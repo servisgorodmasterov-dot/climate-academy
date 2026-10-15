@@ -24,6 +24,8 @@ export interface RoomInput {
   insulation: Insulation;
   region: Region;
   topFloor: boolean;
+  /** Сколько стен комнаты выходят на улицу: 1 — рядовая, 2 — угловая. */
+  exteriorWalls: 1 | 2;
 }
 
 export type ApplianceId = 'tv' | 'pc' | 'laptop' | 'fridge' | 'cooking';
@@ -65,6 +67,11 @@ const SHADE_K: Record<Shading, number> = { none: 1, inner: 0.7, outer: 0.35, tre
 const U_WALL: Record<Insulation, number> = { poor: 1.4, medium: 0.8, good: 0.35 };
 const U_ROOF: Record<Insulation, number> = { poor: 1.2, medium: 0.6, good: 0.25 };
 const U_WINDOW = 2.7; // двухкамерный/однокамерный стеклопакет, Вт/(м²·К)
+/** Железобетонное перекрытие между этажами, Вт/(м²·К). */
+const U_SLAB = 1.5;
+/** Перепад к соседям сверху и снизу: у них летом теплее, но не как на улице. */
+const DT_CEIL = 4;
+const DT_FLOOR = 3;
 /** Добавка к ΔT для освещённой солнцем стены/кровли («эквивалентная температура»), К. */
 const SOLAR_WALL_DT: Record<Orientation, number> = { N: 0, E: 6, S: 7, W: 9 };
 const ROOF_SOLAR_DT = 18;
@@ -108,14 +115,18 @@ export function computeLoad(r: RoomInput): LoadResult {
   const area = r.length * r.width;
   const volume = area * r.height;
   const dT = T_OUT[r.region] - T_INSIDE;
-  // Окна — на наружной стене длиной r.length.
-  const extWall = Math.max(0, r.length * r.height - r.glazing);
+  // Окна — на наружной стене длиной r.length. У угловой комнаты наружная ещё и боковая стена.
+  const extWallArea = (r.length + (r.exteriorWalls === 2 ? r.width : 0)) * r.height;
+  const extWall = Math.max(0, extWallArea - r.glazing);
 
   const items: LoadItem[] = [
     { key: 'solar', label: 'Солнце через окна', watts: r.glazing * SOLAR[r.orientation] * SHADE_K[r.shading] },
     { key: 'glass', label: 'Теплопередача через стёкла', watts: r.glazing * U_WINDOW * dT },
     { key: 'wall', label: 'Наружная стена', watts: extWall * U_WALL[r.insulation] * (dT + SOLAR_WALL_DT[r.orientation]) },
-    ...(r.topFloor ? [{ key: 'roof', label: 'Кровля (последний этаж)', watts: area * U_ROOF[r.insulation] * (dT + ROOF_SOLAR_DT) }] : []),
+    ...(r.topFloor
+      ? [{ key: 'roof', label: 'Кровля (последний этаж)', watts: area * U_ROOF[r.insulation] * (dT + ROOF_SOLAR_DT) }]
+      : [{ key: 'ceil', label: 'Перекрытие сверху (соседи)', watts: area * U_SLAB * DT_CEIL }]),
+    { key: 'floor', label: 'Перекрытие снизу (соседи)', watts: area * U_SLAB * DT_FLOOR },
     { key: 'air', label: 'Наружный воздух (инфильтрация)', watts: 0.335 * AIR_CHANGES * volume * dT },
     { key: 'people', label: 'Люди', watts: r.people * PERSON_W },
     {
@@ -134,6 +145,7 @@ export function computeLoad(r: RoomInput): LoadResult {
 
   const warnings: string[] = [];
   const glazingShare = r.glazing / Math.max(area, 1);
+  if (glazingShare < 0.08 && area > 18) warnings.push('Остекление меньше 8 % площади пола — для жилой комнаты это мало. Проверьте фактическую площадь окон: именно она сильнее всего влияет на результат.');
   if (!cls) warnings.push('Нагрузка выше 7 кВт — больше, чем у бытовой настенной модели. Нужен инженерный расчёт: несколько блоков или другой тип системы.');
   if (glazingShare > 0.3) warnings.push('Остекление больше 30 % площади пола (панорамные окна). Солнечная нагрузка резко меняется в течение дня — рекомендуем инженерную проверку.');
   if (area > 45) warnings.push('Большое помещение: один блок может не обеспечить равномерное распределение воздуха.');
@@ -157,4 +169,10 @@ export const DEFAULT_ROOM: RoomInput = {
   insulation: 'medium',
   region: 'hot',
   topFloor: false,
+  exteriorWalls: 1,
 };
+
+/** Типовая площадь остекления жилой комнаты — около 15 % площади пола. */
+export function suggestGlazing(length: number, width: number, height: number) {
+  return Math.min(+(length * width * 0.15).toFixed(1), +(length * (height - 0.5)).toFixed(1));
+}

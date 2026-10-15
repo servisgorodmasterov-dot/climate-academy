@@ -96,17 +96,20 @@ export function HomeModule() {
       <div className="page-head">
         <div>
           <div className="eyebrow">01 · Квартира с кондиционером</div>
-          <h1 style={{ marginTop: 6 }}>Кондиционер не делает холод — он переносит тепло</h1>
+          <h1 style={{ marginTop: 6 }}>Кондиционер в квартире: как он работает</h1>
           <p className="lead">
             Включите систему и посмотрите, как меняется температура в разных зонах. Вращайте сцену мышью или пальцем, нажимайте на блоки, трассу, окно и пульт.
           </p>
         </div>
-        <div className="seg" role="group" aria-label="Камера">
-          {(Object.keys(CAMS) as CamPreset[]).map((c) => (
-            <button key={c} aria-pressed={cam === c} onClick={() => setCam(c)} disabled={!can3D}>
-              {CAMS[c].label}
-            </button>
-          ))}
+        <div style={{ display: 'grid', gap: 8, justifyItems: 'end' }}>
+          <button className="btn primary" onClick={() => go('calculator')}>Рассчитать мощность кондиционера →</button>
+          <div className="seg" role="group" aria-label="Камера">
+            {(Object.keys(CAMS) as CamPreset[]).map((c) => (
+              <button key={c} aria-pressed={cam === c} onClick={() => setCam(c)} disabled={!can3D}>
+                {CAMS[c].label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

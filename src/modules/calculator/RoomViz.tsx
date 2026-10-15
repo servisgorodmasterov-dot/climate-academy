@@ -135,13 +135,40 @@ function Room({ r, res, reduced }: { r: RoomInput; res: LoadResult; reduced: boo
       <group position={[0, 0, zb - wallT / 2]}>
         <WallWithWindows L={L} H={H} T={wallT} wins={wins} insulation={r.insulation} />
       </group>
-      {/* внутренние стены — полупрозрачные */}
-      {[-1, 1].map((s) => (
-        <mesh key={s} position={[(s * L) / 2, H / 2, 0]}>
-          <boxGeometry args={[0.12, H, W]} />
-          <meshStandardMaterial color="#c9d3e0" transparent opacity={0.22} depthWrite={false} />
-        </mesh>
-      ))}
+      {/* боковые стены: у угловой комнаты левая — наружная */}
+      {[-1, 1].map((s) =>
+        s === -1 && r.exteriorWalls === 2 ? (
+          <group key={s}>
+            <mesh position={[-L / 2 - wallT / 2, H / 2, 0]} castShadow receiveShadow>
+              <boxGeometry args={[wallT, H, W]} />
+              <meshStandardMaterial color="#dfe6ef" roughness={0.9} />
+            </mesh>
+            {r.insulation !== 'poor' && (
+              <mesh position={[-L / 2 - wallT - 0.02, H / 2, 0]}>
+                <boxGeometry args={[0.04, H, W]} />
+                <meshStandardMaterial color={r.insulation === 'good' ? '#ffb07a' : '#d8c3a8'} roughness={1} />
+              </mesh>
+            )}
+            <Pulse reduced={reduced}>
+              <Arrow from={[-L / 2 - 0.05, H * 0.55, 0]} dir={[1, -0.1, 0]} len={scale(item('wall') * 0.4)} />
+            </Pulse>
+          </group>
+        ) : (
+          <mesh key={s} position={[(s * L) / 2, H / 2, 0]}>
+            <boxGeometry args={[0.12, H, W]} />
+            <meshStandardMaterial color="#c9d3e0" transparent opacity={0.22} depthWrite={false} />
+          </mesh>
+        ),
+      )}
+      {/* перекрытия: приток от соседей сверху и снизу */}
+      {!r.topFloor && (
+        <Pulse reduced={reduced}>
+          <Arrow from={[L / 4, H + 0.7, -W / 4]} dir={[0, -1, 0]} len={scale(item('ceil'))} color="#e0905a" />
+        </Pulse>
+      )}
+      <Pulse reduced={reduced}>
+        <Arrow from={[L / 4, -0.7, W / 4]} dir={[0, 1, 0]} len={scale(item('floor'))} color="#e0905a" />
+      </Pulse>
       {/* потолок/кровля */}
       {r.topFloor && (
         <group>

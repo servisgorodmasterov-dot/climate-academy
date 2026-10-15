@@ -12,5 +12,16 @@ export default defineConfig({
     target: 'es2019',
     chunkSizeWarningLimit: 3000,
     outDir: single ? 'dist-single' : 'dist',
+    // Постоянные имена файлов: при обновлении сайта они перезаписываются,
+    // а не копятся в папке docs/ новыми версиями с хешами.
+    rollupOptions: single
+      ? undefined
+      : {
+          output: {
+            entryFileNames: 'assets/[name].js',
+            chunkFileNames: 'assets/[name].js',
+            assetFileNames: 'assets/[name][extname]',
+          },
+        },
   },
 });

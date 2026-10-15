@@ -10,6 +10,7 @@ import {
   REGION_LABEL,
   SHADING_LABEL,
   computeLoad,
+  suggestGlazing,
   type ApplianceId,
   type Insulation,
   type Orientation,
@@ -30,8 +31,16 @@ export function CalculatorModule() {
   const can3D = use3D();
   useEffect(() => markVisited('calculator'), []);
 
-  const [r, setR] = useState<RoomInput>(DEFAULT_ROOM);
+  const [r, setR] = useState<RoomInput>({ ...DEFAULT_ROOM, glazing: suggestGlazing(DEFAULT_ROOM.length, DEFAULT_ROOM.width, DEFAULT_ROOM.height) });
+  // Пока площадь окон не задана вручную, она пересчитывается вместе с размерами комнаты.
+  const [autoGlazing, setAutoGlazing] = useState(true);
   const set = <K extends keyof RoomInput>(k: K, v: RoomInput[K]) => setR((x) => ({ ...x, [k]: v }));
+  const setSize = (k: 'length' | 'width' | 'height', v: number) =>
+    setR((x) => {
+      const n = { ...x, [k]: v };
+      if (autoGlazing && n.windows > 0) n.glazing = suggestGlazing(n.length, n.width, n.height);
+      return n;
+    });
   const res = useMemo(() => computeLoad(r), [r]);
   const maxItem = Math.max(...res.items.map((i) => i.watts), 1);
 
@@ -42,12 +51,20 @@ export function CalculatorModule() {
       <div className="page-head">
         <div>
           <div className="eyebrow">04 · Подбор мощности</div>
-          <h1 style={{ marginTop: 6 }}>Из чего складывается холодильная нагрузка</h1>
+          <h1 style={{ marginTop: 6 }}>Расчёт мощности кондиционера</h1>
           <p className="lead">
             Меняйте параметры комнаты — модель и расчёт обновляются сразу. Стрелки в сцене показывают основные теплопритоки: жёлтые — солнце, оранжевые — стена и кровля.
           </p>
         </div>
-        <button className="btn small" onClick={() => setR(DEFAULT_ROOM)}>Пример по умолчанию</button>
+        <button
+          className="btn small"
+          onClick={() => {
+            setAutoGlazing(true);
+            setR({ ...DEFAULT_ROOM, glazing: suggestGlazing(DEFAULT_ROOM.length, DEFAULT_ROOM.width, DEFAULT_ROOM.height) });
+          }}
+        >
+          Пример по умолчанию
+        </button>
       </div>
 
       <div className="stage wide">
@@ -64,17 +81,52 @@ export function CalculatorModule() {
         </div>
 
         <aside className="panel" aria-label="Параметры комнаты">
-          <div className="eyebrow">Помещение</div>
-          <Range id="c-l" label="Длина (стена с окнами)" unit="м" min={2} max={10} step={0.1} value={r.length} onChange={(v) => set('length', v)} />
-          <Range id="c-w" label="Ширина" unit="м" min={2} max={8} step={0.1} value={r.width} onChange={(v) => set('width', v)} />
-          <Range id="c-h" label="Высота потолка" unit="м" min={2.4} max={4} step={0.05} value={r.height} onChange={(v) => set('height', v)} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+            <span className="eyebrow">Размеры помещения</span>
+            <span className="mono" style={{ fontWeight: 600 }}>{fmt(r.length * r.width, 1)} м²</span>
+          </div>
+          <Range id="c-l" label="Длина (стена с окнами)" unit="м" min={2} max={10} step={0.1} value={r.length} onChange={(v) => setSize('length', v)} />
+          <Range id="c-w" label="Ширина" unit="м" min={2} max={8} step={0.1} value={r.width} onChange={(v) => setSize('width', v)} />
+          <Range id="c-h" label="Высота потолка" unit="м" min={2.4} max={4} step={0.05} value={r.height} onChange={(v) => setSize('height', v)} />
+          <div className="field">
+            <span className="lbl">Сколько стен выходит на улицу</span>
+            <div className="seg" style={{ width: '100%' }}>
+              <button style={{ flex: 1 }} aria-pressed={r.exteriorWalls === 1} onClick={() => set('exteriorWalls', 1)}>Одна</button>
+              <button style={{ flex: 1 }} aria-pressed={r.exteriorWalls === 2} onClick={() => set('exteriorWalls', 2)}>Две (угловая)</button>
+            </div>
+          </div>
           <label className="check">
             <input id="c-top" type="checkbox" checked={r.topFloor} onChange={(e) => set('topFloor', e.target.checked)} /> Последний этаж (кровля над комнатой)
           </label>
           <hr />
           <div className="eyebrow">Окна и солнце</div>
           <Range id="c-win" label="Количество окон" unit="шт." min={0} max={4} step={1} value={r.windows} onChange={(v) => setR((x) => ({ ...x, windows: v, glazing: v === 0 ? 0 : x.glazing || 1.5 }))} />
-          <Range id="c-gl" label="Площадь остекления" unit="м²" min={0} max={Math.max(1, +(r.length * (r.height - 0.3)).toFixed(1))} step={0.1} value={r.glazing} disabled={r.windows === 0} onChange={(v) => set('glazing', v)} />
+          <Range
+            id="c-gl"
+            label="Площадь остекления"
+            unit="м²"
+            min={0}
+            max={Math.max(1, +(r.length * (r.height - 0.3)).toFixed(1))}
+            step={0.1}
+            value={r.glazing}
+            disabled={r.windows === 0}
+            onChange={(v) => {
+              setAutoGlazing(false);
+              set('glazing', v);
+            }}
+          />
+          <label className="check">
+            <input
+              id="c-auto"
+              type="checkbox"
+              checked={autoGlazing}
+              onChange={(e) => {
+                setAutoGlazing(e.target.checked);
+                if (e.target.checked && r.windows > 0) set('glazing', suggestGlazing(r.length, r.width, r.height));
+              }}
+            />
+            Считать окна по площади комнаты (≈15 %)
+          </label>
           <div className="field">
             <span className="lbl">Окна выходят на</span>
             <div className="seg" style={{ width: '100%' }}>

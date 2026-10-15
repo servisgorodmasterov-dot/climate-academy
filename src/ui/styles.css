@@ -193,8 +193,11 @@ select { width: 100%; padding: 8px 10px; border-radius: 8px; background: var(--n
   .panel { max-height: none; }
   .viewport { height: 62vh; min-height: 400px; }
 }
-@media (max-width: 640px) {
+@media (max-width: 1150px) {
   .brand-name { display: none; }
+  .nav button { padding: 7px 9px; }
+}
+@media (max-width: 640px) {
   .nav { margin-left: 0; }
   .nav .n { display: none; }
   .progress-ring span { display: none; }
