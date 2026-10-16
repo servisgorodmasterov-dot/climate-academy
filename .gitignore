@@ -4,3 +4,4 @@ storage
 .env
 *.log
 service-account*.json
+dist-artifact

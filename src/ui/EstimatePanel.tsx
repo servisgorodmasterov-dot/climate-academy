@@ -5,7 +5,7 @@ import { useTotalEstimate } from '../estimate/useEstimate';
 import { demoGateway, freezeOrder } from '../integrations/gorodmasterov/orders';
 import { useApp } from '../store';
 import { EstimateTable } from './EstimateTable';
-import { downloadText, money } from './format';
+import { CAN_DOWNLOAD, downloadText, money } from './format';
 
 export function EstimatePanel() {
   const data = useTotalEstimate();
@@ -110,9 +110,11 @@ export function EstimatePanel() {
               </form>
             ) : (
               <div className="row">
-                <button className="btn ghost" onClick={exportCsv}>
-                  Скачать CSV
-                </button>
+                {CAN_DOWNLOAD && (
+                  <button className="btn ghost" onClick={exportCsv}>
+                    Скачать CSV
+                  </button>
+                )}
                 <button className="btn" onClick={() => (setOrdering(true), setResult(null))} disabled={estimate.total <= 0}>
                   Заказать услугу
                 </button>

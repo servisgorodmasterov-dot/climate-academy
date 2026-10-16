@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ROLE_LABELS } from '../core/types';
 import { compressImage, localPassport, PASSPORT_CATEGORIES, permissions, validateFile, type PassportCategory, type PassportEntry } from '../passport/passport';
 import { useApp } from '../store';
-import { date, dateTime, downloadText } from './format';
+import { CAN_DOWNLOAD, date, dateTime, downloadText } from './format';
 
 function Thumb({ fileId, mime, name }: { fileId: string; mime: string; name: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -37,6 +37,7 @@ export function PassportPanel() {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ roomId: 'apartment', category: 'repair_photo' as PassportCategory, zone: '', title: '', description: '' });
   const [files, setFiles] = useState<File[]>([]);
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
 
   const reload = useCallback(() => localPassport.list(apartmentId).then(setEntries), [apartmentId]);
   useEffect(() => {
@@ -107,7 +108,7 @@ export function PassportPanel() {
             <button className="btn" onClick={() => setAdding(true)}>
               + Добавить запись
             </button>
-            {visible.length > 0 && (
+            {visible.length > 0 && CAN_DOWNLOAD && (
               <button className="btn ghost" onClick={exportJson}>
                 Экспорт JSON
               </button>
@@ -188,19 +189,28 @@ export function PassportPanel() {
                   ))}
                 </div>
               )}
-              {permissions.canDelete(role, e) && (
-                <button
-                  className="link danger"
-                  onClick={async () => {
-                    if (confirm('Удалить запись и её файлы?')) {
-                      await localPassport.remove(e.id);
-                      reload();
-                    }
-                  }}
-                >
-                  Удалить
-                </button>
-              )}
+              {permissions.canDelete(role, e) &&
+                (confirmDel === e.id ? (
+                  <div className="row">
+                    <button className="btn ghost" onClick={() => setConfirmDel(null)}>
+                      Отмена
+                    </button>
+                    <button
+                      className="btn danger"
+                      onClick={async () => {
+                        await localPassport.remove(e.id);
+                        setConfirmDel(null);
+                        reload();
+                      }}
+                    >
+                      Удалить запись и файлы
+                    </button>
+                  </div>
+                ) : (
+                  <button className="link danger" onClick={() => setConfirmDel(e.id)}>
+                    Удалить
+                  </button>
+                ))}
             </li>
           ))}
         </ul>

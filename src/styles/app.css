@@ -321,3 +321,4 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .opt .specs { font-size: 12px; color: var(--muted); margin-top: 3px; }
 .opt .price { font-weight: 800; white-space: nowrap; font-size: 13.5px; color: var(--ink); }
 .compare-wrap { margin-top: 8px; }
+.btn.danger { background: var(--danger); box-shadow: none; }

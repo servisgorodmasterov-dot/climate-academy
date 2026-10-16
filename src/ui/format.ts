@@ -28,3 +28,6 @@ export function downloadText(name: string, text: string, mime = 'text/plain') {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
+
+/** В демо-просмотре (Artifact) браузер не даёт скачивать файлы — кнопки выгрузки скрываются. */
+export const CAN_DOWNLOAD = import.meta.env?.VITE_TARGET !== 'artifact';
