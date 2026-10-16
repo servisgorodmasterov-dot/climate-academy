@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { Layout, Room } from '../../core/types';
 import { edgeSegments, wallPieces, type Box } from '../geometry';
 import { laminateTexture, plasterTexture, sized, tileTexture } from './textures';
+import { TAP_THRESHOLD_PX } from '../objects';
 
 interface Props {
   layout: Layout;
@@ -12,8 +13,6 @@ interface Props {
   floorColors: Record<string, string>; // roomId → цвет выбранного покрытия
   focusRoom: string | null;
   onFloorClick: (room: Room) => void;
-  onFloorHover: (room: Room | null) => void;
-  hoveredRoom: string | null;
   xray: boolean;
 }
 
@@ -25,7 +24,7 @@ function BoxMesh({ b, material, cast = true }: { b: Box; material: THREE.Materia
   );
 }
 
-export function Structure({ layout, wallsTransparent, ceilingHidden, floorColors, focusRoom, onFloorClick, onFloorHover, hoveredRoom, xray }: Props) {
+export function Structure({ layout, wallsTransparent, ceilingHidden, floorColors, focusRoom, onFloorClick, xray }: Props) {
   const H = layout.ceilingHeight;
   const [W, D] = layout.size;
   const transparent = wallsTransparent || xray;
@@ -97,9 +96,8 @@ export function Structure({ layout, wallsTransparent, ceilingHidden, floorColors
             d={d}
             color={floorColors[r.id]}
             dim={xray || (focusRoom != null && focusRoom !== r.id)}
-            highlight={hoveredRoom === r.id}
+            highlight={focusRoom === r.id}
             onClick={() => onFloorClick(r)}
-            onHover={(v) => onFloorHover(v ? r : null)}
           />
         );
       })}
@@ -204,7 +202,7 @@ export function Structure({ layout, wallsTransparent, ceilingHidden, floorColors
   );
 }
 
-function FloorMesh({ room, w, d, color, dim, highlight, onClick, onHover }: { room: Room; w: number; d: number; color?: string; dim: boolean; highlight: boolean; onClick: () => void; onHover: (v: boolean) => void }) {
+function FloorMesh({ room, w, d, color, dim, highlight, onClick }: { room: Room; w: number; d: number; color?: string; dim: boolean; highlight: boolean; onClick: () => void }) {
   const mat = useMemo(() => {
     const base =
       room.floorFinish === 'tile'
@@ -216,7 +214,7 @@ function FloorMesh({ room, w, d, color, dim, highlight, onClick, onHover }: { ro
   }, [room.floorFinish, color, w, d]);
   useMemo(() => {
     mat.emissive = new THREE.Color(highlight ? '#2a6cff' : '#000000');
-    mat.emissiveIntensity = highlight ? 0.18 : 0;
+    mat.emissiveIntensity = highlight ? 0.05 : 0;
     mat.color = new THREE.Color(dim ? '#9a9a9a' : '#ffffff');
   }, [mat, highlight, dim]);
   const [x0, , , ] = room.rect;
@@ -227,14 +225,10 @@ function FloorMesh({ room, w, d, color, dim, highlight, onClick, onHover }: { ro
       material={mat}
       receiveShadow
       onClick={(e) => {
+        if (e.delta > TAP_THRESHOLD_PX) return; // это было вращение камеры, а не касание
         e.stopPropagation();
         onClick();
       }}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        onHover(true);
-      }}
-      onPointerOut={() => onHover(false)}
     >
       <planeGeometry args={[w, d]} />
     </mesh>

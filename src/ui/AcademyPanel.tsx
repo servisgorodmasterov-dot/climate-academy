@@ -12,12 +12,13 @@ import { EstimateTable } from './EstimateTable';
 type Tab = 'card' | 'lesson' | 'variants' | 'calc';
 
 export function AcademyPanel() {
-  const { catalog, layout, activeSection, sections, proMode, role, mode, selectedElement, overrides } = useApp();
+  const { catalog, layout, activeSection, sections, proMode, role, selectedElement, overrides } = useApp();
   const s = activeSection ? sections[activeSection] : null;
   const def = s ? academyById(s.academy) : undefined;
-  const [tab, setTab] = useState<Tab>(mode === 'encyclopedia' ? 'lesson' : 'card');
+  const academyTab = useApp((st) => st.academyTab);
+  const [tab, setTab] = useState<Tab>(academyTab);
   const [compare, setCompare] = useState<{ product: Product; need: number } | null>(null);
-  useEffect(() => setTab(mode === 'encyclopedia' ? 'lesson' : 'card'), [activeSection, mode]);
+  useEffect(() => setTab(academyTab), [activeSection, academyTab]);
 
   const ctx = useMemo(() => (s && catalog && layout ? contextFor(s, catalog, layout, proMode, role, selectedElement) : null), [s, catalog, layout, proMode, role, selectedElement]);
   const section = useMemo(() => (s && catalog && layout ? buildSection(s, catalog, layout) : null), [s, catalog, layout]);
@@ -37,7 +38,7 @@ export function AcademyPanel() {
           <div className="eyebrow">Академия · {def.title}</div>
           <h2>{ctx.element?.label ?? (ctx.room ? `${def.title}: ${ctx.room.name}` : def.title)}</h2>
         </div>
-        <button className="icon-btn" aria-label="Закрыть" onClick={() => (app.set('panel', null), app.set('selectedElement', null))}>
+        <button className="icon-btn" aria-label="Закрыть" onClick={() => app.set('panel', null)}>
           ✕
         </button>
       </header>

@@ -6,18 +6,20 @@ import { findProduct } from '../catalog/sheetParser';
 import { ApartmentScene } from '../apartment/scene/ApartmentScene';
 import { findApartment, listApartments, roomArea, totalArea } from '../apartment/layout';
 import { useTotalEstimate } from '../estimate/useEstimate';
-import { useApp, SYSTEM_META, type ViewMode } from '../store';
+import { useApp, SYSTEM_META, type AcademyTab, type ViewMode } from '../store';
 import { AcademyPanel } from './AcademyPanel';
 import { EstimatePanel } from './EstimatePanel';
 import { OrdersPanel } from './OrdersPanel';
 import { PassportPanel } from './PassportPanel';
 import { AboutPanel } from './AboutPanel';
+import { ObjectsPanel } from './ObjectsPanel';
+import { CATEGORIES, resolveSelectable, selectableObjects } from '../apartment/objects';
 import { money } from './format';
 
 const MODES: { id: ViewMode; label: string; hint: string }[] = [
-  { id: 'apartment', label: 'Моя квартира', hint: 'Нажмите на комнату, пол или отмеченный объект' },
+  { id: 'apartment', label: 'Моя квартира', hint: 'Выберите комнату, затем объект по метке. Список всех объектов — кнопка «Объекты»' },
   { id: 'xray', label: 'Рентген', hint: 'Условная схема инженерных систем — не исполнительная документация' },
-  { id: 'encyclopedia', label: 'Энциклопедия', hint: 'Нажмите на объект — откроется объяснение, как он устроен' },
+  { id: 'encyclopedia', label: 'Энциклопедия', hint: 'Выберите объект — главной станет кнопка «Как устроено»' },
 ];
 
 export function App() {
@@ -51,30 +53,39 @@ export function App() {
 
   if (!layout) return <div className="loading">Загрузка…</div>;
 
-  const openAcademy = (academyId: string, room: Room | null, el: LayoutElement | null) => {
+  const openAcademy = (academyId: string, room: Room | null, el: LayoutElement | null, tab: AcademyTab = 'card') => {
     const def = academyById(academyId);
     if (!def || !catalog) return;
     const sectionRoom = def.scope === 'room' ? room : null;
     const id = `${apartmentId}|${sectionIdFor(def, sectionRoom)}`;
     const ctx = { catalog, layout, room: sectionRoom, element: el, proMode, role };
-    useApp.getState().openSection(id, def.id, sectionRoom?.id ?? null, () => def.defaultParams(ctx), el?.id ?? null);
+    useApp.getState().openSection(id, def.id, sectionRoom?.id ?? null, () => def.defaultParams(ctx), el?.id ?? null, tab);
   };
 
-  const onElement = (el: LayoutElement) => {
+  /** Выбор объекта: только подсветка и плашка снизу. Панель открывается кнопкой на плашке. */
+  const onElement = (picked: LayoutElement) => {
+    const el = resolveSelectable(layout, picked);
     if (!el.academy) return;
-    openAcademy(el.academy, layout.rooms.find((r) => r.id === el.roomId) ?? null, el);
+    const st = useApp.getState();
+    if (st.panel === 'academy' || st.panel === 'objects') st.set('panel', null);
+    st.set('focusRoom', el.roomId);
+    st.set('selectedElement', el.id);
   };
 
+  /** Касание пола только выбирает комнату. */
   const onFloor = (room: Room) => {
     const st = useApp.getState();
-    if (st.mode !== 'encyclopedia' && st.focusRoom !== room.id) {
-      st.set('focusRoom', room.id);
-      if (room.floorFinish === 'laminate') say(`${room.name}: нажмите на пол ещё раз, чтобы открыть академию напольных покрытий`);
-      return;
-    }
-    const el = layout.elements.find((e) => e.kind === 'floor' && e.roomId === room.id) ?? null;
-    if (el?.academy) openAcademy(el.academy, room, el);
-    else say(`Покрытие «${room.name}» — плитка. Академия плитки запланирована в следующих этапах.`);
+    if (st.focusRoom === room.id) return;
+    st.set('selectedElement', null);
+    st.set('focusRoom', room.id);
+    say(`${room.name}: нажмите на метку объекта, чтобы узнать о нём`);
+  };
+
+  const selected = s.selectedElement ? layout.elements.find((e) => e.id === s.selectedElement) ?? null : null;
+  const selectedObj = selected ? selectableObjects(layout).find((o) => o.id === selected.id) ?? null : null;
+  const openSelected = (tab: AcademyTab) => {
+    if (!selected?.academy) return;
+    openAcademy(selected.academy, layout.rooms.find((r) => r.id === selected.roomId) ?? null, selected, tab);
   };
 
   const apt = findApartment(apartmentId);
@@ -139,11 +150,11 @@ export function App() {
             {catalog?.status === 'demo' && <span className="badge demo">Демо-цены</span>}
           </div>
           <div className="rooms" role="tablist" aria-label="Помещения">
-            <button className={!focusRoom ? 'chip on' : 'chip'} onClick={() => s.set('focusRoom', null)}>
+            <button className={!focusRoom ? 'chip on' : 'chip'} onClick={() => (s.set('focusRoom', null), s.set('selectedElement', null))}>
               Вся квартира
             </button>
             {layout.rooms.map((r) => (
-              <button key={r.id} className={focusRoom === r.id ? 'chip on' : 'chip'} onClick={() => s.set('focusRoom', r.id)}>
+              <button key={r.id} className={focusRoom === r.id ? 'chip on' : 'chip'} onClick={() => (s.set('focusRoom', r.id), s.set('selectedElement', null))}>
                 {r.name} <span className="muted">{roomArea(r)}</span>
               </button>
             ))}
@@ -186,6 +197,27 @@ export function App() {
           </div>
         )}
 
+        {selectedObj && !panel && (
+          <div className="selbar" role="region" aria-label="Выбранный объект">
+            <span className="selbar-ico">{selectedObj.icon}</span>
+            <div className="selbar-text">
+              <b>{selectedObj.label}</b>
+              <span className="muted small">{CATEGORIES.find((c) => c.id === selectedObj.category)?.label} · {layout.rooms.find((r) => r.id === selectedObj.roomId)?.name}</span>
+            </div>
+            <div className="selbar-actions">
+              <button className={mode === 'encyclopedia' ? 'btn' : 'btn ghost'} onClick={() => openSelected('lesson')}>
+                Как устроено
+              </button>
+              <button className={mode === 'encyclopedia' ? 'btn ghost' : 'btn'} onClick={() => openSelected('card')}>
+                Цена и варианты
+              </button>
+            </div>
+            <button className="icon-btn sm" aria-label="Снять выбор" onClick={() => s.set('selectedElement', null)}>
+              ✕
+            </button>
+          </div>
+        )}
+
         {toast && (
           <div className="toast" role="status">
             {toast}
@@ -194,6 +226,10 @@ export function App() {
       </main>
 
       <nav className="dock">
+        <button className={panel === 'objects' ? 'on' : ''} onClick={() => s.set('panel', panel === 'objects' ? null : 'objects')}>
+          <span className="ico">☰</span>
+          <span>Объекты</span>
+        </button>
         <button className={panel === 'estimate' ? 'on' : ''} onClick={() => s.set('panel', panel === 'estimate' ? null : 'estimate')}>
           <span className="ico">🧾</span>
           <span>Смета</span>
@@ -215,6 +251,7 @@ export function App() {
       </nav>
 
       {panel === 'academy' && <AcademyPanel />}
+      {panel === 'objects' && <ObjectsPanel onPick={onElement} />}
       {panel === 'estimate' && <EstimatePanel />}
       {panel === 'orders' && <OrdersPanel />}
       {panel === 'passport' && <PassportPanel />}

@@ -1,8 +1,7 @@
-import { Billboard, RoundedBox } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
-import { useRef, useState } from 'react';
+import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import type { LayoutElement } from '../../core/types';
+import { TAP_THRESHOLD_PX } from '../objects';
 
 const white = new THREE.MeshStandardMaterial({ color: '#fbfbfb', roughness: 0.3 });
 const grey = new THREE.MeshStandardMaterial({ color: '#c9cdd2', roughness: 0.5, metalness: 0.2 });
@@ -117,75 +116,34 @@ const HIT_SIZE: Partial<Record<LayoutElement['kind'], [number, number, number]>>
   ac_outdoor: [0.9, 0.7, 0.45],
 };
 
-export function Element({ el, selected, onSelect, showMarker, xray }: { el: LayoutElement; selected: boolean; onSelect: (el: LayoutElement) => void; showMarker: boolean; xray: boolean }) {
-  const [hover, setHover] = useState(false);
+/** 3D-объект. Выбор — только коротким касанием без сдвига (сдвиг = вращение камеры). Подсветка — только у выбранного. */
+export function Element({ el, selected, onSelect, xray }: { el: LayoutElement; selected: boolean; onSelect: (el: LayoutElement) => void; xray: boolean }) {
   const interactive = !!el.academy;
   if (el.kind === 'riser' && xray) return null; // в рентгене вместо короба показываем трубы
+  const size = HIT_SIZE[el.kind] ?? [0.3, 0.3, 0.3];
   return (
     <group position={el.position} rotation={[0, el.rotationY ?? 0, 0]}>
       <Model kind={el.kind} />
       {interactive && (
-        <>
-          <mesh
-            material={hit}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect(el);
-            }}
-            onPointerOver={(e) => {
-              e.stopPropagation();
-              setHover(true);
-              document.body.style.cursor = 'pointer';
-            }}
-            onPointerOut={() => {
-              setHover(false);
-              document.body.style.cursor = '';
-            }}
-          >
-            <boxGeometry args={HIT_SIZE[el.kind] ?? [0.3, 0.3, 0.3]} />
-          </mesh>
-          {(hover || selected) && (
-            <mesh>
-              <boxGeometry args={(HIT_SIZE[el.kind] ?? [0.3, 0.3, 0.3]).map((v) => v * 0.8) as [number, number, number]} />
-              <meshBasicMaterial color={selected ? '#0066fa' : '#4c9bff'} transparent opacity={selected ? 0.1 : 0.16} depthWrite={false} />
-            </mesh>
-          )}
-          {showMarker && !selected && <Marker offset={el.kind === 'leak_sensor' ? 0.35 : el.kind === 'ac_outdoor' ? 0.55 : 0.28} />}
-        </>
+        <mesh
+          material={hit}
+          onClick={(e) => {
+            if (e.delta > TAP_THRESHOLD_PX) return;
+            e.stopPropagation();
+            onSelect(el);
+          }}
+          onPointerOver={() => (document.body.style.cursor = 'pointer')}
+          onPointerOut={() => (document.body.style.cursor = '')}
+        >
+          <boxGeometry args={size} />
+        </mesh>
       )}
-    </group>
-  );
-}
-
-/** Пульсирующая метка «здесь можно нажать». */
-function Marker({ offset }: { offset: number }) {
-  const bob = useRef<THREE.Group>(null);
-  const ring = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (bob.current) bob.current.position.y = offset + Math.sin(t * 2.2) * 0.025;
-    if (ring.current) {
-      const k = (t * 0.8) % 1;
-      ring.current.scale.setScalar(1 + k * 0.7);
-      (ring.current.material as THREE.MeshBasicMaterial).opacity = 1 - k;
-    }
-  });
-  return (
-    <group ref={bob}>
-      <Billboard>
-        <mesh renderOrder={10}>
-          <circleGeometry args={[0.045, 24]} />
-          <meshBasicMaterial color="#0066fa" transparent opacity={0.92} depthTest={false} />
+      {selected && (
+        <mesh>
+          <boxGeometry args={size.map((v) => v * 0.85) as [number, number, number]} />
+          <meshBasicMaterial color="#0066fa" transparent opacity={0.14} depthWrite={false} />
         </mesh>
-        <mesh renderOrder={10}>
-          <circleGeometry args={[0.02, 16]} />
-          <meshBasicMaterial color="#ffffff" transparent depthTest={false} />
-        </mesh>
-        <mesh ref={ring} renderOrder={10}>
-          <ringGeometry args={[0.055, 0.07, 32]} />
-          <meshBasicMaterial color="#0066fa" transparent depthTest={false} />
-        </mesh>
-      </Billboard>
+      )}
     </group>
   );
 }

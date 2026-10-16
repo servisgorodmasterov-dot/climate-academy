@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { Layout, LayoutElement, Room } from '../../core/types';
 import { roomArea } from '../layout';
+import { selectableObjects } from '../objects';
 import { Structure } from './Structure';
 import { Furniture } from './Furniture';
 import { Element } from './Elements';
@@ -31,7 +32,6 @@ export function ApartmentScene(props: SceneProps) {
         gl.toneMappingExposure = 1.05;
         gl.shadowMap.type = THREE.PCFSoftShadowMap;
       }}
-      onPointerMissed={() => useApp.getState().set('selectedElement', null)}
     >
       <Suspense fallback={null}>
         <SceneContent {...props} />
@@ -41,8 +41,8 @@ export function ApartmentScene(props: SceneProps) {
 }
 
 function SceneContent({ layout, floorColors, onElement, onFloor }: SceneProps) {
-  const { mode, focusRoom, ceilingHidden, wallsTransparent, xraySystems, selectedElement, hovered } = useApp();
-  const setHovered = (v: string | null) => useApp.getState().set('hovered', v);
+  const { mode, focusRoom, ceilingHidden, wallsTransparent, xraySystems, selectedElement, categoryFilter } = useApp();
+  const objects = useMemo(() => selectableObjects(layout), [layout]);
   const [W, D] = layout.size;
   const xray = mode === 'xray';
 
@@ -89,18 +89,30 @@ function SceneContent({ layout, floorColors, onElement, onFloor }: SceneProps) {
           ceilingHidden={ceilingHidden}
           floorColors={floorColors}
           focusRoom={focusRoom}
-          hoveredRoom={hovered}
           xray={xray}
           onFloorClick={onFloor}
-          onFloorHover={(r) => setHovered(r?.id ?? null)}
         />
         {!xray && <Furniture items={layout.furniture} />}
         {layout.elements
           .filter((e) => e.kind !== 'floor')
           .map((e) => (
-            <Element key={e.id} el={e} selected={selectedElement === e.id} onSelect={onElement} showMarker={mode !== 'xray' || !!e.academy} xray={xray} />
+            <Element key={e.id} el={e} selected={selectedElement === e.id} onSelect={onElement} xray={xray} />
           ))}
         {xray && <Utilities runs={layout.utilities} systems={xraySystems} />}
+        {objects
+          .filter((o) => (focusRoom ? o.roomId === focusRoom : categoryFilter !== 'all') && (categoryFilter === 'all' || o.category === categoryFilter))
+          .map((o) => (
+            <Html key={o.id} position={o.anchor} center zIndexRange={[30, 10]}>
+              <button
+                className={selectedElement === o.id ? 'pin on' : 'pin'}
+                onClick={() => onElement(o.element)}
+                title={o.label}
+              >
+                <span className="pin-ico">{o.icon}</span>
+                {o.short}
+              </button>
+            </Html>
+          ))}
         {!focusRoom &&
           layout.rooms.map((r) => (
             <Html key={r.id} position={[(r.rect[0] + r.rect[2]) / 2, layout.ceilingHeight + 0.35, (r.rect[1] + r.rect[3]) / 2]} center zIndexRange={[20, 0]}>
@@ -138,7 +150,7 @@ function CameraRig({ layout }: { layout: Layout }) {
     const cx = (r.rect[0] + r.rect[2]) / 2 - W / 2;
     const cz = (r.rect[1] + r.rect[3]) / 2 - D / 2;
     const span = Math.max(r.rect[2] - r.rect[0], r.rect[3] - r.rect[1]) * (portrait ? 1.9 : 1.2) + 1.8;
-    cc.setLookAt(cx + span * 0.2, span * 1.35, cz + span * 0.55, cx, 0.3, cz, true);
+    cc.setLookAt(cx + (portrait ? 0 : span * 0.2), span * 1.35, cz + span * 0.55, cx, 0.3, cz, true);
   }, [focusRoom, rooms, W, D, portrait]);
 
   useEffect(() => {

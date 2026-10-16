@@ -232,6 +232,8 @@ export interface LayoutElement {
   position: [number, number, number];
   rotationY?: number;
   academy?: string; // какая академия открывается
+  /** Часть другого объекта (наружный блок → кондиционер): выбирается как основной объект */
+  partOf?: string;
   label: string;
 }
 

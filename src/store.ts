@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Catalog, Layout, PriceOverride, Role, Tier, UtilitySystem } from './core/types';
+import type { ObjectCategory } from './apartment/objects';
 import type { Selection } from './core/academy';
 import { selectionFromKit } from './core/academy';
 import { createCatalogProvider, DemoCatalogProvider } from './catalog/CatalogProvider';
@@ -10,7 +11,8 @@ import { advance } from './integrations/gorodmasterov/orders';
 import { readLaunchContext } from './integrations/eshanyraq/bridge';
 
 export type ViewMode = 'apartment' | 'xray' | 'encyclopedia';
-export type Panel = 'academy' | 'estimate' | 'passport' | 'orders' | 'about' | null;
+export type Panel = 'academy' | 'objects' | 'estimate' | 'passport' | 'orders' | 'about' | null;
+export type AcademyTab = 'card' | 'lesson' | 'variants' | 'calc';
 
 export interface SectionState {
   id: string;
@@ -37,7 +39,8 @@ interface State {
   wallsTransparent: boolean;
   xraySystems: UtilitySystem[];
   selectedElement: string | null;
-  hovered: string | null;
+  categoryFilter: ObjectCategory | 'all';
+  academyTab: AcademyTab;
   panel: Panel;
   activeSection: string | null;
   proMode: boolean;
@@ -52,7 +55,7 @@ interface State {
   setApartment(id: string): void;
   set<K extends keyof State>(k: K, v: State[K]): void;
   toggleSystem(s: UtilitySystem): void;
-  openSection(sectionId: string, academy: string, roomId: string | null, defaultParams: () => unknown, elementId?: string | null): void;
+  openSection(sectionId: string, academy: string, roomId: string | null, defaultParams: () => unknown, elementId?: string | null, tab?: AcademyTab): void;
   setTier(sectionId: string, tier: Tier): void;
   setSlot(sectionId: string, slot: string, productId: string | null): void;
   setParams(sectionId: string, params: unknown): void;
@@ -79,7 +82,8 @@ export const useApp = create<State>()(
       wallsTransparent: false,
       xraySystems: ALL_SYSTEMS,
       selectedElement: null,
-      hovered: null,
+      categoryFilter: 'all',
+      academyTab: 'card',
       panel: null,
       activeSection: null,
       proMode: false,
@@ -122,14 +126,14 @@ export const useApp = create<State>()(
         set({ xraySystems: cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s] });
       },
 
-      openSection(sectionId, academy, roomId, defaultParams, elementId = null) {
+      openSection(sectionId, academy, roomId, defaultParams, elementId = null, tab = 'card') {
         const { catalog } = get();
         const sections = { ...get().sections };
         if (!sections[sectionId] && catalog) {
           const tier: Tier = 'comfort';
           sections[sectionId] = { id: sectionId, apartmentId: get().apartmentId, academy, roomId, tier, selection: selectionFromKit(catalog, academy, tier), params: defaultParams(), included: false };
         }
-        set({ sections, activeSection: sectionId, panel: 'academy', selectedElement: elementId });
+        set({ sections, activeSection: sectionId, panel: 'academy', selectedElement: elementId, academyTab: tab });
       },
 
       setTier(sectionId, tier) {

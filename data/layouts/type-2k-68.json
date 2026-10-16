@@ -332,7 +332,8 @@
    ],
    "rotationY": 0,
    "academy": "climate",
-   "label": "Наружный блок (гостиная)"
+   "label": "Наружный блок (гостиная)",
+   "partOf": "ac-living"
   },
   {
    "id": "ac-bedroom",
@@ -358,7 +359,8 @@
    ],
    "rotationY": 0,
    "academy": "climate",
-   "label": "Наружный блок (спальня)"
+   "label": "Наружный блок (спальня)",
+   "partOf": "ac-bedroom"
   },
   {
    "id": "sw-living",

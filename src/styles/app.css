@@ -322,3 +322,32 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .opt .price { font-weight: 800; white-space: nowrap; font-size: 13.5px; color: var(--ink); }
 .compare-wrap { margin-top: 8px; }
 .btn.danger { background: var(--danger); box-shadow: none; }
+
+/* --- Выбор объектов --- */
+.pin { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #ffffff; background: #ffffffee; color: var(--ink); border-radius: 999px; padding: 5px 10px 5px 6px; font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 0 3px 10px #26456729; min-height: 30px; }
+.pin-ico { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); font-size: 12px; }
+.pin:hover { border-color: var(--blue); }
+.pin.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.pin.on .pin-ico { background: #ffffff33; color: #fff; }
+
+.selbar { position: absolute; left: 50%; bottom: 86px; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 16px; padding: 10px 10px 10px 12px; box-shadow: 0 16px 40px #2645672e; z-index: 9; }
+.selbar-ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--blue-soft); color: var(--blue); font-size: 20px; flex: none; }
+.selbar-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.selbar-text b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+.selbar-actions { display: flex; gap: 6px; }
+.selbar-actions .btn { padding: 9px 12px; font-size: 13px; min-height: 40px; white-space: nowrap; }
+
+.obj-group h4 { margin-top: 14px; }
+.obj-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.obj { width: 100%; display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 9px 10px; text-align: left; font-size: 14px; }
+.obj.on { border-color: var(--blue); background: var(--blue-soft); }
+.obj-ico { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: #f0f4f9; flex: none; }
+.obj-name { flex: 1; min-width: 0; }
+
+@media (max-width: 760px) {
+  .selbar { bottom: 82px; flex-wrap: wrap; gap: 8px; }
+  .selbar-actions { order: 3; width: 100%; }
+  .selbar-actions .btn { flex: 1; }
+  .view-tools { bottom: 84px; }
+  .app:has(.selbar) .view-tools { display: none; }
+}
