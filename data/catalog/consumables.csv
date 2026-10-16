@@ -1,0 +1,7 @@
+product_id,for_slot,rate,rate_per,condition,note
+FL-FILM-200,floor.laminate,1.15,m2,base=concrete,Нахлёст 20 см и завод на стены ≈ +15% к площади
+FL-SCREED-25,floor.screed,1.6,m2*mm,screed=1,Ориентировочный расход 1.6 кг на 1 м² при слое 1 мм — уточняется по паспорту смеси
+FL-PRIMER-5,floor.screed,0.15,m2,screed=1,Ориентировочно 0.15 л/м² — по паспорту грунта
+FL-CLIP-50,floor.skirting,2,m,,Шаг крепежа около 0.5 м
+AC-DRAIN,ac.route,1,m,,Дренаж прокладывается вдоль трассы
+SH-CABLE-15,sh.switch,4,pcs,neutral_missing=1,Около 4 м кабеля на точку при подводе нейтрали от распределительной коробки

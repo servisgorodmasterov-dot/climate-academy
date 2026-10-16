@@ -1,0 +1,4 @@
+supplier_id,name,city,delivery_price,delivery_days,contact,catalog_source,updated_at
+SUP-MAT,Демо-поставщик отделочных материалов,Астана,5000,2,—,demo,2026-10-16
+SUP-CLM,Демо-поставщик климатической техники (место для каталога ClimateCool),Астана,0,3,—,demo,2026-10-16
+SUP-ELC,Демо-поставщик электрики и умного дома,Астана,3000,2,—,demo,2026-10-16

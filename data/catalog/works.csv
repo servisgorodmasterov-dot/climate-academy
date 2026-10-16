@@ -1,0 +1,13 @@
+work_id,academy,slot,name,unit,price,updated_at,source
+W-FL-LAM,flooring,floor.laminate,Укладка ламината прямым способом,m2,2500,2026-10-16,DEMO
+W-FL-UND,flooring,floor.underlay,Укладка плёнки и подложки,m2,400,2026-10-16,DEMO
+W-FL-SKR,flooring,floor.skirting,Монтаж плинтуса,m,900,2026-10-16,DEMO
+W-FL-SCR,flooring,floor.screed,Грунтование и заливка самовыравнивающейся смеси,m2,2200,2026-10-16,DEMO
+W-AC-STD,climate,ac.split,Стандартный монтаж сплит-системы (без трассы),set,45000,2026-10-16,DEMO
+W-AC-ROUTE,climate,ac.route,Прокладка трассы (медь + кабель + дренаж),m,4500,2026-10-16,DEMO
+W-AC-CHASE,climate,ac.chase,Штробление стены под трассу,m,3500,2026-10-16,DEMO
+W-SH-HUB,smarthome,sh.hub,Установка и настройка хаба,pcs,10000,2026-10-16,DEMO
+W-SH-SW,smarthome,sh.switch,Монтаж умного выключателя,pcs,4000,2026-10-16,DEMO
+W-SH-SENS,smarthome,sh.sensor,Установка и привязка датчика,pcs,2000,2026-10-16,DEMO
+W-SH-NEUTRAL,smarthome,sh.cable,Подвод нейтрали к точке выключателя,pcs,6000,2026-10-16,DEMO
+W-SH-BOX,smarthome,sh.box,Замена подрозетника на глубокий,pcs,2500,2026-10-16,DEMO

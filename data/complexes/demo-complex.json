@@ -1,0 +1,45 @@
+{
+ "id": "demo-complex",
+ "name": "ЖК «Демо» (условный)",
+ "buildings": [
+  {
+   "id": "b1",
+   "name": "Корпус 1",
+   "entrances": [
+    {
+     "id": "e1",
+     "name": "Подъезд 1",
+     "floors": [
+      {
+       "number": 9,
+       "apartments": [
+        {
+         "id": "apt-72",
+         "number": "72",
+         "layoutId": "type-2k-68",
+         "layoutVersion": 1,
+         "mirrored": false,
+         "overrides": []
+        },
+        {
+         "id": "apt-73",
+         "number": "73",
+         "layoutId": "type-2k-68",
+         "layoutVersion": 1,
+         "mirrored": true,
+         "overrides": [
+          {
+           "op": "setRoomName",
+           "target": "bedroom",
+           "value": "Детская"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

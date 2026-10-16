@@ -1,0 +1,1359 @@
+{
+ "id": "type-2k-68",
+ "version": 1,
+ "name": "Типовая 2-комнатная, ~68 м²",
+ "isDemo": true,
+ "note": "Демонстрационная планировка. Реальные чертежи ЖК не загружены — размеры условные.",
+ "ceilingHeight": 2.7,
+ "size": [
+  9,
+  7.6
+ ],
+ "rooms": [
+  {
+   "id": "bedroom",
+   "name": "Спальня",
+   "type": "bedroom",
+   "rect": [
+    0,
+    0,
+    4,
+    4
+   ],
+   "floorFinish": "laminate"
+  },
+  {
+   "id": "living",
+   "name": "Гостиная",
+   "type": "living",
+   "rect": [
+    4,
+    0,
+    9,
+    4
+   ],
+   "floorFinish": "laminate"
+  },
+  {
+   "id": "bath",
+   "name": "Санузел",
+   "type": "bath",
+   "rect": [
+    0,
+    4,
+    2.4,
+    7.6
+   ],
+   "floorFinish": "tile"
+  },
+  {
+   "id": "hall",
+   "name": "Прихожая",
+   "type": "hall",
+   "rect": [
+    2.4,
+    4,
+    5.6,
+    7.6
+   ],
+   "floorFinish": "laminate"
+  },
+  {
+   "id": "kitchen",
+   "name": "Кухня",
+   "type": "kitchen",
+   "rect": [
+    5.6,
+    4,
+    9,
+    7.6
+   ],
+   "floorFinish": "laminate"
+  }
+ ],
+ "walls": [
+  {
+   "id": "W-N",
+   "a": [
+    0,
+    0
+   ],
+   "b": [
+    9,
+    0
+   ],
+   "thickness": 0.3,
+   "exterior": true,
+   "openings": [
+    {
+     "kind": "window",
+     "from": 1.2,
+     "to": 2.8,
+     "sill": 0.85,
+     "head": 2.35
+    },
+    {
+     "kind": "window",
+     "from": 5.4,
+     "to": 7.4,
+     "sill": 0.85,
+     "head": 2.35
+    }
+   ]
+  },
+  {
+   "id": "W-E",
+   "a": [
+    9,
+    0
+   ],
+   "b": [
+    9,
+    7.6
+   ],
+   "thickness": 0.3,
+   "exterior": true,
+   "openings": [
+    {
+     "kind": "window",
+     "from": 5.0,
+     "to": 6.5,
+     "sill": 0.9,
+     "head": 2.35
+    }
+   ]
+  },
+  {
+   "id": "W-S",
+   "a": [
+    0,
+    7.6
+   ],
+   "b": [
+    9,
+    7.6
+   ],
+   "thickness": 0.3,
+   "exterior": true,
+   "openings": [
+    {
+     "kind": "entrance",
+     "from": 3.6,
+     "to": 4.5,
+     "head": 2.1
+    }
+   ]
+  },
+  {
+   "id": "W-W",
+   "a": [
+    0,
+    0
+   ],
+   "b": [
+    0,
+    7.6
+   ],
+   "thickness": 0.3,
+   "exterior": true,
+   "openings": []
+  },
+  {
+   "id": "I-1",
+   "a": [
+    4,
+    0
+   ],
+   "b": [
+    4,
+    4
+   ],
+   "thickness": 0.12,
+   "exterior": false,
+   "openings": []
+  },
+  {
+   "id": "I-2",
+   "a": [
+    0,
+    4
+   ],
+   "b": [
+    9,
+    4
+   ],
+   "thickness": 0.12,
+   "exterior": false,
+   "openings": [
+    {
+     "kind": "door",
+     "from": 2.9,
+     "to": 3.7,
+     "head": 2.1
+    },
+    {
+     "kind": "door",
+     "from": 4.4,
+     "to": 5.2,
+     "head": 2.1
+    },
+    {
+     "kind": "door",
+     "from": 6.4,
+     "to": 7.8,
+     "head": 2.2
+    }
+   ]
+  },
+  {
+   "id": "I-3",
+   "a": [
+    2.4,
+    4
+   ],
+   "b": [
+    2.4,
+    7.6
+   ],
+   "thickness": 0.12,
+   "exterior": false,
+   "openings": [
+    {
+     "kind": "door",
+     "from": 1.0,
+     "to": 1.7,
+     "head": 2.1
+    }
+   ]
+  },
+  {
+   "id": "I-4",
+   "a": [
+    5.6,
+    4
+   ],
+   "b": [
+    5.6,
+    7.6
+   ],
+   "thickness": 0.12,
+   "exterior": false,
+   "openings": [
+    {
+     "kind": "door",
+     "from": 0.6,
+     "to": 1.4,
+     "head": 2.1
+    }
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "floor-bedroom",
+   "kind": "floor",
+   "roomId": "bedroom",
+   "position": [
+    2.0,
+    0,
+    2.0
+   ],
+   "academy": "flooring",
+   "label": "Пол: Спальня"
+  },
+  {
+   "id": "floor-living",
+   "kind": "floor",
+   "roomId": "living",
+   "position": [
+    6.5,
+    0,
+    2.0
+   ],
+   "academy": "flooring",
+   "label": "Пол: Гостиная"
+  },
+  {
+   "id": "floor-bath",
+   "kind": "floor",
+   "roomId": "bath",
+   "position": [
+    1.2,
+    0,
+    5.8
+   ],
+   "label": "Пол: Санузел"
+  },
+  {
+   "id": "floor-hall",
+   "kind": "floor",
+   "roomId": "hall",
+   "position": [
+    4.0,
+    0,
+    5.8
+   ],
+   "academy": "flooring",
+   "label": "Пол: Прихожая"
+  },
+  {
+   "id": "floor-kitchen",
+   "kind": "floor",
+   "roomId": "kitchen",
+   "position": [
+    7.3,
+    0,
+    5.8
+   ],
+   "academy": "flooring",
+   "label": "Пол: Кухня"
+  },
+  {
+   "id": "ac-living",
+   "kind": "ac_indoor",
+   "roomId": "living",
+   "position": [
+    8.1,
+    2.32,
+    0.27
+   ],
+   "rotationY": 0,
+   "academy": "climate",
+   "label": "Кондиционер (гостиная)"
+  },
+  {
+   "id": "ac-living-out",
+   "kind": "ac_outdoor",
+   "roomId": "living",
+   "position": [
+    8.1,
+    1.5,
+    -0.52
+   ],
+   "rotationY": 0,
+   "academy": "climate",
+   "label": "Наружный блок (гостиная)"
+  },
+  {
+   "id": "ac-bedroom",
+   "kind": "ac_indoor",
+   "roomId": "bedroom",
+   "position": [
+    3.25,
+    2.32,
+    0.27
+   ],
+   "rotationY": 0,
+   "academy": "climate",
+   "label": "Кондиционер (спальня)"
+  },
+  {
+   "id": "ac-bedroom-out",
+   "kind": "ac_outdoor",
+   "roomId": "bedroom",
+   "position": [
+    3.25,
+    1.5,
+    -0.52
+   ],
+   "rotationY": 0,
+   "academy": "climate",
+   "label": "Наружный блок (спальня)"
+  },
+  {
+   "id": "sw-living",
+   "kind": "smart_switch",
+   "roomId": "living",
+   "position": [
+    5.45,
+    1.0,
+    3.93
+   ],
+   "rotationY": 3.141592653589793,
+   "academy": "smarthome",
+   "label": "Выключатель (гостиная)"
+  },
+  {
+   "id": "sw-bedroom",
+   "kind": "smart_switch",
+   "roomId": "bedroom",
+   "position": [
+    3.88,
+    1.0,
+    3.93
+   ],
+   "rotationY": 3.141592653589793,
+   "academy": "smarthome",
+   "label": "Выключатель (спальня)"
+  },
+  {
+   "id": "sw-kitchen",
+   "kind": "smart_switch",
+   "roomId": "kitchen",
+   "position": [
+    5.67,
+    1.0,
+    5.65
+   ],
+   "rotationY": 1.5707963267948966,
+   "academy": "smarthome",
+   "label": "Выключатель (кухня)"
+  },
+  {
+   "id": "sw-hall",
+   "kind": "smart_switch",
+   "roomId": "hall",
+   "position": [
+    3.35,
+    1.0,
+    7.44
+   ],
+   "rotationY": 3.141592653589793,
+   "academy": "smarthome",
+   "label": "Выключатель (прихожая)"
+  },
+  {
+   "id": "motion-hall",
+   "kind": "motion_sensor",
+   "roomId": "hall",
+   "position": [
+    5.52,
+    2.35,
+    7.35
+   ],
+   "rotationY": -1.5707963267948966,
+   "academy": "smarthome",
+   "label": "Датчик движения (прихожая)"
+  },
+  {
+   "id": "leak-bath",
+   "kind": "leak_sensor",
+   "roomId": "bath",
+   "position": [
+    1.5,
+    0.02,
+    4.42
+   ],
+   "academy": "smarthome",
+   "label": "Датчик протечки (санузел)"
+  },
+  {
+   "id": "leak-kitchen",
+   "kind": "leak_sensor",
+   "roomId": "kitchen",
+   "position": [
+    8.45,
+    0.02,
+    6.75
+   ],
+   "academy": "smarthome",
+   "label": "Датчик протечки (кухня)"
+  },
+  {
+   "id": "hub",
+   "kind": "smart_hub",
+   "roomId": "hall",
+   "position": [
+    2.47,
+    1.5,
+    6.25
+   ],
+   "rotationY": 1.5707963267948966,
+   "academy": "smarthome",
+   "label": "Хаб умного дома"
+  },
+  {
+   "id": "panel",
+   "kind": "electric_panel",
+   "roomId": "hall",
+   "position": [
+    2.47,
+    1.6,
+    6.9
+   ],
+   "rotationY": 1.5707963267948966,
+   "label": "Квартирный электрощит"
+  },
+  {
+   "id": "rad-bedroom",
+   "kind": "radiator",
+   "roomId": "bedroom",
+   "position": [
+    2.0,
+    0.42,
+    0.24
+   ],
+   "label": "Радиатор (спальня)"
+  },
+  {
+   "id": "rad-living",
+   "kind": "radiator",
+   "roomId": "living",
+   "position": [
+    6.4,
+    0.42,
+    0.24
+   ],
+   "label": "Радиатор (гостиная)"
+  },
+  {
+   "id": "rad-kitchen",
+   "kind": "radiator",
+   "roomId": "kitchen",
+   "position": [
+    8.76,
+    0.42,
+    5.75
+   ],
+   "rotationY": -1.5707963267948966,
+   "label": "Радиатор (кухня)"
+  },
+  {
+   "id": "riser",
+   "kind": "riser",
+   "roomId": "bath",
+   "position": [
+    0.3,
+    1.35,
+    4.3
+   ],
+   "label": "Стояк водоснабжения и канализации"
+  }
+ ],
+ "utilities": [
+  {
+   "id": "el-bed",
+   "system": "electric",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.5,
+     1.6,
+     6.9
+    ],
+    [
+     2.5,
+     2.55,
+     6.9
+    ],
+    [
+     2.5,
+     2.55,
+     4.2
+    ],
+    [
+     3.88,
+     2.55,
+     4.2
+    ],
+    [
+     3.88,
+     2.55,
+     3.86
+    ],
+    [
+     3.88,
+     1.0,
+     3.86
+    ]
+   ],
+   "label": "Линия освещения спальни"
+  },
+  {
+   "id": "el-liv",
+   "system": "electric",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.5,
+     2.55,
+     4.2
+    ],
+    [
+     5.45,
+     2.55,
+     4.2
+    ],
+    [
+     5.45,
+     2.55,
+     3.86
+    ],
+    [
+     5.45,
+     1.0,
+     3.86
+    ]
+   ],
+   "label": "Линия освещения гостиной"
+  },
+  {
+   "id": "el-kit",
+   "system": "electric",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.5,
+     2.55,
+     6.9
+    ],
+    [
+     5.74,
+     2.55,
+     6.9
+    ],
+    [
+     5.74,
+     2.55,
+     5.65
+    ],
+    [
+     5.74,
+     1.0,
+     5.65
+    ]
+   ],
+   "label": "Линия освещения кухни"
+  },
+  {
+   "id": "el-hall",
+   "system": "electric",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.5,
+     2.55,
+     6.9
+    ],
+    [
+     3.35,
+     2.55,
+     6.9
+    ],
+    [
+     3.35,
+     2.55,
+     7.38
+    ],
+    [
+     3.35,
+     1.0,
+     7.38
+    ]
+   ],
+   "label": "Линия освещения прихожей"
+  },
+  {
+   "id": "el-ac",
+   "system": "electric",
+   "confidence": "conditional",
+   "points": [
+    [
+     5.45,
+     2.55,
+     3.86
+    ],
+    [
+     5.45,
+     2.55,
+     0.3
+    ],
+    [
+     7.6,
+     2.55,
+     0.3
+    ],
+    [
+     7.6,
+     2.3,
+     0.3
+    ]
+   ],
+   "label": "Линия питания кондиционера"
+  },
+  {
+   "id": "w-cold",
+   "system": "water",
+   "confidence": "conditional",
+   "points": [
+    [
+     0.3,
+     0.3,
+     4.3
+    ],
+    [
+     0.3,
+     0.3,
+     7.38
+    ],
+    [
+     8.45,
+     0.3,
+     7.38
+    ],
+    [
+     8.45,
+     0.75,
+     7.25
+    ]
+   ],
+   "label": "Водоснабжение кухни"
+  },
+  {
+   "id": "w-bath",
+   "system": "water",
+   "confidence": "conditional",
+   "points": [
+    [
+     0.3,
+     0.6,
+     4.3
+    ],
+    [
+     0.3,
+     0.6,
+     6.0
+    ],
+    [
+     0.45,
+     0.8,
+     6.0
+    ]
+   ],
+   "label": "Водоснабжение санузла"
+  },
+  {
+   "id": "s-kit",
+   "system": "sewer",
+   "confidence": "conditional",
+   "points": [
+    [
+     8.45,
+     0.12,
+     7.3
+    ],
+    [
+     8.45,
+     0.12,
+     7.42
+    ],
+    [
+     0.36,
+     0.12,
+     7.42
+    ],
+    [
+     0.36,
+     0.12,
+     4.35
+    ]
+   ],
+   "label": "Канализация кухни"
+  },
+  {
+   "id": "s-bath",
+   "system": "sewer",
+   "confidence": "conditional",
+   "points": [
+    [
+     1.2,
+     0.12,
+     7.0
+    ],
+    [
+     0.36,
+     0.12,
+     7.0
+    ],
+    [
+     0.36,
+     0.12,
+     4.35
+    ]
+   ],
+   "label": "Канализация ванны"
+  },
+  {
+   "id": "riser-v",
+   "system": "water",
+   "confidence": "conditional",
+   "points": [
+    [
+     0.3,
+     0,
+     4.3
+    ],
+    [
+     0.3,
+     2.7,
+     4.3
+    ]
+   ],
+   "label": "Стояк (условно)"
+  },
+  {
+   "id": "h-liv",
+   "system": "heating",
+   "confidence": "conditional",
+   "points": [
+    [
+     5.3,
+     0,
+     0.25
+    ],
+    [
+     5.3,
+     2.7,
+     0.25
+    ],
+    [
+     5.3,
+     0.25,
+     0.25
+    ],
+    [
+     5.85,
+     0.25,
+     0.25
+    ]
+   ],
+   "label": "Отопление гостиной"
+  },
+  {
+   "id": "h-bed",
+   "system": "heating",
+   "confidence": "conditional",
+   "points": [
+    [
+     0.35,
+     0,
+     0.25
+    ],
+    [
+     0.35,
+     2.7,
+     0.25
+    ],
+    [
+     0.35,
+     0.25,
+     0.25
+    ],
+    [
+     1.45,
+     0.25,
+     0.25
+    ]
+   ],
+   "label": "Отопление спальни"
+  },
+  {
+   "id": "h-kit",
+   "system": "heating",
+   "confidence": "conditional",
+   "points": [
+    [
+     8.75,
+     0,
+     4.3
+    ],
+    [
+     8.75,
+     2.7,
+     4.3
+    ],
+    [
+     8.75,
+     0.25,
+     4.3
+    ],
+    [
+     8.75,
+     0.25,
+     5.15
+    ]
+   ],
+   "label": "Отопление кухни"
+  },
+  {
+   "id": "v-shaft",
+   "system": "ventilation",
+   "confidence": "conditional",
+   "points": [
+    [
+     5.78,
+     0,
+     7.42
+    ],
+    [
+     5.78,
+     2.7,
+     7.42
+    ]
+   ],
+   "label": "Вентиляционная шахта (условно)"
+  },
+  {
+   "id": "v-kit",
+   "system": "ventilation",
+   "confidence": "conditional",
+   "points": [
+    [
+     7.4,
+     2.15,
+     7.3
+    ],
+    [
+     7.4,
+     2.6,
+     7.3
+    ],
+    [
+     5.85,
+     2.6,
+     7.3
+    ]
+   ],
+   "label": "Вытяжка кухни"
+  },
+  {
+   "id": "v-bath",
+   "system": "ventilation",
+   "confidence": "conditional",
+   "points": [
+    [
+     1.2,
+     2.6,
+     7.3
+    ],
+    [
+     5.7,
+     2.6,
+     7.3
+    ]
+   ],
+   "label": "Вытяжка санузла"
+  },
+  {
+   "id": "ac-liv",
+   "system": "ac",
+   "confidence": "conditional",
+   "points": [
+    [
+     8.55,
+     2.32,
+     0.27
+    ],
+    [
+     8.75,
+     2.32,
+     0.27
+    ],
+    [
+     8.75,
+     2.32,
+     -0.4
+    ],
+    [
+     8.75,
+     1.75,
+     -0.4
+    ]
+   ],
+   "label": "Трасса кондиционера гостиной"
+  },
+  {
+   "id": "ac-bed",
+   "system": "ac",
+   "confidence": "conditional",
+   "points": [
+    [
+     3.7,
+     2.32,
+     0.27
+    ],
+    [
+     3.85,
+     2.32,
+     0.27
+    ],
+    [
+     3.85,
+     2.32,
+     -0.4
+    ],
+    [
+     3.85,
+     1.75,
+     -0.4
+    ]
+   ],
+   "label": "Трасса кондиционера спальни"
+  },
+  {
+   "id": "sh-sw-living",
+   "system": "smarthome",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.47,
+     1.5,
+     6.25
+    ],
+    [
+     5.45,
+     1.0,
+     3.93
+    ]
+   ],
+   "label": "Радиосвязь хаб → Выключатель (гостиная)",
+   "wireless": true
+  },
+  {
+   "id": "sh-sw-bedroom",
+   "system": "smarthome",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.47,
+     1.5,
+     6.25
+    ],
+    [
+     3.88,
+     1.0,
+     3.93
+    ]
+   ],
+   "label": "Радиосвязь хаб → Выключатель (спальня)",
+   "wireless": true
+  },
+  {
+   "id": "sh-sw-kitchen",
+   "system": "smarthome",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.47,
+     1.5,
+     6.25
+    ],
+    [
+     5.67,
+     1.0,
+     5.65
+    ]
+   ],
+   "label": "Радиосвязь хаб → Выключатель (кухня)",
+   "wireless": true
+  },
+  {
+   "id": "sh-sw-hall",
+   "system": "smarthome",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.47,
+     1.5,
+     6.25
+    ],
+    [
+     3.35,
+     1.0,
+     7.44
+    ]
+   ],
+   "label": "Радиосвязь хаб → Выключатель (прихожая)",
+   "wireless": true
+  },
+  {
+   "id": "sh-motion-hall",
+   "system": "smarthome",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.47,
+     1.5,
+     6.25
+    ],
+    [
+     5.52,
+     2.35,
+     7.35
+    ]
+   ],
+   "label": "Радиосвязь хаб → Датчик движения (прихожая)",
+   "wireless": true
+  },
+  {
+   "id": "sh-leak-bath",
+   "system": "smarthome",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.47,
+     1.5,
+     6.25
+    ],
+    [
+     1.6,
+     0.02,
+     7.25
+    ]
+   ],
+   "label": "Радиосвязь хаб → Датчик протечки (санузел)",
+   "wireless": true
+  },
+  {
+   "id": "sh-leak-kitchen",
+   "system": "smarthome",
+   "confidence": "conditional",
+   "points": [
+    [
+     2.47,
+     1.5,
+     6.25
+    ],
+    [
+     8.2,
+     0.02,
+     7.1
+    ]
+   ],
+   "label": "Радиосвязь хаб → Датчик протечки (кухня)",
+   "wireless": true
+  }
+ ],
+ "history": [
+  {
+   "version": 1,
+   "date": "2026-10-16",
+   "note": "Демонстрационная версия планировки"
+  }
+ ],
+ "furniture": [
+  {
+   "type": "rug",
+   "roomId": "living",
+   "position": [
+    5.9,
+    0,
+    2.0
+   ],
+   "rotationY": 0,
+   "size": [
+    2.4,
+    1.7
+   ]
+  },
+  {
+   "type": "sofa",
+   "roomId": "living",
+   "position": [
+    6.85,
+    0,
+    2.0
+   ],
+   "rotationY": 1.5707963267948966
+  },
+  {
+   "type": "coffee_table",
+   "roomId": "living",
+   "position": [
+    5.75,
+    0,
+    2.0
+   ],
+   "rotationY": 0
+  },
+  {
+   "type": "tv_stand",
+   "roomId": "living",
+   "position": [
+    4.3,
+    0,
+    2.0
+   ],
+   "rotationY": 1.5707963267948966
+  },
+  {
+   "type": "armchair",
+   "roomId": "living",
+   "position": [
+    5.3,
+    0,
+    0.8
+   ],
+   "rotationY": 3.491592653589793
+  },
+  {
+   "type": "plant",
+   "roomId": "living",
+   "position": [
+    8.6,
+    0,
+    3.55
+   ],
+   "rotationY": 0
+  },
+  {
+   "type": "floor_lamp",
+   "roomId": "living",
+   "position": [
+    7.75,
+    0,
+    0.75
+   ],
+   "rotationY": 0
+  },
+  {
+   "type": "bed",
+   "roomId": "bedroom",
+   "position": [
+    1.2,
+    0,
+    2.2
+   ],
+   "rotationY": 1.5707963267948966
+  },
+  {
+   "type": "nightstand",
+   "roomId": "bedroom",
+   "position": [
+    0.4,
+    0,
+    1.05
+   ],
+   "rotationY": 1.5707963267948966
+  },
+  {
+   "type": "nightstand",
+   "roomId": "bedroom",
+   "position": [
+    0.4,
+    0,
+    3.35
+   ],
+   "rotationY": 1.5707963267948966
+  },
+  {
+   "type": "wardrobe",
+   "roomId": "bedroom",
+   "position": [
+    3.6,
+    0,
+    1.7
+   ],
+   "rotationY": -1.5707963267948966,
+   "length": 2.0
+  },
+  {
+   "type": "rug",
+   "roomId": "bedroom",
+   "position": [
+    2.3,
+    0,
+    2.2
+   ],
+   "rotationY": 0,
+   "size": [
+    1.6,
+    2.6
+   ]
+  },
+  {
+   "type": "fridge",
+   "roomId": "kitchen",
+   "position": [
+    6.0,
+    0,
+    7.12
+   ],
+   "rotationY": 3.141592653589793
+  },
+  {
+   "type": "kitchen_run",
+   "roomId": "kitchen",
+   "position": [
+    7.65,
+    0,
+    7.12
+   ],
+   "rotationY": 3.141592653589793,
+   "length": 2.3,
+   "sink": -0.8,
+   "stove": 0.25
+  },
+  {
+   "type": "dining_table",
+   "roomId": "kitchen",
+   "position": [
+    7.5,
+    0,
+    5.4
+   ],
+   "rotationY": 0
+  },
+  {
+   "type": "bathtub",
+   "roomId": "bath",
+   "position": [
+    1.05,
+    0,
+    7.07
+   ],
+   "rotationY": 0
+  },
+  {
+   "type": "toilet",
+   "roomId": "bath",
+   "position": [
+    0.42,
+    0,
+    5.05
+   ],
+   "rotationY": 1.5707963267948966
+  },
+  {
+   "type": "vanity",
+   "roomId": "bath",
+   "position": [
+    0.4,
+    0,
+    6.05
+   ],
+   "rotationY": 1.5707963267948966
+  },
+  {
+   "type": "washer",
+   "roomId": "bath",
+   "position": [
+    1.95,
+    0,
+    4.42
+   ],
+   "rotationY": 0
+  },
+  {
+   "type": "hall_wardrobe",
+   "roomId": "hall",
+   "position": [
+    5.24,
+    0,
+    6.4
+   ],
+   "rotationY": -1.5707963267948966,
+   "length": 1.6
+  },
+  {
+   "type": "bench",
+   "roomId": "hall",
+   "position": [
+    2.75,
+    0,
+    7.1
+   ],
+   "rotationY": 1.5707963267948966
+  }
+ ]
+}
