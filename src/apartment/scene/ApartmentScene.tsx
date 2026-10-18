@@ -275,6 +275,7 @@ function CameraRig({ layout }: { layout: Layout }) {
       flyTo: (x: number, z: number) => cc.moveTo(x, 0.4, z, true),
     };
     (window as any).__nav = api;
+    (window as any).__cc = cc;
     if (walk) return;
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
@@ -308,6 +309,11 @@ function CameraRig({ layout }: { layout: Layout }) {
       truckSpeed={1.4}
       dollyToCursor={!walk}
       boundaryEnclosesCamera={false}
+      // Обзор: левая кнопка двигает квартиру как карту (влево-вправо и вперёд-назад), правая — вращает, колесо — приближает.
+      // Прогулка: левая кнопка — осмотр головой.
+      verticalDragToForward={!walk}
+      mouseButtons={walk ? { left: 1, middle: 16, right: 2, wheel: 16 } : { left: 2, middle: 16, right: 1, wheel: 16 }}
+      touches={walk ? { one: 64, two: 32768, three: 4096 } : { one: 128, two: 32768, three: 4096 }}
     />
   );
 }

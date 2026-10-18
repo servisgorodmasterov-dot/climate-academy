@@ -221,7 +221,7 @@ export function App() {
             <button title="Вся квартира" aria-label="Вся квартира" onClick={() => (window as any).__nav?.reset()}>⌂</button>
           </div>
         )}
-        <div className="nav-hint">Левая кнопка — вращать · правая — сдвигать · колесо — приблизить к курсору · двойной клик по полу — перелететь</div>
+        <div className="nav-hint">Левая кнопка — двигать · правая — вращать (или ⟲ ⟳) · колесо — приблизить к курсору · двойной клик по полу — перелететь</div>
 
         {mode === 'xray' && (
           <div className="legend">
