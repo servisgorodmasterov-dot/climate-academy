@@ -28,6 +28,15 @@ export function App() {
   const s = useApp();
   const { layout, catalog, mode, focusRoom, panel, apartmentId, role, proMode, embed } = s;
   const [toast, setToast] = useState<string | null>(null);
+  // Компактный экран: телефон или встраивание на сайт — меньше надписей, всё лишнее в меню «Вид»
+  const [compact, setCompact] = useState(() => typeof window !== 'undefined' && (window.innerWidth < 760 || new URLSearchParams(location.search).get('embed') === '1'));
+  const [toolsOpen, setToolsOpen] = useState(false);
+  useEffect(() => {
+    const on = () => setCompact(window.innerWidth < 760 || useApp.getState().embed);
+    on();
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, [embed]);
   const toastTimer = useRef<number>();
   const total = useTotalEstimate();
 
@@ -110,7 +119,7 @@ export function App() {
   const sectionsCount = total?.included.length ?? 0;
 
   return (
-    <div className={`app ${panel ? 'with-panel' : ''} ${embed ? 'embed' : ''}`}>
+    <div className={`app ${panel ? 'with-panel' : ''} ${embed ? 'embed' : ''} ${compact ? 'compact' : ''} ${toolsOpen ? 'tools-open' : ''}`}>
       <header className="topbar">
         <div className="brand">
           <span className="logo" aria-hidden>
@@ -185,7 +194,21 @@ export function App() {
           </div>
         </div>
 
+        {compact && (
+          <button className="chip tools-btn" aria-expanded={toolsOpen} onClick={() => setToolsOpen(!toolsOpen)}>
+            {toolsOpen ? '✕ Закрыть' : '⚙ Вид'}
+          </button>
+        )}
         <div className="view-tools">
+          {compact && (
+            <div className="seg modes-inline" role="tablist" aria-label="Режим просмотра">
+              {MODES.map((m) => (
+                <button key={m.id} className={mode === m.id ? 'on' : ''} onClick={() => (s.set('mode', m.id), say(m.hint))}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
           <label className="toggle" title="Камера на уровне глаз: стрелки или W/A/S/D, на телефоне — кнопки">
             <input type="checkbox" checked={s.walk} onChange={(e) => (s.set('walk', e.target.checked), e.target.checked && s.set('ceilingHidden', false), say(e.target.checked ? 'Прогулка: W/S — вперёд-назад, A/D — поворот, мышь — осмотр' : 'Обзор квартиры'))} />
             <span>Прогулка</span>

@@ -428,3 +428,32 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .scene-loading { position: absolute; inset: 0; z-index: 4; display: grid; place-content: center; justify-items: center; gap: 12px; background: #dfe6ee; color: #3c5372; font-weight: 600; font-size: 14px; pointer-events: none; }
 .scene-spinner { width: 38px; height: 38px; border-radius: 50%; border: 3px solid #b9c7d8; border-top-color: var(--blue); animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Компактный режим: телефон и встраивание на сайт ---- */
+.tools-btn { display: none; }
+.app.compact .seg.modes { display: none; }
+.app.compact .crumbs, .app.compact .nav-hint, .app.compact .nav-pad { display: none; }
+.app.compact .topbar { gap: 8px; padding: 0 10px; }
+.app.compact .brand b { font-size: 14px; }
+.app.compact .brand .logo svg { width: 26px; height: 26px; }
+.app.compact .overlay-top { top: 8px; left: 8px; right: 8px; }
+.app.compact .rooms .chip { padding: 5px 10px; font-size: 12px; }
+.app.compact .rooms .chip .muted { display: none; }
+.app.compact .tools-btn { display: inline-flex; position: absolute; right: 8px; bottom: 76px; z-index: 13; padding: 6px 12px; font-size: 12.5px; }
+.app.compact .catalog-toggle { display: inline-flex; left: 8px; bottom: 76px; padding: 6px 12px; font-size: 12.5px; }
+.app.compact .catalog-bar { display: none; top: auto; bottom: 116px; left: 8px; right: 8px; width: auto; max-height: 50%; }
+.app.compact .catalog-bar.open { display: flex; }
+.app.compact .view-tools { display: none; }
+.app.compact.tools-open .view-tools { display: flex; flex-direction: column; left: auto; right: 8px; bottom: 116px; gap: 10px; padding: 12px; max-width: calc(100% - 16px); z-index: 14; }
+.app.compact .legend { display: none; }
+.app.compact.tools-open .legend { display: flex; top: auto; bottom: 116px; left: 8px; right: auto; width: 190px; max-height: 50%; overflow: auto; font-size: 12px; z-index: 14; }
+.modes-inline { display: flex; gap: 4px; }
+.modes-inline button { flex: 1; font-size: 12px; padding: 7px 8px; }
+.app.compact .dock { padding: 4px; gap: 2px; bottom: 8px; }
+.app.compact .dock button { min-height: 0; padding: 6px 8px; font-size: 11px; flex-direction: column; gap: 1px; }
+.app.compact .dock .ico { font-size: 15px; }
+.app.compact .selbar { bottom: 120px; }
+.app.compact .walk-pad { bottom: 120px; }
+/* во встраивании ещё и шапку делаем тонкой */
+.app.embed.compact .topbar { --top-h: 46px; }
+.app.embed.compact { grid-template-rows: 46px 1fr; }
