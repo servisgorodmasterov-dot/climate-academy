@@ -6,6 +6,8 @@ import { demoGateway, freezeOrder } from '../integrations/gorodmasterov/orders';
 import { useApp } from '../store';
 import { EstimateTable } from './EstimateTable';
 import { CAN_DOWNLOAD, downloadText, money } from './format';
+import { printEstimate } from './printEstimate';
+import { findApartment } from '../apartment/layout';
 
 export function EstimatePanel() {
   const [participants, setParticipants] = useState(1);
@@ -112,9 +114,24 @@ export function EstimatePanel() {
               </form>
             ) : (
               <div className="row">
+                <button
+                  className="btn ghost"
+                  onClick={() => {
+                    const apt = findApartment(apartmentId);
+                    printEstimate(estimate, {
+                      apartment: `кв. ${apt?.apartment.number ?? apartmentId}`,
+                      address: apt ? `${apt.complex.name}, ${apt.buildingName}, ${apt.entranceName}, этаж ${apt.floor}` : '',
+                      sections: included.map((s) => `${academyById(s.academy)?.title ?? s.academy}${s.roomId ? ` — ${layout.rooms.find((r) => r.id === s.roomId)?.name ?? ''}` : ''}`),
+                      source: estimate.priceStatus === 'demo' ? 'демо-каталог' : catalog.sourceName,
+                      demo: estimate.priceStatus === 'demo',
+                    });
+                  }}
+                >
+                  Скачать PDF
+                </button>
                 {CAN_DOWNLOAD && (
                   <button className="btn ghost" onClick={exportCsv}>
-                    Скачать CSV
+                    CSV
                   </button>
                 )}
                 <button className="btn" onClick={() => (setOrdering(true), setResult(null))} disabled={estimate.total <= 0}>

@@ -116,3 +116,17 @@ describe('коллективная закупка', () => {
     expect(twenty.bulk!.savingsTotal).toBeGreaterThan(five.bulk!.savingsTotal);
   });
 });
+
+describe('печать сметы', () => {
+  it('печатная версия содержит все позиции, итог и колонку коллективной закупки', async () => {
+    const { computeEstimate } = await import('../estimate/engine');
+    const { estimateHtml } = await import('../ui/printEstimate');
+    const door = layout.elements.find((e) => e.kind === 'door')!;
+    const est = computeEstimate(catalog, [buildObjectSection(catalog, layout, door, 'econom', objectSelection(catalog, 'door.interior', 'econom'), 's')], {}, 6);
+    const html = estimateHtml(est, { apartment: 'кв. 72', address: 'ЖК Демо', sections: ['Дверь'], source: 'демо', demo: true });
+    for (const l of est.lines) expect(html).toContain(l.name.replace(/"/g, '&quot;').replace(/«|»/g, (m) => m));
+    expect(html).toContain('Вместе (6)');
+    expect(html).toContain('демонстрационному каталогу');
+    expect(html).not.toContain('<script src');
+  });
+});
