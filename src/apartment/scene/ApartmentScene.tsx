@@ -1,6 +1,6 @@
 import { CameraControls, Environment, Html, Lightformer, PerformanceMonitor, SoftShadows } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // Эффекты (затенение в углах, свечение) грузятся отдельно и только на мощных компьютерах
 const Effects = lazy(() => import('./Effects'));
@@ -14,6 +14,7 @@ import { Element } from './Elements';
 import { Utilities } from './Utilities';
 import { useApp } from '../../store';
 import { lookOf } from '../../objects/logic';
+import { useGameControls } from './gameControls';
 
 export interface SceneProps {
   layout: Layout;
@@ -312,22 +313,10 @@ function CameraRig({ layout }: { layout: Layout }) {
     };
     (window as any).__nav = api;
     (window as any).__cc = cc;
-    if (walk) return;
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
-      if (e.key === 'ArrowLeft') api.rotate(0.3);
-      else if (e.key === 'ArrowRight') api.rotate(-0.3);
-      else if (e.key === 'ArrowUp') api.tilt(-0.15);
-      else if (e.key === 'ArrowDown') api.tilt(0.15);
-      else if (e.key === '+' || e.key === '=') api.zoom(1.5);
-      else if (e.key === '-') api.zoom(-1.5);
-      else return;
-      e.preventDefault();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
   }, [walk, portrait]);
+
+  const onReset = useCallback(() => (window as any).__nav?.reset(), []);
+  useGameControls(ref, { walk, W, D, onReset });
 
   return (
     <CameraControls
@@ -345,10 +334,10 @@ function CameraRig({ layout }: { layout: Layout }) {
       truckSpeed={1.4}
       dollyToCursor={!walk}
       boundaryEnclosesCamera={false}
-      // Обзор: левая кнопка двигает квартиру как карту (влево-вправо и вперёд-назад), правая — вращает, колесо — приближает.
+      // Обзор: левую кнопку обрабатывает useGameControls («схватить пол»), правая и средняя — вращение вокруг точки под курсором.
       // Прогулка: левая кнопка — осмотр головой.
       verticalDragToForward={!walk}
-      mouseButtons={walk ? { left: 1, middle: 16, right: 2, wheel: 16 } : { left: 2, middle: 16, right: 1, wheel: 16 }}
+      mouseButtons={walk ? { left: 1, middle: 16, right: 2, wheel: 16 } : { left: 0, middle: 1, right: 1, wheel: 16 }}
       touches={walk ? { one: 64, two: 32768, three: 4096 } : { one: 128, two: 32768, three: 4096 }}
     />
   );
