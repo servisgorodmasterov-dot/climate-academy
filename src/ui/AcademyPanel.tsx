@@ -141,6 +141,32 @@ export function AcademyPanel() {
   );
 }
 
+/** Быстрая смена дизайна: цвета и модели той же позиции — одним нажатием, сразу видно в 3D. */
+function Swatches({ product, sectionId }: { product: Product; sectionId: string }) {
+  const { catalog } = useApp();
+  const list = productsForSlot(catalog!, product.slot).filter((p) => p.attrs.color);
+  if (list.length < 2) return null;
+  return (
+    <>
+      <h4>Дизайн</h4>
+      <div className="swatches" role="radiogroup" aria-label="Цвет и модель">
+        {list.map((p) => (
+          <button
+            key={p.id}
+            role="radio"
+            aria-checked={p.id === product.id}
+            className={p.id === product.id ? 'on' : ''}
+            style={{ background: p.attrs.color }}
+            title={`${p.name} — ${money(findPrice(catalog!, p.id)?.sale)}`}
+            onClick={() => useApp.getState().setSlot(sectionId, product.slot, p.id)}
+          />
+        ))}
+      </div>
+      <p className="muted small">{product.attrs.model ? `${product.attrs.model} · ` : ''}нажмите на цвет — изменение сразу видно в квартире</p>
+    </>
+  );
+}
+
 function ProductCard({ product, sectionId, workId, need, onCompare, onVariants }: { product: Product; sectionId: string; workId: string | null; need: number; onCompare: () => void; onVariants: () => void }) {
   const { catalog, role, proMode, sections, overrides } = useApp();
   const s = sections[sectionId];
@@ -178,6 +204,7 @@ function ProductCard({ product, sectionId, workId, need, onCompare, onVariants }
         </div>
       </div>
       {price?.source === 'DEMO' && <div className="badge demo">Демо-цена из тестового каталога · обновлено {price.updatedAt}</div>}
+      <Swatches product={product} sectionId={sectionId} />
       <h4>Характеристики</h4>
       <table className="spec">
         <tbody>

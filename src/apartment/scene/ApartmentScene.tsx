@@ -1,5 +1,7 @@
-import { CameraControls, Environment, Html, Lightformer } from '@react-three/drei';
+import { CameraControls, Environment, Html, Lightformer, SoftShadows } from '@react-three/drei';
 import { Canvas, useThree } from '@react-three/fiber';
+import { EffectComposer, Bloom, SMAA, Vignette } from '@react-three/postprocessing';
+import { N8AO } from '@react-three/postprocessing';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { GEOMETRY_KINDS, type Layout, type LayoutElement, type Room } from '../../core/types';
@@ -27,13 +29,15 @@ export function ApartmentScene(props: SceneProps) {
       shadows
       dpr={[1, isMobile ? 1.5 : 2]}
       camera={{ position: [0, 12, 11], fov: 40, near: 0.05, far: 200 }}
-      gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+      gl={{ antialias: !isMobile, alpha: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.05;
+        gl.toneMappingExposure = 1.18;
         gl.shadowMap.type = THREE.PCFSoftShadowMap;
       }}
     >
+      <color attach="background" args={['#dfe6ee']} />
+      <fog attach="fog" args={['#dfe6ee', 26, 60]} />
       <Suspense fallback={null}>
         <SceneContent {...props} />
       </Suspense>
@@ -49,38 +53,52 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor }: SceneP
 
   return (
     <>
-      <hemisphereLight args={['#ffffff', '#c9c2b6', 0.75]} />
+      {/* Освещение: небо + солнце под углом, чтобы свет проходил через окна и ложился на пол */}
+      {!isMobile && <SoftShadows size={18} samples={12} focus={0.6} />}
+      <hemisphereLight args={['#eaf2ff', '#9a8c7a', 0.75]} />
       <directionalLight
-        position={[6, 12, 5]}
-        intensity={1.9}
+        position={[9, 10, -7]}
+        intensity={2.8}
         castShadow
-        shadow-mapSize={isMobile ? [1024, 1024] : [2048, 2048]}
-        shadow-camera-left={-8}
-        shadow-camera-right={8}
-        shadow-camera-top={8}
-        shadow-camera-bottom={-8}
-        shadow-bias={-0.0004}
-        shadow-normalBias={0.02}
-        shadow-radius={4}
-        color="#fff6ea"
+        shadow-mapSize={isMobile ? [1024, 1024] : [4096, 4096]}
+        shadow-camera-left={-9}
+        shadow-camera-right={9}
+        shadow-camera-top={9}
+        shadow-camera-bottom={-9}
+        shadow-camera-near={1}
+        shadow-camera-far={40}
+        shadow-bias={-0.00025}
+        shadow-normalBias={0.015}
+        color="#fff3e0"
       />
-      <Environment resolution={256} frames={1}>
-        <Lightformer form="rect" intensity={2.2} position={[0, 6, -6]} scale={[14, 4, 1]} color="#eaf3ff" />
-        <Lightformer form="rect" intensity={1.4} position={[-8, 4, 2]} rotation-y={Math.PI / 2} scale={[10, 4, 1]} color="#fff4e6" />
-        <Lightformer form="rect" intensity={1.0} position={[8, 4, 2]} rotation-y={-Math.PI / 2} scale={[10, 4, 1]} />
-        <Lightformer form="circle" intensity={3} position={[0, 10, 0]} rotation-x={Math.PI / 2} scale={4} />
+      {/* заполняющий свет с противоположной стороны — без теней */}
+      <directionalLight position={[-8, 6, 9]} intensity={0.55} color="#dfe9ff" />
+      <Environment resolution={isMobile ? 128 : 256} frames={1} environmentIntensity={0.9}>
+        <Lightformer form="rect" intensity={3} position={[0, 7, -9]} scale={[18, 5, 1]} color="#e8f1ff" />
+        <Lightformer form="rect" intensity={1.6} position={[-9, 4, 0]} rotation-y={Math.PI / 2} scale={[12, 4, 1]} color="#fff2e2" />
+        <Lightformer form="rect" intensity={1.2} position={[9, 4, 0]} rotation-y={-Math.PI / 2} scale={[12, 4, 1]} color="#e9f0fa" />
+        <Lightformer form="circle" intensity={2.4} position={[0, 10, 0]} rotation-x={Math.PI / 2} scale={5} color="#ffffff" />
+        <Lightformer form="rect" intensity={0.8} position={[0, -2, 0]} rotation-x={-Math.PI / 2} scale={[20, 20, 1]} color="#b7ab9c" />
       </Environment>
+      {!isMobile && !xray && (
+        <EffectComposer multisampling={0} enableNormalPass={false}>
+          <N8AO aoRadius={0.5} intensity={1.6} distanceFalloff={0.8} quality="medium" halfRes />
+          <Bloom luminanceThreshold={1.05} intensity={0.25} mipmapBlur />
+          <Vignette eskil={false} offset={0.25} darkness={0.35} />
+          <SMAA />
+        </EffectComposer>
+      )}
 
       <CameraRig layout={layout} />
 
       {/* Земля и плита перекрытия */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.32, 0]} receiveShadow>
-        <circleGeometry args={[40, 64]} />
-        <meshStandardMaterial color="#e3e9ef" roughness={1} />
+        <circleGeometry args={[60, 64]} />
+        <meshStandardMaterial color="#d6dde5" roughness={1} />
       </mesh>
       <mesh position={[0, -0.16, 0]} receiveShadow castShadow>
         <boxGeometry args={[W + 0.3, 0.3, D + 0.3]} />
-        <meshStandardMaterial color="#cfd2d4" roughness={0.9} />
+        <meshStandardMaterial color="#c9ccd0" roughness={0.85} />
       </mesh>
 
       <group position={[-W / 2, 0, -D / 2]}>
@@ -176,7 +194,7 @@ function CameraRig({ layout }: { layout: Layout }) {
       const depth = Math.abs(face.x) > 0.5 ? x1 - x0 : z1 - z0;
       const dist = Math.min(portrait ? 4.6 : 5, Math.max(1.6, depth - 0.4));
       const side = new THREE.Vector3(face.z, 0, -face.x);
-      const to = p.clone().add(face.clone().multiplyScalar(dist)).add(side.multiplyScalar(0.5)).setY(1.55);
+      const to = p.clone().add(face.clone().multiplyScalar(dist)).add(side.multiplyScalar(0.5)).setY(1.75);
       // не выходить за пределы комнаты
       to.x = Math.min(Math.max(to.x, x0 - W / 2 + 0.35), x1 - W / 2 - 0.35);
       to.z = Math.min(Math.max(to.z, z0 - D / 2 + 0.35), z1 - D / 2 - 0.35);

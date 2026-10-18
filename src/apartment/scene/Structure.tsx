@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import type { Catalog, Layout, LayoutElement, Room } from '../../core/types';
 import type { Selection } from '../../core/academy';
 import { edgeSegments, wallPieces, type Box } from '../geometry';
-import { laminateTexture, plasterTexture, sized, tileTexture } from './textures';
+import { laminateRoughness, laminateTexture, plasterTexture, sized, tileTexture } from './textures';
 import { TAP_THRESHOLD_PX } from '../objects';
 import { ARCH_WIDTH, roomWallRects } from '../../objects/geometry';
 import { lookOf } from '../../objects/logic';
@@ -70,8 +70,8 @@ export function Structure({ layout, catalog, wallsTransparent, ceilingHidden, fl
   const [W, D] = layout.size;
   const transparent = wallsTransparent || xray;
 
-  const wallMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f4f0ea', roughness: 0.92, map: sized(plasterTexture(), 3, 3) }), []);
-  const extMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#e7dfd2', roughness: 0.95 }), []);
+  const wallMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f1ede6', roughness: 0.95, map: sized(plasterTexture(), 3, 3) }), []);
+  const extMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ddd4c6', roughness: 0.97, map: sized(plasterTexture(), 2, 2) }), []);
   useMemo(() => {
     for (const m of [wallMat, extMat]) {
       m.transparent = transparent;
@@ -81,7 +81,7 @@ export function Structure({ layout, catalog, wallsTransparent, ceilingHidden, fl
     }
   }, [transparent, xray, wallMat, extMat]);
 
-  const glassMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#cfe8f5', roughness: 0.05, metalness: 0, transmission: 0.9, transparent: true, opacity: 0.35, ior: 1.5, thickness: 0.01 }), []);
+  const glassMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#dff0fa', roughness: 0.03, metalness: 0, transmission: 0.92, transparent: true, opacity: 0.45, ior: 1.5, thickness: 0.02, envMapIntensity: 1.4, clearcoat: 1 }), []);
   const skirtMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f7f5f1', roughness: 0.5 }), []);
   const ceilMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, side: THREE.DoubleSide }), []);
 
@@ -348,7 +348,16 @@ function FloorMesh({ room, w, d, color, dim, highlight, onClick }: { room: Room;
         : room.floorFinish === 'porcelain'
           ? sized(tileTexture('#cfc8bd'), w, d)
           : sized(laminateTexture(color ?? '#b08a5e'), w, d);
-    return new THREE.MeshStandardMaterial({ map: base, roughness: room.floorFinish === 'tile' ? 0.35 : 0.55, metalness: 0 });
+    const lam = room.floorFinish !== 'tile' && room.floorFinish !== 'porcelain';
+    return new THREE.MeshPhysicalMaterial({
+      map: base,
+      roughnessMap: lam ? sized(laminateRoughness(), w, d) : null,
+      roughness: lam ? 0.75 : 0.28,
+      metalness: 0,
+      clearcoat: lam ? 0.08 : 0.35,
+      clearcoatRoughness: 0.4,
+      envMapIntensity: 0.9,
+    });
   }, [room.floorFinish, color, w, d]);
   useMemo(() => {
     mat.emissive = new THREE.Color(highlight ? '#2a6cff' : '#000000');

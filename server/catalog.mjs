@@ -11,6 +11,9 @@ export const SHEET_NAMES = {
   kits: 'Комплектации',
   suppliers: 'Поставщики',
   consumables: 'Расходники',
+  categories: 'Категории',
+  objectTypes: 'Объекты',
+  objectSlots: 'Позиции объектов',
 };
 
 const b64url = (buf) => Buffer.from(buf).toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');

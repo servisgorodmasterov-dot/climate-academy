@@ -127,9 +127,17 @@ export function plasterTexture(): THREE.CanvasTexture {
   g.fillStyle = '#f2eee7';
   g.fillRect(0, 0, S, S);
   const rand = rng(3);
-  for (let i = 0; i < 5000; i++) {
-    g.fillStyle = `rgba(${rand() > 0.5 ? '255,255,255' : '120,110,95'},${rand() * 0.05})`;
-    g.fillRect(rand() * S, rand() * S, 1 + rand() * 3, 1 + rand() * 3);
+  for (let i = 0; i < 14000; i++) {
+    g.fillStyle = `rgba(${rand() > 0.5 ? '255,255,255' : '110,100,85'},${rand() * 0.07})`;
+    g.fillRect(rand() * S, rand() * S, 1 + rand() * 2, 1 + rand() * 2);
+  }
+  for (let i = 0; i < 60; i++) {
+    g.strokeStyle = `rgba(90,80,70,${0.02 + rand() * 0.03})`;
+    g.lineWidth = 0.5 + rand();
+    g.beginPath();
+    g.moveTo(rand() * S, rand() * S);
+    g.bezierCurveTo(rand() * S, rand() * S, rand() * S, rand() * S, rand() * S, rand() * S);
+    g.stroke();
   }
   const t = finish(cv, key);
   t.userData.size = [1.5, 1.5];
@@ -157,6 +165,39 @@ export function fabricTexture(color: string): THREE.CanvasTexture {
   }
   const t = finish(cv, key);
   t.userData.size = [0.3, 0.3];
+  return t;
+}
+
+/** Карта шероховатости для ламината: доски блестят по-разному, стыки матовые. Размер как у laminateTexture. */
+export function laminateRoughness(): THREE.CanvasTexture {
+  const key = 'lam-rough';
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const W = 512;
+  const H = 486;
+  const cv = document.createElement('canvas');
+  cv.width = W;
+  cv.height = H;
+  const g = cv.getContext('2d')!;
+  const rand = rng(11);
+  const rows = 6;
+  const rh = H / rows;
+  for (let r = 0; r < rows; r++) {
+    const v = 150 + Math.round(rand() * 60);
+    g.fillStyle = `rgb(${v},${v},${v})`;
+    g.fillRect(0, r * rh, W, rh);
+    for (let i = 0; i < 400; i++) {
+      const a = 120 + Math.round(rand() * 100);
+      g.fillStyle = `rgba(${a},${a},${a},0.35)`;
+      g.fillRect(rand() * W, r * rh + rand() * rh, 2 + rand() * 40, 1);
+    }
+    g.fillStyle = '#ffffff';
+    g.fillRect(0, r * rh, W, 2);
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.userData.size = [1.2, 1.14];
+  cache.set(key, t);
   return t;
 }
 

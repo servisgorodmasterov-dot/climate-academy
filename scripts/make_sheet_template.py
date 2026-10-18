@@ -6,9 +6,9 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.worksheet.datavalidation import DataValidation
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHEETS = [('Товары', 'products'), ('Цены', 'prices'), ('Работы', 'works'), ('Комплектации', 'kits'), ('Поставщики', 'suppliers'), ('Расходники', 'consumables')]
+SHEETS = [('Товары', 'products'), ('Цены', 'prices'), ('Работы', 'works'), ('Комплектации', 'kits'), ('Поставщики', 'suppliers'), ('Расходники', 'consumables'), ('Категории', 'categories'), ('Объекты', 'object_types'), ('Позиции объектов', 'object_slots')]
 UNITS = ['m2', 'm', 'pcs', 'set', 'kg', 'l', 'pack']
-NUMERIC = {'pack_size', 'purchase_price', 'sale_price', 'price', 'delivery_price', 'delivery_days', 'rate', 'warranty_months', 'active'}
+NUMERIC = {'pack_size', 'purchase_price', 'sale_price', 'price', 'delivery_price', 'delivery_days', 'rate', 'warranty_months', 'active', 'order', 'qty', 'waste', 'optional'}
 
 wb = Workbook()
 info = wb.active
@@ -26,6 +26,13 @@ rows = [
     ['specs — характеристики «Название=значение;Название=значение»; attrs — служебные атрибуты (color, capacity_kw, series, protocol).'],
     ['Расходники: rate — норма; rate_per — на что умножается (m2, m, pcs или m2*mm); condition — условие, например screed=1.'],
     ['Подтверждённые заказы хранят цены на момент оформления — изменение таблицы их не меняет.'],
+    [''],
+    ['КОНСТРУКТОР: листы «Категории», «Объекты», «Позиции объектов».'],
+    ['Категории — разделы левого меню (category_id, name, icon, order).'],
+    ['Объекты — типы объектов квартиры: type_id, category_id, name, renderer (door|entrance|window|wall|none), placement (door|entrance|window|room_walls), primary_slot, description, lesson_steps (шаги через |), mistakes (через |).'],
+    ['Позиции объектов — состав объекта: type_id, slot, label, qty (норма), per (pcs|opening_m2|opening_w|opening_h|opening_perimeter_m|wall_m2|floor_m2|perimeter_m|ceiling_m2), waste (запас, 0.1 = 10%), optional (1/0), default_product_id, work_id, work_per, order.'],
+    ['Товар может переопределить норму позиции в attrs: rate=0.1;per=wall_m2;waste=0.15;work=W-WL-WP (например, обои — рулоны на м²).'],
+    ['Новая модель двери или цвет краски = строка в «Товары» с тем же slot + строка в «Цены». Новый тип объекта = строка в «Объекты» + его позиции. Код не меняется.'],
 ]
 for r in rows:
     info.append(r)
