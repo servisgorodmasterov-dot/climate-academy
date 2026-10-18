@@ -386,3 +386,15 @@ svg .radio { animation: dash 1.2s linear infinite; }
   .catalog-bar.open { display: flex; }
   .catalog-toggle { display: inline-flex; }
 }
+
+/* ---- Коллективная закупка ---- */
+.bulk { padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #f6fbf7; margin: 12px 0; }
+.bulk-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.bulk-head h4 { margin: 0; }
+.bulk-slider { display: grid; gap: 6px; margin: 10px 0; font-size: 13.5px; }
+.bulk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bulk-grid > div { display: grid; gap: 2px; padding: 8px 10px; background: #fff; border-radius: 10px; border: 1px solid var(--line); }
+.bulk-grid > div:last-child { grid-column: 1 / -1; }
+.bulk-grid b { font-size: 17px; }
+.ok { color: #1c7d44; }
+.grand.ok b { color: #1c7d44; }

@@ -5,6 +5,7 @@ import {
   RENDERERS,
   UNITS,
   type Basis,
+  type BulkRule,
   type CategoryDef,
   type ObjectSlotDef,
   type ObjectType,
@@ -34,10 +35,11 @@ export const SHEETS = {
   categories: 'Категории',
   objectTypes: 'Объекты',
   objectSlots: 'Позиции объектов',
+  bulk: 'Опт',
 } as const;
 export type SheetKey = keyof typeof SHEETS;
 /** Листы конфигуратора объектов. Если их нет в таблице, берутся встроенные (демо) — старые таблицы продолжают работать. */
-export const CONFIG_SHEETS = ['categories', 'objectTypes', 'objectSlots'] as const;
+export const CONFIG_SHEETS = ['categories', 'objectTypes', 'objectSlots', 'bulk'] as const;
 export type ConfigSheetKey = (typeof CONFIG_SHEETS)[number];
 export type CoreSheetKey = Exclude<SheetKey, ConfigSheetKey>;
 export type SheetValues = Record<CoreSheetKey, string[][]> & Partial<Record<ConfigSheetKey, string[][]>>;
@@ -53,6 +55,7 @@ export const REQUIRED_COLUMNS: Record<SheetKey, string[]> = {
   categories: ['category_id', 'name'],
   objectTypes: ['type_id', 'category_id', 'name', 'renderer', 'placement', 'primary_slot'],
   objectSlots: ['type_id', 'slot', 'label', 'qty', 'per'],
+  bulk: ['kind', 'ref_id', 'min_participants', 'price'],
 };
 
 /** Есть ли в листе все обязательные колонки (пустой лист или чужой лист — нет). */
@@ -371,6 +374,26 @@ export function buildCatalog(values: SheetValues, opts: { status: DataStatus; so
     }
   objectSlots.sort((a, b) => a.order - b.order);
 
+  // --- Опт (коллективные закупки)
+  const bulk: BulkRule[] = [];
+  if (values.bulk)
+    for (const r of toObjects('bulk', values.bulk, issues)) {
+      const kind = r.get('kind') as BulkRule['kind'];
+      const refId = r.get('ref_id');
+      const minP = parseNumber(r.get('min_participants'));
+      const price = parseNumber(r.get('price'));
+      if (!['product', 'work', 'delivery'].includes(kind) || !refId || minP == null || price == null) {
+        issues.push({ sheet: S.bulk, row: r.row, message: `Опт: нужны kind (product|work|delivery), ref_id, min_participants и price` });
+        continue;
+      }
+      const known = kind === 'product' ? ids.has(refId) : kind === 'work' ? workIds.has(refId) : suppliers.some((x) => x.id === refId);
+      if (!known) {
+        issues.push({ sheet: S.bulk, row: r.row, message: `Опт: ${refId} не найден в каталоге` });
+        continue;
+      }
+      bulk.push({ kind, refId, minParticipants: minP, price, note: r.get('note') });
+    }
+
   const dates = [...prices.map((p) => p.updatedAt), ...works.map((w) => w.updatedAt)].filter(Boolean).sort();
   return {
     products,
@@ -382,6 +405,7 @@ export function buildCatalog(values: SheetValues, opts: { status: DataStatus; so
     categories,
     objectTypes,
     objectSlots,
+    bulk,
     issues,
     status: opts.status,
     sourceName: opts.sourceName,

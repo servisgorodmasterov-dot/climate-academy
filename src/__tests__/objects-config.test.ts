@@ -94,3 +94,25 @@ describe('конфигуратор объектов', () => {
     expect(parseSheetRef('просто текст')).toBeNull();
   });
 });
+
+describe('коллективная закупка', () => {
+  it('пороги из листа «Опт» применяются по числу участников; без условия цена розничная', async () => {
+    const { computeEstimate } = await import('../estimate/engine');
+    const doors = layout.elements.filter((e) => e.kind === 'door').slice(0, 2);
+    const sel = objectSelection(catalog, 'door.interior', 'econom');
+    const sections = doors.map((d) => buildObjectSection(catalog, layout, d, 'econom', sel, `s-${d.id}`));
+    const one = computeEstimate(catalog, sections, {}, 1);
+    expect(one.bulk).toBeUndefined();
+    const five = computeEstimate(catalog, sections, {}, 5);
+    expect(five.bulk!.total).toBeLessThan(five.total);
+    const leaf = five.lines.find((l) => l.refId === 'DR-NEO-WHITE')!;
+    expect(leaf.bulkUnitPrice).toBe(25500);
+    const twenty = computeEstimate(catalog, sections, {}, 20);
+    expect(twenty.lines.find((l) => l.refId === 'DR-NEO-WHITE')!.bulkUnitPrice).toBe(23000);
+    expect(twenty.bulk!.savings.delivery).toBeGreaterThan(0);
+    // ручка без условия на 5 участников — розница
+    const casing = five.lines.find((l) => l.refId === 'DR-CAS-70')!;
+    expect(casing.bulkUnitPrice).toBe(casing.unitPrice);
+    expect(twenty.bulk!.savingsTotal).toBeGreaterThan(five.bulk!.savingsTotal);
+  });
+});

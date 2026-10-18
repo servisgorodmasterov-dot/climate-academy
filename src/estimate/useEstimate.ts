@@ -28,17 +28,17 @@ export function buildSection(s: SectionState, catalog: Catalog, layout: Layout):
   return def.buildSection(ctx, s.tier, s.params, s.selection);
 }
 
-export function estimateFor(states: SectionState[], catalog: Catalog, layout: Layout, overrides: Record<string, PriceOverride>) {
+export function estimateFor(states: SectionState[], catalog: Catalog, layout: Layout, overrides: Record<string, PriceOverride>, participants = 1) {
   const sections = states.map((s) => buildSection(s, catalog, layout)).filter((x): x is EstimateSection => !!x);
-  return { sections, estimate: computeEstimate(catalog, sections, overrides) };
+  return { sections, estimate: computeEstimate(catalog, sections, overrides, participants) };
 }
 
-/** Общая смета: все разделы, включённые пользователем. */
-export function useTotalEstimate() {
+/** Общая смета: все разделы, включённые пользователем. participants > 1 — расчёт коллективной закупки. */
+export function useTotalEstimate(participants = 1) {
   const { catalog, layout, sections, overrides, apartmentId } = useApp();
   return useMemo(() => {
     if (!catalog || !layout) return null;
     const included = Object.values(sections).filter((s) => s.included && s.apartmentId === apartmentId);
-    return { included, ...estimateFor(included, catalog, layout, overrides) };
-  }, [catalog, layout, sections, overrides, apartmentId]);
+    return { included, ...estimateFor(included, catalog, layout, overrides, participants) };
+  }, [catalog, layout, sections, overrides, apartmentId, participants]);
 }

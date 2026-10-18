@@ -1,0 +1,25 @@
+kind,ref_id,min_participants,price,note
+product,DR-NEO-WHITE,5,25500,от 5 дверей — партия
+product,DR-NEO-WHITE,15,23000,от 15 дверей — контейнерная цена
+product,DR-LINE-OAK,5,33000,
+product,DR-LINE-OAK,15,30000,
+product,DR-LOFT-BLACK,10,54000,
+product,DR-FRAME-STD,5,8200,
+product,DR-HDL-CHROME,10,5200,
+product,FL-LAM-32-8,5,4100,паллета
+product,FL-LAM-32-8,20,3700,фура
+product,WL-PNT-WHITE,5,2900,
+product,WL-PNT-SAND,5,3300,
+product,WIN-PVC-WHITE,5,35000,замер одним выездом
+product,WIN-PVC-WHITE,20,32000,
+product,ENT-MODERN-WHITE,5,180000,
+product,KIT-MODERN-WHITE,5,118000,серия фасадов одной партией
+work,W-DR-INST,5,21000,бригада на подъезд
+work,W-DR-INST,15,19000,
+work,W-FL-LAM,5,2200,
+work,W-WL-PAINT,5,1600,
+work,W-WIN-INST,5,8000,
+work,W-KIT-INST,5,10500,
+delivery,SUP-DR,3,2000,одна машина на подъезд
+delivery,SUP-MAT,3,1700,
+delivery,SUP-FURN,3,2700,

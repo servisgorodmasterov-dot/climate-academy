@@ -28,7 +28,14 @@ export function EstimateTable({ estimate, compact }: { estimate: Estimate; compa
                     <span className="muted small">
                       {qty(l.qty)} {unitLabel(l.unit)} × {money(l.unitPrice)}
                     </span>
-                    <b>{money(l.total)}</b>
+                    {estimate.bulk && l.bulkTotal != null && l.bulkTotal < (l.total ?? 0) ? (
+                      <b>
+                        <s className="muted">{money(l.total)}</s> {money(l.bulkTotal)}
+                      </b>
+                    ) : (
+                      <b>{money(l.total)}</b>
+                    )}
+                    {estimate.bulk && l.bulkNote && l.bulkTotal != null && l.bulkTotal < (l.total ?? 0) && <span className="muted tiny-text">{l.bulkNote}</span>}
                     {!compact && <span className="muted tiny-text">{l.priceSource}</span>}
                   </div>
                 </li>
@@ -38,9 +45,15 @@ export function EstimateTable({ estimate, compact }: { estimate: Estimate; compa
         );
       })}
       <div className="grand">
-        <span>Итого</span>
+        <span>Итого{estimate.bulk ? ' (розница)' : ''}</span>
         <b>{money(estimate.total, estimate.currency)}</b>
       </div>
+      {estimate.bulk && (
+        <div className="grand ok">
+          <span>Итого вместе ({estimate.bulk.participants})</span>
+          <b>{money(estimate.bulk.total, estimate.currency)}</b>
+        </div>
+      )}
       {estimate.priceStatus === 'demo' && <p className="badge demo">Расчёт по демо-каталогу: числа тестовые и не являются рыночными ценами.</p>}
     </div>
   );

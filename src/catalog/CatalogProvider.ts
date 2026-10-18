@@ -10,6 +10,7 @@ import consumablesCsv from '../../data/catalog/consumables.csv?raw';
 import categoriesCsv from '../../data/catalog/categories.csv?raw';
 import objectTypesCsv from '../../data/catalog/object_types.csv?raw';
 import objectSlotsCsv from '../../data/catalog/object_slots.csv?raw';
+import bulkCsv from '../../data/catalog/bulk.csv?raw';
 
 /** Единый интерфейс источника каталога (товары, цены, работы, комплектации, поставщики, расходники, объекты). */
 export interface CatalogProvider {
@@ -23,6 +24,7 @@ export const BUILTIN_CONFIG: Partial<SheetValues> = {
   categories: parseCsv(categoriesCsv),
   objectTypes: parseCsv(objectTypesCsv),
   objectSlots: parseCsv(objectSlotsCsv),
+  bulk: parseCsv(bulkCsv),
 };
 
 /** Локальный демонстрационный каталог: CSV-файлы в data/catalog повторяют структуру Google Таблицы. */
@@ -193,9 +195,9 @@ export class PublicSheetCatalogProvider implements CatalogProvider {
     const missing: string[] = [];
     for (const [k, rows] of results) {
       if (rows) sheets[k] = rows;
-      else if (!['categories', 'objectTypes', 'objectSlots'].includes(k)) missing.push(SHEETS[k]);
+      else if (!['categories', 'objectTypes', 'objectSlots', 'bulk'].includes(k)) missing.push(SHEETS[k]);
     }
-    if (missing.length === keys.length - 3 || !sheets.products)
+    if (!sheets.products)
       throw new Error('нет доступа к таблице. Откройте доступ «Все, у кого есть ссылка — Читатель» и проверьте ссылку');
     if (missing.length) throw new Error(`не найдены листы: ${missing.join(', ')}. Названия листов и первую строку менять нельзя`);
     return sheets as SheetValues;

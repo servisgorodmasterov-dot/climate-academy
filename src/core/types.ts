@@ -153,6 +153,16 @@ export interface ObjectSlotDef {
   order: number;
 }
 
+/** Лист «Опт»: условия коллективной закупки. Свои пороги у каждого товара, работы и поставщика — без единого процента. */
+export interface BulkRule {
+  kind: 'product' | 'work' | 'delivery';
+  refId: string; // product_id | work_id | supplier_id
+  minParticipants: number;
+  /** product: цена за единицу при закупке от minParticipants; work: цена за единицу работы; delivery: стоимость доставки на одного участника */
+  price: number;
+  note: string;
+}
+
 export interface CatalogIssue {
   sheet: string;
   row: number;
@@ -169,6 +179,7 @@ export interface Catalog {
   categories: CategoryDef[];
   objectTypes: ObjectType[];
   objectSlots: ObjectSlotDef[];
+  bulk: BulkRule[];
   issues: CatalogIssue[];
   status: DataStatus;
   sourceName: string;
@@ -213,6 +224,18 @@ export interface EstimateLine {
   priceUpdatedAt: string;
   note?: string;
   warning?: string;
+  /** Цена и сумма при коллективной закупке (если для позиции есть условие в листе «Опт») */
+  bulkUnitPrice?: number | null;
+  bulkTotal?: number | null;
+  bulkNote?: string;
+}
+
+export interface BulkSummary {
+  participants: number;
+  total: number; // итог при коллективной закупке
+  savings: Record<EstimateGroup, number>;
+  savingsTotal: number;
+  linesWithOffer: number;
 }
 
 export interface Estimate {
@@ -222,6 +245,7 @@ export interface Estimate {
   warnings: string[];
   currency: string;
   priceStatus: DataStatus;
+  bulk?: BulkSummary;
 }
 
 // ---------- Объекты недвижимости ----------

@@ -2,6 +2,8 @@
 // Все цены, нормы расхода и кратности берутся только из каталога.
 import {
   GROUP_LABELS,
+  type BulkRule,
+  type BulkSummary,
   type Catalog,
   type Estimate,
   type EstimateGroup,
@@ -64,6 +66,7 @@ export function computeEstimate(
   catalog: Catalog,
   sections: EstimateSection[],
   overrides: Record<string, PriceOverride> = {},
+  participants = 1,
 ): Estimate {
   const warnings: string[] = [];
   type Acc = { need: number; sections: Set<string>; notes: Set<string> };
@@ -191,7 +194,43 @@ export function computeEstimate(
   const totals = Object.fromEntries(order.map((g) => [g, 0])) as Record<EstimateGroup, number>;
   for (const l of lines) if (l.total != null) totals[l.group] += l.total;
   const total = order.reduce((s, g) => s + totals[g], 0);
-  return { lines, totals, total, warnings, currency: catalog.prices[0]?.currency ?? 'KZT', priceStatus: catalog.status };
+  const est: Estimate = { lines, totals, total, warnings, currency: catalog.prices[0]?.currency ?? 'KZT', priceStatus: catalog.status };
+  if (participants > 1) est.bulk = applyBulk(catalog, est, participants);
+  return est;
+}
+
+/**
+ * Коллективная закупка: для каждой позиции берётся лучшее условие листа «Опт», порог которого достигнут
+ * числом участников. Нет условия — цена остаётся розничной. Доставка поставщика делится по условию «delivery».
+ */
+export function applyBulk(catalog: Catalog, est: Estimate, participants: number): BulkSummary {
+  const savings = Object.fromEntries(Object.keys(est.totals).map((g) => [g, 0])) as Record<EstimateGroup, number>;
+  let total = 0;
+  let linesWithOffer = 0;
+  const best = (kind: BulkRule['kind'], refId: string) =>
+    catalog.bulk
+      .filter((b) => b.kind === kind && b.refId === refId && b.minParticipants <= participants)
+      .sort((a, b) => b.minParticipants - a.minParticipants)[0];
+  for (const l of est.lines) {
+    const kind: BulkRule['kind'] = l.key.startsWith('p:') ? 'product' : l.key.startsWith('w:') ? 'work' : 'delivery';
+    const rule = l.key.startsWith('d:offer:') ? undefined : best(kind, l.refId);
+    if (!rule || l.unitPrice == null || l.total == null) {
+      l.bulkUnitPrice = l.unitPrice;
+      l.bulkTotal = l.total;
+      total += l.total ?? 0;
+      continue;
+    }
+    const unit = Math.min(rule.price, l.unitPrice);
+    const sum = Math.round(unit * l.qty);
+    l.bulkUnitPrice = unit;
+    l.bulkTotal = sum;
+    l.bulkNote = rule.note || `от ${rule.minParticipants} участников`;
+    savings[l.group] += l.total - sum;
+    total += sum;
+    if (sum < l.total) linesWithOffer++;
+  }
+  const savingsTotal = Object.values(savings).reduce((a, b) => a + b, 0);
+  return { participants, total, savings, savingsTotal, linesWithOffer };
 }
 
 export { GROUP_LABELS };

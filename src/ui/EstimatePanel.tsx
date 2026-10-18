@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GROUP_LABELS, TIERS, type EstimateGroup } from '../core/types';
+import { GROUP_LABELS, TIERS, type Estimate, type EstimateGroup } from '../core/types';
 import { academyById } from '../academies';
 import { useTotalEstimate } from '../estimate/useEstimate';
 import { demoGateway, freezeOrder } from '../integrations/gorodmasterov/orders';
@@ -8,7 +8,8 @@ import { EstimateTable } from './EstimateTable';
 import { CAN_DOWNLOAD, downloadText, money } from './format';
 
 export function EstimatePanel() {
-  const data = useTotalEstimate();
+  const [participants, setParticipants] = useState(1);
+  const data = useTotalEstimate(participants);
   const { catalog, layout, apartmentId, overrides } = useApp();
   const app = useApp.getState();
   const [ordering, setOrdering] = useState(false);
@@ -75,6 +76,7 @@ export function EstimatePanel() {
               })}
             </ul>
             {Object.keys(overrides).length > 0 && <p className="muted small">Цены {Object.keys(overrides).length} поз. взяты из поиска «Найти дешевле».</p>}
+            <BulkBlock estimate={estimate} participants={participants} setParticipants={setParticipants} hasRules={catalog.bulk.length > 0} />
             <EstimateTable estimate={estimate} />
             {estimate.warnings.length > 0 && (
               <div className="notice warn">
@@ -124,5 +126,47 @@ export function EstimatePanel() {
         )}
       </div>
     </aside>
+  );
+}
+
+/** Коллективная закупка жильцов одного ЖК: ползунок участников и сравнение с розницей. */
+function BulkBlock({ estimate, participants, setParticipants, hasRules }: { estimate: Estimate; participants: number; setParticipants: (n: number) => void; hasRules: boolean }) {
+  if (!hasRules) return null;
+  const b = estimate.bulk;
+  return (
+    <section className="bulk">
+      <div className="bulk-head">
+        <h4>Коллективная закупка</h4>
+        <span className="badge demo">условия — пример</span>
+      </div>
+      <label className="bulk-slider">
+        <span>
+          Участников в ЖК: <b>{participants}</b>
+        </span>
+        <input type="range" min={1} max={40} step={1} value={participants} onChange={(e) => setParticipants(+e.target.value)} />
+      </label>
+      {participants === 1 ? (
+        <p className="muted small">Сдвиньте ползунок: цены, доставка и монтаж пересчитаются по порогам из листа «Опт» — у каждой позиции свои условия.</p>
+      ) : b ? (
+        <div className="bulk-grid">
+          <div>
+            <span className="muted small">Розница</span>
+            <b>{money(estimate.total)}</b>
+          </div>
+          <div>
+            <span className="muted small">Вместе ({participants})</span>
+            <b className="ok">{money(b.total)}</b>
+          </div>
+          <div>
+            <span className="muted small">Экономия</span>
+            <b className="ok">{money(b.savingsTotal)}</b>
+            <span className="muted small">
+              товары {money(b.savings.materials + b.savings.equipment + b.savings.consumables)} · доставка {money(b.savings.delivery)} · монтаж {money(b.savings.works)}
+            </span>
+          </div>
+        </div>
+      ) : null}
+      {b && b.linesWithOffer === 0 && participants > 1 && <p className="muted small">Для выбранных позиций пороги ещё не достигнуты — попробуйте больше участников.</p>}
+    </section>
   );
 }
