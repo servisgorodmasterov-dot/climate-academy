@@ -180,7 +180,10 @@ export class PublicSheetCatalogProvider implements CatalogProvider {
     const results = await Promise.all(
       keys.map(async (k) => {
         try {
-          const res = await this.fetchImpl(gvizUrl(this.sheetId, SHEETS[k]));
+          const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          const timer = ac ? setTimeout(() => ac.abort(), 8000) : null;
+          const res = await this.fetchImpl(gvizUrl(this.sheetId, SHEETS[k]), ac ? { signal: ac.signal } : undefined);
+          if (timer) clearTimeout(timer);
           if (!res.ok) return [k, null] as const;
           const text = await res.text();
           if (/^\s*</.test(text)) return [k, null] as const; // страница входа Google — доступ закрыт

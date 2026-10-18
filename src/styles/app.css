@@ -423,3 +423,8 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .app.with-panel .nav-pad { right: calc(var(--panel-w) + 24px); }
 @media (max-width: 760px) { .nav-pad { right: 8px; bottom: 150px; grid-template-columns: repeat(3, 38px); } .nav-pad button { height: 38px; } .nav-hint { display: none; } .app.with-panel .nav-pad { display: none; } }
 @media (pointer: coarse) { .nav-hint { display: none; } }
+
+/* ---- Заставка загрузки 3D ---- */
+.scene-loading { position: absolute; inset: 0; z-index: 4; display: grid; place-content: center; justify-items: center; gap: 12px; background: #dfe6ee; color: #3c5372; font-weight: 600; font-size: 14px; pointer-events: none; }
+.scene-spinner { width: 38px; height: 38px; border-radius: 50%; border: 3px solid #b9c7d8; border-top-color: var(--blue); animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

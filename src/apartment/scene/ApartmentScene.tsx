@@ -1,8 +1,9 @@
-import { CameraControls, Environment, Html, Lightformer, SoftShadows } from '@react-three/drei';
+import { CameraControls, Environment, Html, Lightformer, PerformanceMonitor, SoftShadows } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { EffectComposer, Bloom, SMAA, Vignette } from '@react-three/postprocessing';
-import { N8AO } from '@react-three/postprocessing';
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+
+// Эффекты (затенение в углах, свечение) грузятся отдельно и только на мощных компьютерах
+const Effects = lazy(() => import('./Effects'));
 import * as THREE from 'three';
 import { GEOMETRY_KINDS, type Layout, type LayoutElement, type Room } from '../../core/types';
 import { roomArea } from '../layout';
@@ -24,13 +25,30 @@ export interface SceneProps {
 
 const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth < 760);
 
+/**
+ * Качество графики подстраивается под компьютер:
+ * low — без теней и эффектов (слабые ноутбуки, телефоны), mid — тени без эффектов (старт), high — мягкие тени и объёмное затенение.
+ * Стартуем со «средним», чтобы сцена показалась быстро; PerformanceMonitor повышает или понижает по реальному FPS.
+ */
+export type Quality = 'low' | 'mid' | 'high';
+const forced = typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('quality') as Quality | null) : null;
+
 export function ApartmentScene(props: SceneProps) {
+  const [quality, setQuality] = useState<Quality>(forced ?? (isMobile ? 'low' : 'mid'));
+  const [ready, setReady] = useState(false);
   return (
+    <>
+    {!ready && (
+      <div className="scene-loading" role="status">
+        <div className="scene-spinner" />
+        <span>Загружаем 3D-квартиру…</span>
+      </div>
+    )}
     <Canvas
-      shadows
-      dpr={[1, isMobile ? 1.5 : 2]}
+      shadows={quality !== 'low'}
+      dpr={quality === 'high' ? [1, 2] : quality === 'mid' ? [1, 1.5] : 1}
       camera={{ position: [0, 12, 11], fov: 40, near: 0.05, far: 200 }}
-      gl={{ antialias: !isMobile, alpha: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
+      gl={{ antialias: !isMobile, alpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.18;
@@ -39,14 +57,35 @@ export function ApartmentScene(props: SceneProps) {
     >
       <color attach="background" args={['#dfe6ee']} />
       <fog attach="fog" args={['#dfe6ee', 26, 60]} />
+      {!forced && (
+        <PerformanceMonitor
+          bounds={() => [32, 55]}
+          flipflops={3}
+          onIncline={() => setQuality((q) => (q === 'low' ? 'mid' : isMobile ? q : 'high'))}
+          onDecline={() => setQuality((q) => (q === 'high' ? 'mid' : 'low'))}
+        />
+      )}
+      <FirstFrame onReady={() => setReady(true)} />
       <Suspense fallback={null}>
-        <SceneContent {...props} />
+        <SceneContent {...props} quality={quality} />
       </Suspense>
     </Canvas>
+    </>
   );
 }
 
-function SceneContent({ layout, floorColors, looks, onElement, onFloor }: SceneProps) {
+/** Убирает заставку после первого нарисованного кадра. */
+function FirstFrame({ onReady }: { onReady: () => void }) {
+  const done = useRef(false);
+  useFrame(() => {
+    if (done.current) return;
+    done.current = true;
+    requestAnimationFrame(onReady);
+  });
+  return null;
+}
+
+function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality }: SceneProps & { quality: Quality }) {
   const { mode, focusRoom, ceilingHidden, wallsTransparent, xraySystems, selectedElement, categoryFilter, catalog, closedDoors } = useApp();
   const objects = useMemo(() => selectableObjects(layout, catalog), [layout, catalog]);
   const furnLooks = useMemo(() => {
@@ -66,13 +105,13 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor }: SceneP
   return (
     <>
       {/* Освещение: небо + солнце под углом, чтобы свет проходил через окна и ложился на пол */}
-      {!isMobile && <SoftShadows size={18} samples={12} focus={0.6} />}
+      {quality === 'high' && <SoftShadows size={18} samples={10} focus={0.6} />}
       <hemisphereLight args={['#eaf2ff', '#9a8c7a', 0.75]} />
       <directionalLight
         position={[9, 10, -7]}
         intensity={2.8}
-        castShadow
-        shadow-mapSize={isMobile ? [1024, 1024] : [4096, 4096]}
+        castShadow={quality !== 'low'}
+        shadow-mapSize={quality === 'high' ? [2048, 2048] : [1024, 1024]}
         shadow-camera-left={-9}
         shadow-camera-right={9}
         shadow-camera-top={9}
@@ -85,20 +124,17 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor }: SceneP
       />
       {/* заполняющий свет с противоположной стороны — без теней */}
       <directionalLight position={[-8, 6, 9]} intensity={0.55} color="#dfe9ff" />
-      <Environment resolution={isMobile ? 128 : 256} frames={1} environmentIntensity={0.9}>
+      <Environment resolution={quality === 'high' ? 256 : 128} frames={1} environmentIntensity={0.9}>
         <Lightformer form="rect" intensity={3} position={[0, 7, -9]} scale={[18, 5, 1]} color="#e8f1ff" />
         <Lightformer form="rect" intensity={1.6} position={[-9, 4, 0]} rotation-y={Math.PI / 2} scale={[12, 4, 1]} color="#fff2e2" />
         <Lightformer form="rect" intensity={1.2} position={[9, 4, 0]} rotation-y={-Math.PI / 2} scale={[12, 4, 1]} color="#e9f0fa" />
         <Lightformer form="circle" intensity={2.4} position={[0, 10, 0]} rotation-x={Math.PI / 2} scale={5} color="#ffffff" />
         <Lightformer form="rect" intensity={0.8} position={[0, -2, 0]} rotation-x={-Math.PI / 2} scale={[20, 20, 1]} color="#b7ab9c" />
       </Environment>
-      {!isMobile && !xray && (
-        <EffectComposer multisampling={0} enableNormalPass={false}>
-          <N8AO aoRadius={0.5} intensity={1.6} distanceFalloff={0.8} quality="medium" halfRes />
-          <Bloom luminanceThreshold={1.05} intensity={0.25} mipmapBlur />
-          <Vignette eskil={false} offset={0.25} darkness={0.35} />
-          <SMAA />
-        </EffectComposer>
+      {quality === 'high' && !xray && (
+        <Suspense fallback={null}>
+          <Effects />
+        </Suspense>
       )}
 
       <CameraRig layout={layout} />

@@ -127,6 +127,14 @@ export const useApp = create<State>()(
 
       async reloadCatalog() {
         const provider = createCatalogProvider();
+        // Пока таблица грузится, квартира уже работает на встроенном каталоге — 3D не ждёт сеть
+        if (!get().catalog) {
+          const demo = await new DemoCatalogProvider().load();
+          set({ catalog: demo });
+          setObjectCatalog(demo);
+          const l0 = get().layout;
+          if (l0) set({ layout: bindObjectTypes(l0, demo) });
+        }
         try {
           set({ catalog: await provider.load({ force: true }), catalogError: null });
         } catch (e) {
