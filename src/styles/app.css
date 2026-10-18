@@ -398,3 +398,13 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .bulk-grid b { font-size: 17px; }
 .ok { color: #1c7d44; }
 .grand.ok b { color: #1c7d44; }
+
+/* ---- Прогулка и подсказки ---- */
+.walk-pad { position: absolute; right: 14px; bottom: 90px; display: grid; grid-template-columns: repeat(3, 46px); gap: 6px; z-index: 6; }
+.walk-pad button { height: 46px; border-radius: 12px; border: 1px solid var(--line); background: #ffffffe6; backdrop-filter: blur(10px); font-size: 18px; box-shadow: var(--shadow); }
+.walk-pad button:active { background: var(--blue-soft); }
+.hovertip { position: fixed; z-index: 40; pointer-events: none; background: #ffffffee; backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; box-shadow: var(--shadow); display: grid; gap: 2px; max-width: 260px; font-size: 12.5px; }
+.hovertip b { font-size: 13px; }
+.hovertip span { color: #5b6b82; }
+.hovertip em { font-style: normal; font-weight: 700; color: var(--blue); }
+@media (max-width: 760px) { .walk-pad { right: 8px; bottom: 150px; grid-template-columns: repeat(3, 40px); } .walk-pad button { height: 40px; } }

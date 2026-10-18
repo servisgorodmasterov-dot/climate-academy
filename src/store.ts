@@ -48,6 +48,10 @@ interface State {
   role: Role;
   /** Двери, закрытые пользователем (по умолчанию двери приоткрыты, чтобы было видно комнаты) */
   closedDoors: Record<string, boolean>;
+  /** Прогулка: камера на уровне глаз внутри квартиры */
+  walk: boolean;
+  /** Объект под курсором (подсказка) */
+  hover: string | null;
   // планирование
   sections: Record<string, SectionState>;
   overrides: Record<string, PriceOverride>;
@@ -97,6 +101,8 @@ export const useApp = create<State>()(
       proMode: false,
       role: 'resident',
       closedDoors: {},
+      walk: false,
+      hover: null,
       sections: {},
       overrides: {},
       orders: [],

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ROLE_LABELS, type LayoutElement, type Role, type Room, type UtilitySystem } from '../core/types';
 import { sectionIdFor, type Selection } from '../core/academy';
 import { academyById } from '../academies';
-import { findProduct } from '../catalog/sheetParser';
+import { findPrice, findProduct } from '../catalog/sheetParser';
+import { primaryProduct } from '../objects/logic';
 import { ApartmentScene } from '../apartment/scene/ApartmentScene';
 import { findApartment, listApartments, roomArea, totalArea } from '../apartment/layout';
 import { useTotalEstimate } from '../estimate/useEstimate';
@@ -174,6 +175,10 @@ export function App() {
         </div>
 
         <div className="view-tools">
+          <label className="toggle" title="Камера на уровне глаз: стрелки или W/A/S/D, на телефоне — кнопки">
+            <input type="checkbox" checked={s.walk} onChange={(e) => (s.set('walk', e.target.checked), e.target.checked && s.set('ceilingHidden', false), say(e.target.checked ? 'Прогулка: W/S — вперёд-назад, A/D — поворот, мышь — осмотр' : 'Обзор квартиры'))} />
+            <span>Прогулка</span>
+          </label>
           <label className="toggle">
             <input type="checkbox" checked={!s.ceilingHidden} onChange={(e) => s.set('ceilingHidden', !e.target.checked)} />
             <span>Потолок</span>
@@ -183,6 +188,18 @@ export function App() {
             <span>Прозрачные стены</span>
           </label>
         </div>
+
+        {s.walk && (
+          <div className="walk-pad" aria-label="Управление прогулкой">
+            <button aria-label="Повернуть влево" onClick={() => (window as any).__walk?.turn(0.25)}>↶</button>
+            <button aria-label="Вперёд" onClick={() => (window as any).__walk?.forward(0.6)}>▲</button>
+            <button aria-label="Повернуть вправо" onClick={() => (window as any).__walk?.turn(-0.25)}>↷</button>
+            <span />
+            <button aria-label="Назад" onClick={() => (window as any).__walk?.forward(-0.6)}>▼</button>
+            <span />
+          </div>
+        )}
+        <HoverTip />
 
         {mode === 'xray' && (
           <div className="legend">
@@ -268,6 +285,41 @@ export function App() {
       {panel === 'orders' && <OrdersPanel />}
       {panel === 'passport' && <PassportPanel />}
       {panel === 'about' && <AboutPanel />}
+    </div>
+  );
+}
+
+/** Подсказка при наведении: название объекта и цена выбранного главного товара. */
+function HoverTip() {
+  const hover = useApp((st) => st.hover);
+  const { layout, catalog, sections, apartmentId } = useApp();
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    if (!hover) return;
+    const move = (e: PointerEvent) => setPos({ x: e.clientX, y: e.clientY });
+    window.addEventListener('pointermove', move);
+    return () => window.removeEventListener('pointermove', move);
+  }, [hover]);
+  if (!hover || !layout || !catalog || window.matchMedia?.('(pointer: coarse)').matches) return null;
+  const el = layout.elements.find((e) => e.id === hover);
+  if (!el) return null;
+  let price: string | null = null;
+  let sub = '';
+  if (el.typeId) {
+    const sec = sections[`${apartmentId}|${el.academy}:${el.id}`];
+    const p = primaryProduct(catalog, el, sec?.selection);
+    if (p) {
+      sub = p.name;
+      price = money(findPrice(catalog, p.id)?.sale);
+    }
+  } else {
+    sub = 'Нажмите, чтобы открыть варианты и расчёт';
+  }
+  return (
+    <div className="hovertip" style={{ left: pos.x + 14, top: pos.y + 14 }}>
+      <b>{el.label}</b>
+      {sub && <span>{sub}</span>}
+      {price && <em>{price}</em>}
     </div>
   );
 }

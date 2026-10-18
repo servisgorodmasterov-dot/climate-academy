@@ -1,5 +1,5 @@
 import { CameraControls, Environment, Html, Lightformer, SoftShadows } from '@react-three/drei';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer, Bloom, SMAA, Vignette } from '@react-three/postprocessing';
 import { N8AO } from '@react-three/postprocessing';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
@@ -50,10 +50,11 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor }: SceneP
   const { mode, focusRoom, ceilingHidden, wallsTransparent, xraySystems, selectedElement, categoryFilter, catalog, closedDoors } = useApp();
   const objects = useMemo(() => selectableObjects(layout, catalog), [layout, catalog]);
   const furnLooks = useMemo(() => {
-    const out = { looks: {} as Record<number, Record<string, string>>, selectable: {} as Record<number, boolean>, selected: null as number | null };
+    const out = { looks: {} as Record<number, Record<string, string>>, selectable: {} as Record<number, boolean>, selected: null as number | null, ids: {} as Record<number, string> };
     for (const e of layout.elements) {
       if (e.kind !== 'furniture' || e.furniture == null) continue;
       if (e.academy) out.selectable[e.furniture] = true;
+      out.ids[e.furniture] = e.id;
       if (catalog && e.academy) out.looks[e.furniture] = lookOf(catalog, e, looks[e.id]);
       if (selectedElement === e.id) out.selected = e.furniture;
     }
@@ -127,7 +128,7 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor }: SceneP
           onFloorClick={onFloor}
           onElement={onElement}
         />
-        {!xray && <Furniture items={layout.furniture} looks={furnLooks.looks} selectable={furnLooks.selectable} selected={furnLooks.selected} onPick={(i) => { const el = layout.elements.find((e) => e.furniture === i); if (el) onElement(el); }} />}
+        {!xray && <Furniture items={layout.furniture} looks={furnLooks.looks} selectable={furnLooks.selectable} selected={furnLooks.selected} ids={furnLooks.ids} onPick={(i) => { const el = layout.elements.find((e) => e.furniture === i); if (el) onElement(el); }} />}
         {layout.elements
           .filter((e) => e.kind !== 'floor' && !GEOMETRY_KINDS.includes(e.kind))
           .map((e) => (
@@ -166,15 +167,53 @@ function CameraRig({ layout }: { layout: Layout }) {
   const ref = useRef<CameraControls>(null);
   const focusRoom = useApp((s) => s.focusRoom);
   const selected = useApp((s) => s.selectedElement);
+  const walk = useApp((s) => s.walk);
   const { size } = useThree();
   const [W, D] = layout.size;
   const portrait = size.height > size.width;
 
   const rooms = useMemo(() => Object.fromEntries(layout.rooms.map((r) => [r.id, r])), [layout]);
 
+  // Прогулка: камера на высоте глаз в выбранной комнате (или в прихожей), управление клавишами и кнопками
   useEffect(() => {
     const cc = ref.current;
     if (!cc) return;
+    if (!walk) return;
+    const r = rooms[focusRoom ?? ''] ?? layout.rooms.find((x) => x.type === 'hall') ?? layout.rooms[0];
+    const cx = (r.rect[0] + r.rect[2]) / 2 - W / 2;
+    const cz = (r.rect[1] + r.rect[3]) / 2 - D / 2;
+    cc.setLookAt(cx, 1.6, cz + 0.01, cx, 1.5, cz - 1.5, true);
+    const onKey = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      const step = 0.35;
+      if (k === 'w' || k === 'arrowup' || k === 'ц') cc.forward(step, true);
+      else if (k === 's' || k === 'arrowdown' || k === 'ы') cc.forward(-step, true);
+      else if (k === 'a' || k === 'arrowleft' || k === 'ф') cc.rotate(0.12, 0, true);
+      else if (k === 'd' || k === 'arrowright' || k === 'в') cc.rotate(-0.12, 0, true);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    (window as any).__walk = { forward: (d: number) => cc.forward(d, true), turn: (a: number) => cc.rotate(a, 0, true) };
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      delete (window as any).__walk;
+    };
+  }, [walk, focusRoom, rooms, layout, W, D]);
+
+  // не выходить из квартиры во время прогулки
+  useFrame(() => {
+    const cc = ref.current;
+    if (!cc || !walk) return;
+    const p = cc.camera.position;
+    const nx = Math.min(Math.max(p.x, -W / 2 + 0.3), W / 2 - 0.3);
+    const nz = Math.min(Math.max(p.z, -D / 2 + 0.3), D / 2 - 0.3);
+    if (nx !== p.x || nz !== p.z || Math.abs(p.y - 1.6) > 0.05) cc.moveTo(cc.camera.position.x + (nx - p.x), 1.5, cc.camera.position.z + (nz - p.z), false);
+  });
+
+  useEffect(() => {
+    const cc = ref.current;
+    if (!cc || walk) return;
     if (!focusRoom) {
       const k = portrait ? 1.6 : 1;
       cc.setLookAt(portrait ? 0 : 1.2, 13 * k, 7.2 * k, 0, 0, 0.4, true);
@@ -186,11 +225,11 @@ function CameraRig({ layout }: { layout: Layout }) {
     const cz = (r.rect[1] + r.rect[3]) / 2 - D / 2;
     const span = Math.max(r.rect[2] - r.rect[0], r.rect[3] - r.rect[1]) * (portrait ? 1.9 : 1.2) + 1.8;
     cc.setLookAt(cx + (portrait ? 0 : span * 0.2), span * 1.35, cz + span * 0.55, cx, 0.3, cz, true);
-  }, [focusRoom, rooms, W, D, portrait]);
+  }, [focusRoom, rooms, W, D, portrait, walk]);
 
   useEffect(() => {
     const cc = ref.current;
-    if (!cc || !selected) return;
+    if (!cc || !selected || walk) return;
     const el = layout.elements.find((e) => e.id === selected);
     if (!el || el.kind === 'floor') return;
     if (el.kind === 'room_walls') return; // стены — остаёмся на виде комнаты
@@ -217,7 +256,7 @@ function CameraRig({ layout }: { layout: Layout }) {
     const dist = portrait ? 4.6 : 3.4;
     const to = p.clone().add(face.multiplyScalar(dist)).add(new THREE.Vector3(0.6, el.kind === 'leak_sensor' ? 2.2 : 1.4, 0));
     cc.setLookAt(to.x, to.y, to.z, p.x, p.y, p.z, true);
-  }, [selected, layout, W, D, portrait, rooms]);
+  }, [selected, layout, W, D, portrait, rooms, walk]);
 
-  return <CameraControls ref={ref} makeDefault minDistance={1.2} maxDistance={32} maxPolarAngle={Math.PI * 0.47} smoothTime={0.45} draggingSmoothTime={0.12} />;
+  return <CameraControls ref={ref} makeDefault minDistance={walk ? 0.05 : 1.2} maxDistance={walk ? 0.2 : 32} minPolarAngle={walk ? Math.PI * 0.3 : 0} maxPolarAngle={walk ? Math.PI * 0.62 : Math.PI * 0.47} smoothTime={walk ? 0.25 : 0.45} draggingSmoothTime={0.12} azimuthRotateSpeed={walk ? -0.5 : 1} polarRotateSpeed={walk ? -0.5 : 1} />;
 }

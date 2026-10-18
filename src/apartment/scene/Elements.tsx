@@ -2,6 +2,9 @@ import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import type { LayoutElement } from '../../core/types';
 import { TAP_THRESHOLD_PX } from '../objects';
+import { useApp } from '../../store';
+
+const setHover = (id: string | null) => useApp.getState().set('hover', id);
 
 const white = new THREE.MeshStandardMaterial({ color: '#fbfbfb', roughness: 0.3 });
 const grey = new THREE.MeshStandardMaterial({ color: '#c9cdd2', roughness: 0.5, metalness: 0.2 });
@@ -121,6 +124,7 @@ export function Element({ el, selected, onSelect, xray }: { el: LayoutElement; s
   const interactive = !!el.academy;
   if (el.kind === 'riser' && xray) return null; // в рентгене вместо короба показываем трубы
   const size = HIT_SIZE[el.kind] ?? [0.3, 0.3, 0.3];
+  const HOVER_ID = el.id;
   return (
     <group position={el.position} rotation={[0, el.rotationY ?? 0, 0]}>
       <Model kind={el.kind} />
@@ -132,8 +136,15 @@ export function Element({ el, selected, onSelect, xray }: { el: LayoutElement; s
             e.stopPropagation();
             onSelect(el);
           }}
-          onPointerOver={() => (document.body.style.cursor = 'pointer')}
-          onPointerOut={() => (document.body.style.cursor = '')}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = 'pointer';
+            setHover(HOVER_ID);
+          }}
+          onPointerOut={() => {
+            document.body.style.cursor = '';
+            setHover(null);
+          }}
         >
           <boxGeometry args={size} />
         </mesh>

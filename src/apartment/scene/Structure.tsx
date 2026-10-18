@@ -9,6 +9,9 @@ import { TAP_THRESHOLD_PX } from '../objects';
 import { ARCH_WIDTH, roomWallRects } from '../../objects/geometry';
 import { lookOf } from '../../objects/logic';
 import { DoorFrame, DoorLeaf, finishMaterial } from '../../objects/models';
+import { useApp } from '../../store';
+
+const setHover = (id: string | null) => useApp.getState().set('hover', id);
 
 /** Что выбрано для объекта конфигуратора (по id элемента) — для отрисовки. */
 export type ObjectLooks = Record<string, Selection | undefined>;
@@ -41,8 +44,9 @@ const selMat = new THREE.MeshBasicMaterial({ color: '#0066fa', transparent: true
 const selEdge = new THREE.LineBasicMaterial({ color: '#0066fa' });
 
 /** Невидимая зона касания + подсветка выбранного объекта. */
-function Hit({ size, selected, onPick }: { size: [number, number, number]; selected: boolean; onPick?: () => void }) {
+function Hit({ size, selected, onPick, id }: { size: [number, number, number]; selected: boolean; onPick?: () => void; id?: string }) {
   if (!onPick) return null;
+  const HOVER_ID = id ?? null;
   return (
     <>
       <mesh
@@ -52,8 +56,15 @@ function Hit({ size, selected, onPick }: { size: [number, number, number]; selec
           e.stopPropagation();
           onPick();
         }}
-        onPointerOver={() => (document.body.style.cursor = 'pointer')}
-        onPointerOut={() => (document.body.style.cursor = '')}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+          setHover(HOVER_ID);
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = '';
+          setHover(null);
+        }}
       >
         <boxGeometry args={size} />
       </mesh>
@@ -153,7 +164,7 @@ export function Structure({ layout, catalog, wallsTransparent, ceilingHidden, fl
           const el = wallEl[r.id];
           if (!el?.typeId) return null;
           const look = lookOf(catalog, el, looks[el.id]);
-          return <WallFinish key={r.id} layout={layout} room={r} finish={look.finish ?? 'paint'} color={look.color ?? '#f3f1ec'} selected={selectedElement === el.id} onPick={() => onElement(el)} transparent={transparent} />;
+          return <WallFinish key={r.id} layout={layout} room={r} finish={look.finish ?? 'paint'} color={look.color ?? '#f3f1ec'} selected={selectedElement === el.id} onPick={() => onElement(el)} transparent={transparent} id={el.id} />;
         })}
 
       {/* Стены */}
@@ -175,6 +186,7 @@ export function Structure({ layout, catalog, wallsTransparent, ceilingHidden, fl
                 glassMat={glassMat}
                 selected={!!el && selectedElement === el.id}
                 onPick={el?.academy ? () => onElement(el) : undefined}
+                id={el?.id}
               />
             );
           })}
@@ -198,6 +210,7 @@ export function Structure({ layout, catalog, wallsTransparent, ceilingHidden, fl
                 closed={closed}
                 selected={!!el && selectedElement === el.id}
                 onPick={el?.academy ? () => onElement(el) : undefined}
+                id={el?.id}
               />
             );
           })}
@@ -238,7 +251,7 @@ export function Structure({ layout, catalog, wallsTransparent, ceilingHidden, fl
 }
 
 /** Дверной блок в проёме: коробка + наличники + полотно, цвет и модель — из выбранного товара. */
-function DoorUnit({ box, horizontal, thickness, entrance, look, closed, selected, onPick }: { box: Box; horizontal: boolean; thickness: number; entrance: boolean; look: Record<string, string>; closed: boolean; selected: boolean; onPick?: () => void }) {
+function DoorUnit({ box, horizontal, thickness, entrance, look, closed, selected, onPick, id }: { box: Box; horizontal: boolean; thickness: number; entrance: boolean; look: Record<string, string>; closed: boolean; selected: boolean; onPick?: () => void; id?: string }) {
   const [sx, sy, sz] = box.size;
   const width = horizontal ? sx : sz;
   const leafRef = useRef<THREE.Group>(null);
@@ -259,14 +272,14 @@ function DoorUnit({ box, horizontal, thickness, entrance, look, closed, selected
         <DoorLeaf w={width - 0.06} h={sy - 0.04} look={{ ...look, style }} />
       </group>
       <group position={[width / 2, sy / 2, 0]}>
-        <Hit size={[width + 0.1, sy, 0.5]} selected={selected} onPick={onPick} />
+        <Hit size={[width + 0.1, sy, 0.5]} selected={selected} onPick={onPick} id={id} />
       </group>
     </group>
   );
 }
 
 /** Окно: стеклопакет, рама нужного цвета, подоконник. */
-function WindowUnit({ box, horizontal, color, glassMat, selected, onPick }: { box: Box; horizontal: boolean; color: string; glassMat: THREE.Material; selected: boolean; onPick?: () => void }) {
+function WindowUnit({ box, horizontal, color, glassMat, selected, onPick, id }: { box: Box; horizontal: boolean; color: string; glassMat: THREE.Material; selected: boolean; onPick?: () => void; id?: string }) {
   const [sx, sy, sz] = box.size;
   const frameT = 0.06;
   const frameMat = useMemo(() => new THREE.MeshStandardMaterial({ color, roughness: 0.4 }), [color]);
@@ -289,13 +302,14 @@ function WindowUnit({ box, horizontal, color, glassMat, selected, onPick }: { bo
       <mesh position={horizontal ? [0, -sy / 2 - 0.02, 0.12] : [-0.12, -sy / 2 - 0.02, 0]} material={sillMat} castShadow receiveShadow>
         <boxGeometry args={horizontal ? [sx + 0.1, 0.03, 0.3] : [0.3, 0.03, sz + 0.1]} />
       </mesh>
-      <Hit size={horizontal ? [sx, sy, 0.4] : [0.4, sy, sz]} selected={selected} onPick={onPick} />
+      <Hit size={horizontal ? [sx, sy, 0.4] : [0.4, sy, sz]} selected={selected} onPick={onPick} id={id} />
     </group>
   );
 }
 
 /** Отделка стен одного помещения — тонкие плоскости на внутренних гранях стен (проёмы вырезаны). */
-function WallFinish({ layout, room, finish, color, selected, onPick, transparent }: { layout: Layout; room: Room; finish: string; color: string; selected: boolean; onPick: () => void; transparent: boolean }) {
+function WallFinish({ layout, room, finish, color, selected, onPick, transparent, id }: { layout: Layout; room: Room; finish: string; color: string; selected: boolean; onPick: () => void; transparent: boolean; id?: string }) {
+  const HOVER_ID = id ?? null;
   const rects = useMemo(() => roomWallRects(layout, room), [layout, room]);
   const mat = useMemo(() => finishMaterial(finish, color, 1, 1), [finish, color]);
   useMemo(() => {
@@ -335,8 +349,15 @@ function WallFinish({ layout, room, finish, color, selected, onPick, transparent
               e.stopPropagation();
               onPick();
             }}
-            onPointerOver={() => (document.body.style.cursor = 'pointer')}
-            onPointerOut={() => (document.body.style.cursor = '')}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              document.body.style.cursor = 'pointer';
+              setHover(HOVER_ID);
+            }}
+            onPointerOut={() => {
+              document.body.style.cursor = '';
+              setHover(null);
+            }}
           >
             <planeGeometry args={[len, h]} />
           </mesh>

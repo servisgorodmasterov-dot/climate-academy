@@ -5,6 +5,9 @@ import * as THREE from 'three';
 import type { FurnitureItem } from '../../core/types';
 import { fabricTexture, sized } from './textures';
 import { TAP_THRESHOLD_PX } from '../objects';
+import { useApp } from '../../store';
+
+const setHover = (id: string | null) => useApp.getState().set('hover', id);
 
 /** Атрибуты внешнего вида из выбранного товара (facade, top, fabric, handle, style, mirror, tall). */
 export type Look = Record<string, string>;
@@ -358,14 +361,17 @@ export interface FurnitureProps {
   selectable?: Record<number, boolean>;
   selected?: number | null;
   onPick?: (index: number) => void;
+  /** индекс предмета → id элемента (для подсказки) */
+  ids?: Record<number, string>;
 }
 
-export function Furniture({ items, hidden, looks = {}, selectable = {}, selected = null, onPick }: FurnitureProps) {
+export function Furniture({ items, hidden, looks = {}, selectable = {}, selected = null, onPick, ids = {} }: FurnitureProps) {
   return (
     <group>
       {items.map((f, i) => {
         if (hidden?.(f.roomId)) return null;
         const hit = selectable[i] && onPick ? HIT[f.type]?.(f) : undefined;
+        const HOVER_ID = ids[i] ?? null;
         return (
           <group key={i} position={f.position} rotation={[0, f.rotationY, 0]}>
             {REGISTRY[f.type]?.(f, looks[i] ?? {}) ?? null}
@@ -378,8 +384,15 @@ export function Furniture({ items, hidden, looks = {}, selectable = {}, selected
                     e.stopPropagation();
                     onPick!(i);
                   }}
-                  onPointerOver={() => (document.body.style.cursor = 'pointer')}
-                  onPointerOut={() => (document.body.style.cursor = '')}
+                  onPointerOver={(e) => {
+                    e.stopPropagation();
+                    document.body.style.cursor = 'pointer';
+                    setHover(HOVER_ID);
+                  }}
+                  onPointerOut={() => {
+                    document.body.style.cursor = '';
+                    setHover(null);
+                  }}
                 >
                   <boxGeometry args={hit} />
                 </mesh>
