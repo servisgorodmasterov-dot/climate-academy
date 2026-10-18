@@ -44,7 +44,9 @@ const selMat = new THREE.MeshBasicMaterial({ color: '#0066fa', transparent: true
 const selEdge = new THREE.LineBasicMaterial({ color: '#0066fa' });
 
 /** Невидимая зона касания + подсветка выбранного объекта. */
+const hoverEdge = new THREE.LineBasicMaterial({ color: '#7fb0ff', transparent: true, opacity: 0.9 });
 function Hit({ size, selected, onPick, id }: { size: [number, number, number]; selected: boolean; onPick?: () => void; id?: string }) {
+  const hovered = useApp((s) => !!id && s.hover === id);
   if (!onPick) return null;
   const HOVER_ID = id ?? null;
   return (
@@ -68,6 +70,11 @@ function Hit({ size, selected, onPick, id }: { size: [number, number, number]; s
       >
         <boxGeometry args={size} />
       </mesh>
+      {hovered && !selected && (
+        <lineSegments material={hoverEdge}>
+          <edgesGeometry args={[new THREE.BoxGeometry(size[0] * 1.02, size[1] * 1.02, size[2] * 1.02)]} />
+        </lineSegments>
+      )}
       {selected && (
         <>
           <mesh material={selMat}>
@@ -402,6 +409,10 @@ function FloorMesh({ room, w, d, color, dim, highlight, onClick }: { room: Room;
         if (e.delta > TAP_THRESHOLD_PX) return;
         e.stopPropagation();
         onClick();
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        (window as any).__nav?.flyTo(e.point.x, e.point.z);
       }}
     >
       <planeGeometry args={[w, d]} />

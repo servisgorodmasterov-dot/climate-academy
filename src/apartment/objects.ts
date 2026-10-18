@@ -73,7 +73,7 @@ export function selectableObjects(layout: Layout, catalog: Catalog | null = null
 }
 
 /** Касание считается выбором, только если палец/мышь почти не сдвинулись (иначе это вращение камеры). */
-export const TAP_THRESHOLD_PX = 6;
+export const TAP_THRESHOLD_PX = 12;
 
 /** Наружный блок и другие составные части выбираются как свой основной объект. */
 export function resolveSelectable(layout: Layout, el: LayoutElement): LayoutElement {

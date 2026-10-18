@@ -211,6 +211,17 @@ export function App() {
           </div>
         )}
         <HoverTip />
+        {!s.walk && (
+          <div className="nav-pad" aria-label="Управление камерой">
+            <button title="Повернуть влево (←)" aria-label="Повернуть влево" onClick={() => (window as any).__nav?.rotate(0.5)}>⟲</button>
+            <button title="Приблизить (+)" aria-label="Приблизить" onClick={() => (window as any).__nav?.zoom(2)}>＋</button>
+            <button title="Повернуть вправо (→)" aria-label="Повернуть вправо" onClick={() => (window as any).__nav?.rotate(-0.5)}>⟳</button>
+            <button title="Вид сверху" aria-label="Вид сверху" onClick={() => (window as any).__nav?.top()}>⬒</button>
+            <button title="Отдалить (−)" aria-label="Отдалить" onClick={() => (window as any).__nav?.zoom(-2)}>－</button>
+            <button title="Вся квартира" aria-label="Вся квартира" onClick={() => (window as any).__nav?.reset()}>⌂</button>
+          </div>
+        )}
+        <div className="nav-hint">Левая кнопка — вращать · правая — сдвигать · колесо — приблизить к курсору · двойной клик по полу — перелететь</div>
 
         {mode === 'xray' && (
           <div className="legend">

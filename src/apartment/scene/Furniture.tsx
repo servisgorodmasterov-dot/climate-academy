@@ -14,6 +14,7 @@ export type Look = Record<string, string>;
 const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 const selMat = new THREE.MeshBasicMaterial({ color: '#0066fa', transparent: true, opacity: 0.05, depthWrite: false });
 const selEdge = new THREE.LineBasicMaterial({ color: '#0066fa' });
+const hoverEdge = new THREE.LineBasicMaterial({ color: '#7fb0ff', transparent: true, opacity: 0.9 });
 function useColorMat(color: string | undefined, fallback: THREE.MeshStandardMaterial, rough = 0.5) {
   return useMemo(() => (color ? new THREE.MeshStandardMaterial({ color, roughness: rough }) : fallback), [color, fallback, rough]);
 }
@@ -423,6 +424,7 @@ export interface FurnitureProps {
 }
 
 export function Furniture({ items, hidden, looks = {}, selectable = {}, selected = null, onPick, ids = {} }: FurnitureProps) {
+  const hover = useApp((s) => s.hover);
   return (
     <group>
       {items.map((f, i) => {
@@ -453,6 +455,11 @@ export function Furniture({ items, hidden, looks = {}, selectable = {}, selected
                 >
                   <boxGeometry args={hit} />
                 </mesh>
+                {selected !== i && hover != null && hover === HOVER_ID && (
+                  <lineSegments material={hoverEdge}>
+                    <edgesGeometry args={[new THREE.BoxGeometry(hit[0] * 1.03, hit[1] * 1.03, hit[2] * 1.03)]} />
+                  </lineSegments>
+                )}
                 {selected === i && (
                   <>
                     <mesh material={selMat}>

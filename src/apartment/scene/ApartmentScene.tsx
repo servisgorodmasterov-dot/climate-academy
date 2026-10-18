@@ -258,5 +258,56 @@ function CameraRig({ layout }: { layout: Layout }) {
     cc.setLookAt(to.x, to.y, to.z, p.x, p.y, p.z, true);
   }, [selected, layout, W, D, portrait, rooms, walk]);
 
-  return <CameraControls ref={ref} makeDefault minDistance={walk ? 0.05 : 1.2} maxDistance={walk ? 0.2 : 32} minPolarAngle={walk ? Math.PI * 0.3 : 0} maxPolarAngle={walk ? Math.PI * 0.62 : Math.PI * 0.47} smoothTime={walk ? 0.25 : 0.45} draggingSmoothTime={0.12} azimuthRotateSpeed={walk ? -0.5 : 1} polarRotateSpeed={walk ? -0.5 : 1} />;
+  // Кнопки навигации и клавиатура: повернуть, приблизить, вид сверху, сброс
+  useEffect(() => {
+    const cc = ref.current;
+    if (!cc) return;
+    const api = {
+      rotate: (a: number) => cc.rotate(a, 0, true),
+      tilt: (a: number) => cc.rotate(0, a, true),
+      zoom: (k: number) => cc.dolly(k, true),
+      top: () => cc.rotatePolarTo(0.05, true),
+      reset: () => {
+        useApp.getState().set('focusRoom', null);
+        useApp.getState().set('selectedElement', null);
+        cc.setLookAt(portrait ? 0 : 1.2, 13 * (portrait ? 1.6 : 1), 7.2 * (portrait ? 1.6 : 1), 0, 0, 0.4, true);
+      },
+      flyTo: (x: number, z: number) => cc.moveTo(x, 0.4, z, true),
+    };
+    (window as any).__nav = api;
+    if (walk) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+      if (e.key === 'ArrowLeft') api.rotate(0.3);
+      else if (e.key === 'ArrowRight') api.rotate(-0.3);
+      else if (e.key === 'ArrowUp') api.tilt(-0.15);
+      else if (e.key === 'ArrowDown') api.tilt(0.15);
+      else if (e.key === '+' || e.key === '=') api.zoom(1.5);
+      else if (e.key === '-') api.zoom(-1.5);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [walk, portrait]);
+
+  return (
+    <CameraControls
+      ref={ref}
+      makeDefault
+      minDistance={walk ? 0.05 : 1.2}
+      maxDistance={walk ? 0.2 : 32}
+      minPolarAngle={walk ? Math.PI * 0.3 : 0}
+      maxPolarAngle={walk ? Math.PI * 0.62 : Math.PI * 0.47}
+      smoothTime={walk ? 0.25 : 0.35}
+      draggingSmoothTime={0.08}
+      azimuthRotateSpeed={walk ? -0.5 : 0.6}
+      polarRotateSpeed={walk ? -0.5 : 0.5}
+      dollySpeed={0.6}
+      truckSpeed={1.4}
+      dollyToCursor={!walk}
+      boundaryEnclosesCamera={false}
+    />
+  );
 }
