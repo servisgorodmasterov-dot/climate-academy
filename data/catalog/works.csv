@@ -23,3 +23,7 @@ W-WL-WP,wall.finish,wall.finish,Поклейка флизелиновых обо
 W-WL-PLASTER,wall.finish,wall.finish,Нанесение декоративной штукатурки с лаком,m2,6500,2026-10-18,DEMO
 W-WL-PANEL,wall.finish,wall.finish,Монтаж реечных панелей,m2,4500,2026-10-18,DEMO
 W-WL-PRIME,wall.finish,wall.primer,Грунтование стен,m2,350,2026-10-18,DEMO
+W-KIT-INST,furniture.kitchen,kit.set,"Сборка и установка кухни, подключение мойки",m,12000,2026-10-18,DEMO
+W-BED-ASM,furniture.bed,bed.frame,Сборка кровати,pcs,8000,2026-10-18,DEMO
+W-WRD-ASM,furniture.wardrobe,wrd.body,Сборка и установка шкафа,m,9000,2026-10-18,DEMO
+W-SOFA-ASM,furniture.sofa,sofa.unit,Доставка на этаж и сборка дивана,pcs,6000,2026-10-18,DEMO

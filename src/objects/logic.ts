@@ -16,8 +16,14 @@ export const typeIdFromAcademy = (academy: string) => (academy.startsWith(OBJECT
 /** Связь «место в планировке → тип из таблицы»: placement типа совпадает с видом элемента. */
 export function typeForElement(catalog: Catalog, el: LayoutElement) {
   if (el.typeId) return objectType(catalog, el.typeId);
-  const placement = el.kind;
-  return catalog.objectTypes.find((t) => t.placement === placement);
+  return catalog.objectTypes.find((t) => t.placement === placementOf(el));
+}
+
+/** Место объекта в планировке: door | entrance | window | room_walls | furniture:<тип предмета> */
+export function placementOf(el: LayoutElement, layout?: Layout) {
+  if (el.kind !== 'furniture') return el.kind;
+  const type = layout && el.furniture != null ? layout.furniture[el.furniture]?.type : el.id.replace(/^furn-/, '').replace(/-\d+$/, '');
+  return `furniture:${type}`;
 }
 
 /** Добавляет в планировку объекты из геометрии (если их ещё нет). Без каталога они не выбираются. */
@@ -28,12 +34,12 @@ export function withGeneratedObjects(layout: Layout): Layout {
 
 /** Назначает объектам тип и академию по каталогу. Тип убрали из таблицы — объект перестаёт быть выбираемым. */
 export function bindObjectTypes(layout: Layout, catalog: Catalog | null): Layout {
-  const generated = new Set(['door', 'entrance', 'window', 'room_walls']);
+  const generated = new Set(['door', 'entrance', 'window', 'room_walls', 'furniture']);
   return {
     ...layout,
     elements: layout.elements.map((e) => {
       if (!generated.has(e.kind)) return e;
-      const t = catalog ? catalog.objectTypes.find((x) => x.placement === e.kind) : undefined;
+      const t = catalog ? catalog.objectTypes.find((x) => x.placement === placementOf(e, layout)) : undefined;
       if (!t) return { ...e, typeId: undefined, academy: undefined };
       return { ...e, typeId: t.id, academy: academyIdForType(t.id), label: e.label.replace(/^[^:]+:/, `${t.name}:`) };
     }),

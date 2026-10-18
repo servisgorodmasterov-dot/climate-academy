@@ -12,6 +12,7 @@ import { Furniture } from './Furniture';
 import { Element } from './Elements';
 import { Utilities } from './Utilities';
 import { useApp } from '../../store';
+import { lookOf } from '../../objects/logic';
 
 export interface SceneProps {
   layout: Layout;
@@ -48,6 +49,16 @@ export function ApartmentScene(props: SceneProps) {
 function SceneContent({ layout, floorColors, looks, onElement, onFloor }: SceneProps) {
   const { mode, focusRoom, ceilingHidden, wallsTransparent, xraySystems, selectedElement, categoryFilter, catalog, closedDoors } = useApp();
   const objects = useMemo(() => selectableObjects(layout, catalog), [layout, catalog]);
+  const furnLooks = useMemo(() => {
+    const out = { looks: {} as Record<number, Record<string, string>>, selectable: {} as Record<number, boolean>, selected: null as number | null };
+    for (const e of layout.elements) {
+      if (e.kind !== 'furniture' || e.furniture == null) continue;
+      if (e.academy) out.selectable[e.furniture] = true;
+      if (catalog && e.academy) out.looks[e.furniture] = lookOf(catalog, e, looks[e.id]);
+      if (selectedElement === e.id) out.selected = e.furniture;
+    }
+    return out;
+  }, [layout, catalog, looks, selectedElement]);
   const [W, D] = layout.size;
   const xray = mode === 'xray';
 
@@ -116,7 +127,7 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor }: SceneP
           onFloorClick={onFloor}
           onElement={onElement}
         />
-        {!xray && <Furniture items={layout.furniture} />}
+        {!xray && <Furniture items={layout.furniture} looks={furnLooks.looks} selectable={furnLooks.selectable} selected={furnLooks.selected} onPick={(i) => { const el = layout.elements.find((e) => e.furniture === i); if (el) onElement(el); }} />}
         {layout.elements
           .filter((e) => e.kind !== 'floor' && !GEOMETRY_KINDS.includes(e.kind))
           .map((e) => (
@@ -194,11 +205,13 @@ function CameraRig({ layout }: { layout: Layout }) {
       const depth = Math.abs(face.x) > 0.5 ? x1 - x0 : z1 - z0;
       const dist = Math.min(portrait ? 4.6 : 5, Math.max(1.6, depth - 0.4));
       const side = new THREE.Vector3(face.z, 0, -face.x);
-      const to = p.clone().add(face.clone().multiplyScalar(dist)).add(side.multiplyScalar(0.5)).setY(1.75);
+      // мебель смотрим сверху-сбоку (через шкафы и стены не видно), двери и окна — с высоты глаз
+      const furniture = el.kind === 'furniture';
+      const to = p.clone().add(face.clone().multiplyScalar(furniture ? dist * 0.85 : dist)).add(side.multiplyScalar(furniture ? 0.9 : 0.5)).setY(furniture ? 2.9 : 1.75);
       // не выходить за пределы комнаты
       to.x = Math.min(Math.max(to.x, x0 - W / 2 + 0.35), x1 - W / 2 - 0.35);
       to.z = Math.min(Math.max(to.z, z0 - D / 2 + 0.35), z1 - D / 2 - 0.35);
-      cc.setLookAt(to.x, to.y, to.z, p.x, Math.min(p.y, 1.3), p.z, true);
+      cc.setLookAt(to.x, to.y, to.z, p.x, Math.min(p.y, furniture ? 0.7 : 1.3), p.z, true);
       return;
     }
     const dist = portrait ? 4.6 : 3.4;

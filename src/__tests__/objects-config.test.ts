@@ -13,7 +13,7 @@ const layout = bindObjectTypes(withGeneratedObjects(base), catalog);
 describe('конфигуратор объектов', () => {
   it('демо-каталог читает листы «Категории», «Объекты» и «Позиции объектов» без замечаний', () => {
     expect(catalog.categories.length).toBeGreaterThanOrEqual(12);
-    expect(catalog.objectTypes.map((t) => t.id)).toEqual(['door.interior', 'door.entrance', 'window', 'wall.finish']);
+    expect(catalog.objectTypes.map((t) => t.id)).toEqual(['door.interior', 'door.entrance', 'window', 'wall.finish', 'furniture.kitchen', 'furniture.bed', 'furniture.wardrobe', 'furniture.sofa']);
     expect(catalog.issues.filter((i) => ['Объекты', 'Позиции объектов', 'Категории'].includes(i.sheet))).toEqual([]);
     expect(catalog.issues.filter((i) => /Нет цены/.test(i.message))).toEqual([]);
   });

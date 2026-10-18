@@ -144,7 +144,8 @@ export function AcademyPanel() {
 /** Быстрая смена дизайна: цвета и модели той же позиции — одним нажатием, сразу видно в 3D. */
 function Swatches({ product, sectionId }: { product: Product; sectionId: string }) {
   const { catalog } = useApp();
-  const list = productsForSlot(catalog!, product.slot).filter((p) => p.attrs.color);
+  const swatch = (p: Product) => p.attrs.color ?? p.attrs.facade ?? p.attrs.fabric ?? p.attrs.top;
+  const list = productsForSlot(catalog!, product.slot).filter((p) => swatch(p));
   if (list.length < 2) return null;
   return (
     <>
@@ -156,7 +157,7 @@ function Swatches({ product, sectionId }: { product: Product; sectionId: string 
             role="radio"
             aria-checked={p.id === product.id}
             className={p.id === product.id ? 'on' : ''}
-            style={{ background: p.attrs.color }}
+            style={{ background: swatch(p) }}
             title={`${p.name} — ${money(findPrice(catalog!, p.id)?.sale)}`}
             onClick={() => useApp.getState().setSlot(sectionId, product.slot, p.id)}
           />

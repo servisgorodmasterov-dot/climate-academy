@@ -13,3 +13,11 @@ window,win.sill,Подоконник,1,opening_w,0.15,1,WIN-SILL-PVC,W-WIN-SILL,
 window,win.reveal,Откосы,1,opening_perimeter_m,0.1,1,WIN-REV-PVC,W-WIN-REV,opening_perimeter_m,3
 wall.finish,wall.finish,Финишная отделка,1,wall_m2,0.1,0,WL-PNT-WHITE,W-WL-PAINT,wall_m2,1
 wall.finish,wall.primer,Грунт,0.15,wall_m2,0,1,WL-PRIMER,W-WL-PRIME,wall_m2,2
+furniture.kitchen,kit.set,Корпус и фасады (погонный метр),1,length_m,0,0,KIT-MODERN-WHITE,W-KIT-INST,length_m,1
+furniture.kitchen,kit.top,Столешница,1,length_m,0.1,0,KIT-TOP-STONE,,,2
+furniture.kitchen,kit.upper,Верхние шкафы,1,length_m,0,1,KIT-UPPER-STD,,,3
+furniture.kitchen,kit.handle,Ручки,2,length_m,0,1,KIT-HDL-BLACK,,,4
+furniture.bed,bed.frame,Кровать с изголовьем,1,pcs,0,0,BED-SOFT-GREY,W-BED-ASM,pcs,1
+furniture.bed,bed.mattress,Матрас,1,pcs,0,1,MAT-ORTHO-M,,,2
+furniture.wardrobe,wrd.body,Корпус и фасады (погонный метр),1,length_m,0,0,WRD-SWING-WHITE,W-WRD-ASM,length_m,1
+furniture.sofa,sofa.unit,Диван,1,pcs,0,0,SOFA-GREY,W-SOFA-ASM,pcs,1

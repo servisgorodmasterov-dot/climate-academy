@@ -115,11 +115,12 @@ export const BASES = {
   floor_m2: 'площадь пола, м²',
   perimeter_m: 'периметр помещения, м',
   ceiling_m2: 'площадь потолка, м²',
+  length_m: 'длина предмета, м',
 } as const;
 export type Basis = keyof typeof BASES;
 
 /** Как объект выглядит в 3D. Новый вид отрисовки требует кода; новые модели и цвета — нет. */
-export const RENDERERS = ['door', 'entrance', 'window', 'wall', 'none'] as const;
+export const RENDERERS = ['door', 'entrance', 'window', 'wall', 'furniture', 'none'] as const;
 export type Renderer = (typeof RENDERERS)[number];
 
 /** Тип объекта квартиры: «Межкомнатная дверь», «Окно», «Отделка стен»… */
@@ -294,10 +295,11 @@ export type ElementKind =
   | 'door'
   | 'entrance'
   | 'window'
-  | 'room_walls';
+  | 'room_walls'
+  | 'furniture';
 
-/** Объекты, которые рисует каркас квартиры (стены и проёмы), а не отдельная 3D-модель. */
-export const GEOMETRY_KINDS: ElementKind[] = ['door', 'entrance', 'window', 'room_walls'];
+/** Объекты, которые рисует каркас квартиры (стены, проёмы, мебель), а не отдельная 3D-модель. */
+export const GEOMETRY_KINDS: ElementKind[] = ['door', 'entrance', 'window', 'room_walls', 'furniture'];
 
 export interface LayoutElement {
   id: string;
@@ -315,6 +317,8 @@ export interface LayoutElement {
   opening?: { wallId: string; index: number };
   /** Все помещения, которые объект соединяет (дверь между комнатами) */
   rooms?: string[];
+  /** Индекс предмета в layout.furniture (для мебели) */
+  furniture?: number;
 }
 
 export type UtilitySystem = 'electric' | 'water' | 'sewer' | 'heating' | 'ventilation' | 'ac' | 'smarthome';
@@ -330,6 +334,8 @@ export interface UtilityRun {
 
 export interface FurnitureItem {
   type: string;
+  /** Можно ли выбирать и менять предмет (тип объекта из таблицы: placement = furniture:<type>) */
+  selectable?: boolean;
   roomId: string;
   position: [number, number, number];
   rotationY: number;

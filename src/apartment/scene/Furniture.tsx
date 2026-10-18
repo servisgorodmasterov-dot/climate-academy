@@ -4,6 +4,16 @@ import { useMemo, type ReactNode } from 'react';
 import * as THREE from 'three';
 import type { FurnitureItem } from '../../core/types';
 import { fabricTexture, sized } from './textures';
+import { TAP_THRESHOLD_PX } from '../objects';
+
+/** Атрибуты внешнего вида из выбранного товара (facade, top, fabric, handle, style, mirror, tall). */
+export type Look = Record<string, string>;
+const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+const selMat = new THREE.MeshBasicMaterial({ color: '#0066fa', transparent: true, opacity: 0.05, depthWrite: false });
+const selEdge = new THREE.LineBasicMaterial({ color: '#0066fa' });
+function useColorMat(color: string | undefined, fallback: THREE.MeshStandardMaterial, rough = 0.5) {
+  return useMemo(() => (color ? new THREE.MeshStandardMaterial({ color, roughness: rough }) : fallback), [color, fallback, rough]);
+}
 
 const M = {
   wood: new THREE.MeshStandardMaterial({ color: '#9a7350', roughness: 0.6 }),
@@ -34,9 +44,10 @@ const B = ({ args, position, material, cast = true }: { args: [number, number, n
   </mesh>
 );
 
-function Sofa() {
-  const fab = useFabric('#7d8794', 2, 1);
-  const cush = useFabric('#8a95a3', 1, 1);
+function Sofa({ look = {} }: { look?: Look }) {
+  const base = look.fabric ?? '#7d8794';
+  const fab = useFabric(base, 2, 1);
+  const cush = useFabric(useMemo(() => `#${new THREE.Color(base).multiplyScalar(1.08).getHexString()}`, [base]), 1, 1);
   return (
     <group>
       <RB args={[2.2, 0.42, 0.95]} position={[0, 0.25, 0]} material={fab} radius={0.06} />
@@ -124,14 +135,17 @@ function FloorLamp() {
   );
 }
 
-function Bed() {
+function Bed({ look = {} }: { look?: Look }) {
   const linen = useFabric('#eef0f2', 2, 2);
   const blanket = useFabric('#9fb2c4', 2, 1.4);
   const pillow = useFabric('#ffffff', 1, 1);
+  const soft = look.style === 'soft';
+  const head = useFabric(look.fabric ?? '#8d94a0', 1, 1);
+  const frame = useColorMat(soft ? look.fabric : look.fabric, M.wood, soft ? 0.9 : 0.6);
   return (
     <group>
-      <RB args={[1.7, 0.3, 2.15]} position={[0, 0.17, 0]} material={M.wood} radius={0.02} />
-      <RB args={[1.7, 0.95, 0.08]} position={[0, 0.55, -1.08]} material={M.wood} radius={0.02} />
+      <RB args={[1.7, 0.3, 2.15]} position={[0, 0.17, 0]} material={soft ? head : frame} radius={soft ? 0.06 : 0.02} />
+      <RB args={soft ? [1.8, 1.1, 0.14] : [1.7, 0.95, 0.08]} position={[0, soft ? 0.6 : 0.55, -1.08]} material={soft ? head : frame} radius={soft ? 0.06 : 0.02} />
       <RB args={[1.6, 0.22, 2.0]} position={[0, 0.42, 0.02]} material={linen} radius={0.06} />
       <RB args={[1.64, 0.06, 1.35]} position={[0, 0.54, 0.35]} material={blanket} radius={0.03} />
       {[-0.4, 0.4].map((x) => (
@@ -153,17 +167,23 @@ function Nightstand() {
   );
 }
 
-function Wardrobe({ length = 2 }: { length?: number }) {
-  const doors = Math.max(2, Math.round(length / 0.5));
+const mirrorMat = new THREE.MeshStandardMaterial({ color: '#dfe8ee', metalness: 0.6, roughness: 0.05 });
+function Wardrobe({ length = 2, look = {} }: { length?: number; look?: Look }) {
+  const slide = look.style === 'slide';
+  const doors = slide ? 2 : Math.max(2, Math.round(length / 0.5));
+  const facade = useColorMat(look.facade, M.white, 0.4);
+  const body = useColorMat(look.facade ? `#${new THREE.Color(look.facade).multiplyScalar(0.92).getHexString()}` : undefined, M.whiteMatte, 0.8);
   return (
     <group>
-      <B args={[length, 2.4, 0.6]} position={[0, 1.2, 0]} material={M.whiteMatte} />
+      <B args={[length, 2.4, 0.6]} position={[0, 1.2, 0]} material={body} />
       {Array.from({ length: doors }).map((_, i) => {
         const w = length / doors;
+        const mirror = look.mirror === '1' && i === doors - 1;
         return (
           <group key={i}>
-            <B args={[w - 0.006, 2.36, 0.02]} position={[-length / 2 + w / 2 + i * w, 1.2, 0.305]} material={M.white} cast={false} />
-            <B args={[0.012, 0.3, 0.02]} position={[-length / 2 + i * w + (i % 2 ? 0.04 : w - 0.04), 1.15, 0.325]} material={M.steel} cast={false} />
+            <B args={[w - (slide ? 0.02 : 0.006), 2.36, 0.02]} position={[-length / 2 + w / 2 + i * w, 1.2, slide ? 0.305 + (i % 2) * 0.025 : 0.305]} material={mirror ? mirrorMat : facade} cast={false} />
+            {!slide && <B args={[0.012, 0.3, 0.02]} position={[-length / 2 + i * w + (i % 2 ? 0.04 : w - 0.04), 1.15, 0.325]} material={M.steel} cast={false} />}
+            {slide && <B args={[0.02, 2.36, 0.012]} position={[-length / 2 + i * w + (i % 2 ? 0.02 : w - 0.02), 1.2, 0.32 + (i % 2) * 0.025]} material={M.steel} cast={false} />}
           </group>
         );
       })}
@@ -182,16 +202,26 @@ function Fridge() {
   );
 }
 
-function KitchenRun({ length = 2.3, sink = 0.6, stove = -0.3 }: { length?: number; sink?: number; stove?: number }) {
+function KitchenRun({ length = 2.3, sink = 0.6, stove = -0.3, look = {} }: { length?: number; sink?: number; stove?: number; look?: Look }) {
   const n = Math.max(2, Math.round(length / 0.6));
+  const facade = useColorMat(look.facade, M.whiteMatte, look.style === 'panel' ? 0.6 : 0.35);
+  const body = useColorMat(look.facade ? `#${new THREE.Color(look.facade).multiplyScalar(0.9).getHexString()}` : undefined, M.white, 0.5);
+  const top = useColorMat(look.top, M.stone, look.top && look.top < '#888888' ? 0.2 : 0.3);
+  const handle = useColorMat(look.handle, M.steel, 0.3);
+  const upper = look.upper !== undefined ? look.upper === '1' : true;
+  const upperH = look.tall === '1' ? 0.92 : 0.7;
   return (
     <group>
       <B args={[length, 0.1, 0.55]} position={[0, 0.05, -0.02]} material={M.graphite} />
-      <B args={[length, 0.76, 0.58]} position={[0, 0.48, 0]} material={M.white} />
+      <B args={[length, 0.76, 0.58]} position={[0, 0.48, 0]} material={body} />
       {Array.from({ length: n }).map((_, i) => (
-        <B key={i} args={[length / n - 0.008, 0.72, 0.02]} position={[-length / 2 + (i + 0.5) * (length / n), 0.48, 0.3]} material={M.whiteMatte} cast={false} />
+        <group key={i}>
+          <B args={[length / n - 0.008, 0.72, 0.02]} position={[-length / 2 + (i + 0.5) * (length / n), 0.48, 0.3]} material={facade} cast={false} />
+          {look.style === 'panel' && <B args={[length / n - 0.09, 0.6, 0.008]} position={[-length / 2 + (i + 0.5) * (length / n), 0.48, 0.315]} material={facade} cast={false} />}
+          {look.handle && <B args={[0.16, 0.012, 0.03]} position={[-length / 2 + (i + 0.5) * (length / n), 0.78, 0.325]} material={handle} cast={false} />}
+        </group>
       ))}
-      <B args={[length + 0.02, 0.04, 0.62]} position={[0, 0.88, 0.01]} material={M.stone} />
+      <B args={[length + 0.02, 0.04, 0.62]} position={[0, 0.88, 0.01]} material={top} />
       {/* мойка */}
       <B args={[0.5, 0.012, 0.42]} position={[sink, 0.905, 0.02]} material={M.steel} />
       <mesh position={[sink, 1.0, -0.2]} material={M.steel}>
@@ -200,8 +230,8 @@ function KitchenRun({ length = 2.3, sink = 0.6, stove = -0.3 }: { length?: numbe
       {/* варочная панель */}
       <B args={[0.58, 0.01, 0.5]} position={[stove, 0.905, 0.02]} material={M.black} />
       {/* фартук и верхние шкафы */}
-      <B args={[length, 0.6, 0.02]} position={[0, 1.2, -0.3]} material={M.stone} cast={false} />
-      <B args={[length, 0.7, 0.33]} position={[0, 1.85, -0.14]} material={M.white} />
+      <B args={[length, 0.6, 0.02]} position={[0, 1.2, -0.3]} material={top} cast={false} />
+      {upper && <B args={[length, upperH, 0.33]} position={[0, 1.5 + upperH / 2, -0.14]} material={facade} />}
       {/* вытяжка */}
       <B args={[0.6, 0.12, 0.45]} position={[stove, 1.45, -0.08]} material={M.steel} />
     </group>
@@ -285,20 +315,20 @@ function Bench() {
   );
 }
 
-const REGISTRY: Record<string, (f: FurnitureItem) => ReactNode> = {
-  sofa: () => <Sofa />,
+const REGISTRY: Record<string, (f: FurnitureItem, look: Look) => ReactNode> = {
+  sofa: (_, look) => <Sofa look={look} />,
   armchair: () => <Armchair />,
   coffee_table: () => <CoffeeTable />,
   tv_stand: () => <TvStand />,
   rug: (f) => <Rug size={f.size} />,
   plant: () => <Plant />,
   floor_lamp: () => <FloorLamp />,
-  bed: () => <Bed />,
+  bed: (_, look) => <Bed look={look} />,
   nightstand: () => <Nightstand />,
-  wardrobe: (f) => <Wardrobe length={f.length} />,
-  hall_wardrobe: (f) => <Wardrobe length={f.length} />,
+  wardrobe: (f, look) => <Wardrobe length={f.length} look={look} />,
+  hall_wardrobe: (f, look) => <Wardrobe length={f.length} look={look} />,
   fridge: () => <Fridge />,
-  kitchen_run: (f) => <KitchenRun length={f.length} sink={f.sink} stove={f.stove} />,
+  kitchen_run: (f, look) => <KitchenRun length={f.length} sink={f.sink} stove={f.stove} look={look} />,
   dining_table: () => <DiningTable />,
   bathtub: () => <Bathtub />,
   toilet: () => <Toilet />,
@@ -309,16 +339,65 @@ const REGISTRY: Record<string, (f: FurnitureItem) => ReactNode> = {
 
 export const FURNITURE_TYPES = Object.keys(REGISTRY);
 
-export function Furniture({ items, hidden }: { items: FurnitureItem[]; hidden?: (roomId: string) => boolean }) {
+/** Габарит для зоны касания и подсветки по типу предмета. */
+const HIT: Record<string, (f: FurnitureItem) => [number, number, number]> = {
+  kitchen_run: (f) => [f.length ?? 2.3, 2.3, 0.7],
+  bed: () => [1.8, 1.1, 2.2],
+  wardrobe: (f) => [f.length ?? 2, 2.4, 0.65],
+  hall_wardrobe: (f) => [f.length ?? 1.6, 2.4, 0.65],
+  sofa: () => [2.3, 0.9, 1.0],
+  dining_table: () => [1.4, 0.8, 1.6],
+};
+
+export interface FurnitureProps {
+  items: FurnitureItem[];
+  hidden?: (roomId: string) => boolean;
+  /** индекс предмета → атрибуты вида */
+  looks?: Record<number, Look>;
+  /** индекс предмета → можно выбирать */
+  selectable?: Record<number, boolean>;
+  selected?: number | null;
+  onPick?: (index: number) => void;
+}
+
+export function Furniture({ items, hidden, looks = {}, selectable = {}, selected = null, onPick }: FurnitureProps) {
   return (
     <group>
-      {items.map((f, i) =>
-        hidden?.(f.roomId) ? null : (
+      {items.map((f, i) => {
+        if (hidden?.(f.roomId)) return null;
+        const hit = selectable[i] && onPick ? HIT[f.type]?.(f) : undefined;
+        return (
           <group key={i} position={f.position} rotation={[0, f.rotationY, 0]}>
-            {REGISTRY[f.type]?.(f) ?? null}
+            {REGISTRY[f.type]?.(f, looks[i] ?? {}) ?? null}
+            {hit && (
+              <group position={[0, hit[1] / 2, 0]}>
+                <mesh
+                  material={hitMat}
+                  onClick={(e) => {
+                    if (e.delta > TAP_THRESHOLD_PX) return;
+                    e.stopPropagation();
+                    onPick!(i);
+                  }}
+                  onPointerOver={() => (document.body.style.cursor = 'pointer')}
+                  onPointerOut={() => (document.body.style.cursor = '')}
+                >
+                  <boxGeometry args={hit} />
+                </mesh>
+                {selected === i && (
+                  <>
+                    <mesh material={selMat}>
+                      <boxGeometry args={[hit[0] * 1.03, hit[1] * 1.03, hit[2] * 1.03]} />
+                    </mesh>
+                    <lineSegments material={selEdge}>
+                      <edgesGeometry args={[new THREE.BoxGeometry(hit[0] * 1.03, hit[1] * 1.03, hit[2] * 1.03)]} />
+                    </lineSegments>
+                  </>
+                )}
+              </group>
+            )}
           </group>
-        ),
-      )}
+        );
+      })}
     </group>
   );
 }

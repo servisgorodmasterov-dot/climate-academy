@@ -27,7 +27,11 @@ export function openingPlace(layout: Layout, w: Wall, o: Opening) {
 }
 
 const KIND_OF: Record<Opening['kind'], ElementKind> = { door: 'door', entrance: 'entrance', window: 'window' };
-const NAMES: Record<string, string> = { door: 'Дверь', entrance: 'Входная дверь', window: 'Окно', room_walls: 'Стены' };
+const NAMES: Record<string, string> = { door: 'Дверь', entrance: 'Входная дверь', window: 'Окно', room_walls: 'Стены', furniture: 'Мебель' };
+
+/** Типы мебели, которые можно выбирать и менять; длина по умолчанию (м) для расчёта. */
+export const FURNITURE_DEFAULT_LENGTH: Record<string, number> = { kitchen_run: 2.3, bed: 1.7, wardrobe: 2.0, hall_wardrobe: 1.6, sofa: 2.2, dining_table: 1.2 };
+export const FURNITURE_NAMES: Record<string, string> = { kitchen_run: 'Кухня', bed: 'Кровать', wardrobe: 'Шкаф', hall_wardrobe: 'Шкаф в прихожей', sofa: 'Диван', dining_table: 'Стол' };
 
 /** Все объекты конфигуратора квартиры (без привязки к каталогу — тип назначается позже по листу «Объекты»). */
 export function generateObjectElements(layout: Layout): LayoutElement[] {
@@ -66,6 +70,20 @@ export function generateObjectElements(layout: Layout): LayoutElement[] {
       label: `${NAMES.room_walls}: ${r.name}`,
     });
   }
+  layout.furniture.forEach((f, i) => {
+    if (!(f.type in FURNITURE_DEFAULT_LENGTH)) return;
+    const room = layout.rooms.find((r) => r.id === f.roomId);
+    out.push({
+      id: `furn-${f.type}-${i}`,
+      kind: 'furniture',
+      roomId: f.roomId,
+      rooms: [f.roomId],
+      position: [f.position[0], 0.6, f.position[2]],
+      rotationY: f.rotationY,
+      label: `${FURNITURE_NAMES[f.type]}: ${room?.name ?? ''}`,
+      furniture: i,
+    });
+  });
   // подписи «Дверь: Спальня» могут повторяться — нумеруем
   const seen: Record<string, number> = {};
   for (const e of out) seen[e.label] = (seen[e.label] ?? 0) + 1;
@@ -174,7 +192,9 @@ export function measure(layout: Layout, el: LayoutElement): Record<Basis, number
   const ow = op ? op.opening.to - op.opening.from : 0;
   const oh = op ? op.opening.head - (op.opening.kind === 'window' ? op.opening.sill ?? 0.9 : 0) : 0;
   const walls = room ? roomWallRects(layout, room).reduce((s, r) => s + (r.s1 - r.s0) * (r.y1 - r.y0), 0) : 0;
+  const item = el.furniture != null ? layout.furniture[el.furniture] : undefined;
   return {
+    length_m: item ? r2(item.length ?? FURNITURE_DEFAULT_LENGTH[item.type] ?? 1) : 0,
     pcs: 1,
     opening_m2: r2(ow * oh),
     opening_w: r2(ow),

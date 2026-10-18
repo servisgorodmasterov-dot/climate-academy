@@ -37,7 +37,8 @@ function BoxMesh({ b, material, cast = true }: { b: Box; material: THREE.Materia
 }
 
 const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
-const selMat = new THREE.MeshBasicMaterial({ color: '#0066fa', transparent: true, opacity: 0.16, depthWrite: false });
+const selMat = new THREE.MeshBasicMaterial({ color: '#0066fa', transparent: true, opacity: 0.05, depthWrite: false });
+const selEdge = new THREE.LineBasicMaterial({ color: '#0066fa' });
 
 /** Невидимая зона касания + подсветка выбранного объекта. */
 function Hit({ size, selected, onPick }: { size: [number, number, number]; selected: boolean; onPick?: () => void }) {
@@ -57,9 +58,14 @@ function Hit({ size, selected, onPick }: { size: [number, number, number]; selec
         <boxGeometry args={size} />
       </mesh>
       {selected && (
-        <mesh material={selMat}>
-          <boxGeometry args={[size[0] * 1.02, size[1] * 1.02, size[2] * 1.02]} />
-        </mesh>
+        <>
+          <mesh material={selMat}>
+            <boxGeometry args={[size[0] * 1.02, size[1] * 1.02, size[2] * 1.02]} />
+          </mesh>
+          <lineSegments material={selEdge}>
+            <edgesGeometry args={[new THREE.BoxGeometry(size[0] * 1.02, size[1] * 1.02, size[2] * 1.02)]} />
+          </lineSegments>
+        </>
       )}
     </>
   );
