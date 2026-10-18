@@ -458,3 +458,10 @@ svg .radio { animation: dash 1.2s linear infinite; }
 /* во встраивании ещё и шапку делаем тонкой */
 .app.embed.compact .topbar { --top-h: 46px; }
 .app.embed.compact { grid-template-rows: 46px 1fr; }
+
+/* ---- Переключатель левой кнопки мыши ---- */
+.nav-pad .drag-mode { grid-column: 1 / -1; width: max-content; justify-self: end; display: flex; gap: 4px; padding: 3px; border-radius: 12px; border: 1px solid var(--line); background: #ffffffe8; backdrop-filter: blur(10px); box-shadow: var(--shadow); }
+.nav-pad .drag-mode button { flex: 1; height: 30px; font-size: 12px; font-weight: 600; border: 0; border-radius: 9px; background: transparent; box-shadow: none; color: #5b6b82; white-space: nowrap; }
+.nav-pad .drag-mode button.on { background: var(--blue); color: #fff; }
+.nav-pad .drag-mode button:hover:not(.on) { background: var(--blue-soft); color: var(--blue); }
+@media (max-width: 760px) { .nav-pad .drag-mode { display: none; } }

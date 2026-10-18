@@ -236,6 +236,10 @@ export function App() {
         <HoverTip />
         {!s.walk && (
           <div className="nav-pad" aria-label="Управление камерой">
+            <div className="drag-mode seg" role="group" aria-label="Левая кнопка мыши">
+              <button className={s.dragMode === 'pan' ? 'on' : ''} title="Левая кнопка двигает квартиру (пробел — временно вращать)" onClick={() => s.set('dragMode', 'pan')}>✋ Двигать</button>
+              <button className={s.dragMode === 'orbit' ? 'on' : ''} title="Левая кнопка вращает камеру вокруг точки под курсором" onClick={() => s.set('dragMode', 'orbit')}>⟳ Вращать</button>
+            </div>
             <button title="Повернуть влево (Q)" aria-label="Повернуть влево" onClick={() => (window as any).__nav?.rotate(0.5)}>⟲</button>
             <button title="Приблизить (+)" aria-label="Приблизить" onClick={() => (window as any).__nav?.zoom(2)}>＋</button>
             <button title="Повернуть вправо (E)" aria-label="Повернуть вправо" onClick={() => (window as any).__nav?.rotate(-0.5)}>⟳</button>
@@ -245,7 +249,7 @@ export function App() {
           </div>
         )}
         <div className="nav-hint">
-          <b>Мышь:</b> левая — тянуть квартиру · правая — вращать вокруг точки · колесо — ближе к курсору · <b>Клавиши:</b> WASD — ехать · Q/E — поворот · R/F — наклон · Shift — быстрее · H — вся квартира
+          <b>Мышь:</b> левая — {s.dragMode === 'pan' ? 'тянуть квартиру' : 'вращать'} (кнопки ✋ ⟳ справа) · правая — {s.dragMode === 'pan' ? 'вращать вокруг точки' : 'тянуть'} · колесо — ближе к курсору · <b>Клавиши:</b> WASD — ехать · Q/E — поворот · R/F — наклон · Shift — быстрее · H — вся квартира
         </div>
 
         {mode === 'xray' && (

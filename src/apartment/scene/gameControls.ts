@@ -8,8 +8,7 @@ import { useEffect, type RefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type CameraControlsImpl from 'camera-controls';
-
-const ACTION = { NONE: 0, ROTATE: 1, TRUCK: 2, DOLLY: 16 } as const;
+import { useApp } from '../../store';
 
 /** Клавиши по физическому положению (e.code) — работают и в русской раскладке. */
 const PAN_KEYS: Record<string, [number, number]> = {
@@ -51,7 +50,7 @@ export function useGameControls(ref: RefObject<CameraControlsImpl | null>, opts:
     const t0 = new THREE.Vector3();
     const p0 = new THREE.Vector3();
     const p1 = new THREE.Vector3();
-    let drag: { id: number } | null = null;
+    let drag: { id: number; mode: 'pan' | 'orbit'; x: number; y: number } | null = null;
 
     const groundAt = (e: PointerEvent | MouseEvent, cam: THREE.Camera, out: THREE.Vector3) => {
       const r = el.getBoundingClientRect();
@@ -74,26 +73,37 @@ export function useGameControls(ref: RefObject<CameraControlsImpl | null>, opts:
 
     const onDown = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return; // пальцы — стандартные жесты (один — двигать, два — масштаб и поворот)
-      const modifier = e.shiftKey || e.ctrlKey || e.altKey || e.metaKey;
-      if (e.button === 0 && !modifier) {
-        cc.mouseButtons.left = ACTION.NONE;
+      if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
+      // Shift/Ctrl/Alt или зажатый пробел временно меняют роли кнопок местами
+      const swap = e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || !!keys.current?.has('Space');
+      const orbitMode = (useApp.getState().dragMode === 'orbit') !== swap;
+      // средняя кнопка — всегда вращение
+      const wantPan = e.button === 1 ? false : (e.button === 0) !== orbitMode;
+      if (wantPan) {
         if (!anchor(e)) return;
-        drag = { id: e.pointerId };
+        drag = { id: e.pointerId, mode: 'pan', x: e.clientX, y: e.clientY };
         el.style.cursor = 'grabbing';
         return;
       }
-      if (e.button === 0) cc.mouseButtons.left = ACTION.ROTATE;
-      if (e.button === 2 || e.button === 1 || (e.button === 0 && modifier)) {
-        // вращать вокруг того, на что смотрит курсор (если это квартира)
-        camera.updateMatrixWorld();
-        const hit = groundAt(e, camera, p1);
-        if (hit && Math.abs(hit.x) < W / 2 + 0.5 && Math.abs(hit.z) < D / 2 + 0.5) cc.setOrbitPoint(hit.x, 0, hit.z);
-        el.style.cursor = 'move';
-      }
+      // вращать вокруг того, на что смотрит курсор (если это квартира)
+      camera.updateMatrixWorld();
+      const hit = groundAt(e, camera, p1);
+      if (hit && Math.abs(hit.x) < W / 2 + 0.5 && Math.abs(hit.z) < D / 2 + 0.5) cc.setOrbitPoint(hit.x, 0, hit.z);
+      drag = { id: e.pointerId, mode: 'orbit', x: e.clientX, y: e.clientY };
+      el.style.cursor = 'move';
     };
 
     const onMove = (e: PointerEvent) => {
       if (!drag || e.pointerId !== drag.id) return;
+      if (drag.mode === 'orbit') {
+        // поворот и наклон: градусы на пиксель — как в играх, без ускорения
+        const dx = e.clientX - drag.x;
+        const dy = e.clientY - drag.y;
+        drag.x = e.clientX;
+        drag.y = e.clientY;
+        if (dx || dy) cc.rotate(-dx * 0.005, -dy * 0.004, false);
+        return;
+      }
       // считаем от положения камеры в момент нажатия — движение точное и не зависит от частоты кадров
       if (!groundAt(e, startCam, p1)) return;
       const nx = clampX(t0.x + p0.x - p1.x);
@@ -133,6 +143,11 @@ export function useGameControls(ref: RefObject<CameraControlsImpl | null>, opts:
       if (isTyping(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.code === 'Home' || e.code === 'KeyH') {
         onReset();
+        e.preventDefault();
+        return;
+      }
+      if (e.code === 'Space') {
+        down.add(e.code);
         e.preventDefault();
         return;
       }

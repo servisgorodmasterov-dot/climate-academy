@@ -334,10 +334,10 @@ function CameraRig({ layout }: { layout: Layout }) {
       truckSpeed={1.4}
       dollyToCursor={!walk}
       boundaryEnclosesCamera={false}
-      // Обзор: левую кнопку обрабатывает useGameControls («схватить пол»), правая и средняя — вращение вокруг точки под курсором.
+      // Обзор: все кнопки мыши обрабатывает useGameControls (движение и вращение), библиотеке оставлено только колесо.
       // Прогулка: левая кнопка — осмотр головой.
       verticalDragToForward={!walk}
-      mouseButtons={walk ? { left: 1, middle: 16, right: 2, wheel: 16 } : { left: 0, middle: 1, right: 1, wheel: 16 }}
+      mouseButtons={walk ? { left: 1, middle: 16, right: 2, wheel: 16 } : { left: 0, middle: 0, right: 0, wheel: 16 }}
       touches={walk ? { one: 64, two: 32768, three: 4096 } : { one: 128, two: 32768, three: 4096 }}
     />
   );

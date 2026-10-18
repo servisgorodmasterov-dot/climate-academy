@@ -52,6 +52,8 @@ interface State {
   walk: boolean;
   /** Объект под курсором (подсказка) */
   hover: string | null;
+  /** Что делает левая кнопка мыши в обзоре: двигать квартиру или вращать камеру */
+  dragMode: 'pan' | 'orbit';
   /** Встроено на сайт (?embed=1): компактная шапка, итог сметы отправляется родительской странице */
   embed: boolean;
   // планирование
@@ -105,6 +107,7 @@ export const useApp = create<State>()(
       closedDoors: {},
       walk: false,
       hover: null,
+      dragMode: 'pan',
       embed: false,
       sections: {},
       overrides: {},
@@ -242,7 +245,7 @@ export const useApp = create<State>()(
     }),
     {
       name: 'home-academy-state-v1',
-      partialize: (s) => ({ closedDoors: s.closedDoors, role: s.role, proMode: s.proMode, sections: s.sections, overrides: s.overrides, orders: s.orders, apartmentId: s.apartmentId }),
+      partialize: (s) => ({ dragMode: s.dragMode, closedDoors: s.closedDoors, role: s.role, proMode: s.proMode, sections: s.sections, overrides: s.overrides, orders: s.orders, apartmentId: s.apartmentId }),
     },
   ),
 );
