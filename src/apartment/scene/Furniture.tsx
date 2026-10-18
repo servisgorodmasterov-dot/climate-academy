@@ -276,10 +276,43 @@ function Bathtub() {
 }
 
 function Toilet() {
+  // напольный унитаз-компакт: чаша со скруглённой передней частью, крышка и сиденье, бачок с кнопкой
+  const bowl = useMemo(() => {
+    const shape = new THREE.Shape();
+    shape.moveTo(-0.18, -0.1);
+    shape.lineTo(0.18, -0.1);
+    shape.absarc(0, 0.12, 0.19, -Math.PI / 2 + 0.3, Math.PI / 2 - 0.3, false);
+    shape.lineTo(-0.18, -0.1);
+    return new THREE.ExtrudeGeometry(shape, { depth: 0.38, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 4, curveSegments: 24 });
+  }, []);
+  const seat = useMemo(() => {
+    const shape = new THREE.Shape();
+    shape.absellipse(0, 0.08, 0.195, 0.24, 0, Math.PI * 2, false, 0);
+    const hole = new THREE.Path();
+    hole.absellipse(0, 0.1, 0.11, 0.15, 0, Math.PI * 2, true, 0);
+    shape.holes.push(hole);
+    return new THREE.ExtrudeGeometry(shape, { depth: 0.025, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: 3, curveSegments: 32 });
+  }, []);
   return (
     <group>
-      <RB args={[0.38, 0.4, 0.55]} position={[0, 0.2, 0.05]} material={M.ceramic} radius={0.12} />
-      <RB args={[0.4, 0.38, 0.17]} position={[0, 0.6, -0.2]} material={M.ceramic} radius={0.04} />
+      {/* чаша: экструзия вдоль Y */}
+      <mesh geometry={bowl} material={M.ceramic} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0.06]} castShadow receiveShadow />
+      {/* ободок и сиденье */}
+      <mesh geometry={seat} material={M.ceramic} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.405, 0.06]} castShadow />
+      <mesh geometry={seat} material={new THREE.MeshStandardMaterial({ color: '#f7f7f5', roughness: 0.3 })} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.435, 0.06]} castShadow />
+      {/* крышка — приоткрыта к бачку */}
+      <group position={[0, 0.46, -0.17]} rotation={[-1.35, 0, 0]}>
+        <RB args={[0.4, 0.5, 0.025]} position={[0, 0.25, 0]} material={M.ceramic} radius={0.04} />
+      </group>
+      {/* бачок */}
+      <RB args={[0.4, 0.4, 0.17]} position={[0, 0.62, -0.26]} material={M.ceramic} radius={0.03} />
+      <RB args={[0.42, 0.03, 0.19]} position={[0, 0.835, -0.26]} material={M.ceramic} radius={0.01} />
+      <mesh position={[0, 0.855, -0.26]} material={M.steel}>
+        <cylinderGeometry args={[0.028, 0.028, 0.012, 24]} />
+      </mesh>
+      <mesh position={[0, 0.862, -0.26]} material={M.steel}>
+        <boxGeometry args={[0.004, 0.006, 0.05]} />
+      </mesh>
     </group>
   );
 }
@@ -295,15 +328,39 @@ function Vanity() {
 }
 
 function Washer() {
+  // стиральная машина с фронтальной загрузкой: корпус, панель, люк с кольцом и стеклом, лоток, ножки
+  const glass = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#8fa6b4', transmission: 0.55, transparent: true, opacity: 0.7, roughness: 0.08, metalness: 0.1, clearcoat: 1 }), []);
+  const drum = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b8bec4', metalness: 0.8, roughness: 0.35 }), []);
   return (
     <group>
-      <RB args={[0.6, 0.85, 0.55]} position={[0, 0.425, 0]} material={M.white} radius={0.02} />
-      <mesh position={[0, 0.45, 0.28]} rotation={[Math.PI / 2, 0, 0]} material={M.graphite}>
-        <torusGeometry args={[0.17, 0.025, 10, 32]} />
+      <RB args={[0.6, 0.85, 0.58]} position={[0, 0.455, 0]} material={M.white} radius={0.02} />
+      {/* ножки и цоколь */}
+      <B args={[0.56, 0.05, 0.5]} position={[0, 0.025, -0.02]} material={M.graphite} />
+      {/* верхняя крышка */}
+      <RB args={[0.61, 0.02, 0.59]} position={[0, 0.885, 0]} material={M.white} radius={0.005} />
+      {/* панель управления */}
+      <B args={[0.56, 0.1, 0.012]} position={[0, 0.82, 0.295]} material={new THREE.MeshStandardMaterial({ color: '#e9ebee', roughness: 0.4 })} />
+      <mesh position={[0.17, 0.82, 0.305]} rotation={[Math.PI / 2, 0, 0]} material={M.graphite}>
+        <cylinderGeometry args={[0.03, 0.03, 0.012, 24]} />
       </mesh>
-      <mesh position={[0, 0.45, 0.27]} rotation={[Math.PI / 2, 0, 0]} material={new THREE.MeshPhysicalMaterial({ color: '#9fb5c0', transmission: 0.6, transparent: true, opacity: 0.6, roughness: 0.1 })}>
-        <cylinderGeometry args={[0.16, 0.16, 0.02, 32]} />
+      <B args={[0.12, 0.03, 0.004]} position={[-0.05, 0.82, 0.302]} material={new THREE.MeshStandardMaterial({ color: '#223', emissive: '#4ad1ff', emissiveIntensity: 0.6 })} />
+      {/* лоток для порошка */}
+      <B args={[0.14, 0.04, 0.01]} position={[-0.19, 0.82, 0.302]} material={M.steel} />
+      {/* люк: кольцо, стекло, барабан внутри */}
+      <mesh position={[0, 0.42, 0.295]} rotation={[Math.PI / 2, 0, 0]} material={M.graphite}>
+        <torusGeometry args={[0.19, 0.03, 12, 48]} />
       </mesh>
+      <mesh position={[0, 0.42, 0.3]} rotation={[Math.PI / 2, 0, 0]} material={glass}>
+        <sphereGeometry args={[0.165, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2.6]} />
+      </mesh>
+      <mesh position={[0, 0.42, 0.2]} rotation={[Math.PI / 2, 0, 0]} material={drum}>
+        <cylinderGeometry args={[0.16, 0.16, 0.2, 32, 1, true]} />
+      </mesh>
+      <mesh position={[0, 0.42, 0.1]} rotation={[Math.PI / 2, 0, 0]} material={drum}>
+        <circleGeometry args={[0.16, 32]} />
+      </mesh>
+      {/* ручка люка */}
+      <B args={[0.03, 0.08, 0.02]} position={[0.2, 0.46, 0.325]} material={M.graphite} />
     </group>
   );
 }

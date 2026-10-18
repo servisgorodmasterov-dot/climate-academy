@@ -26,10 +26,16 @@ const MODES: { id: ViewMode; label: string; hint: string }[] = [
 
 export function App() {
   const s = useApp();
-  const { layout, catalog, mode, focusRoom, panel, apartmentId, role, proMode } = s;
+  const { layout, catalog, mode, focusRoom, panel, apartmentId, role, proMode, embed } = s;
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number>();
   const total = useTotalEstimate();
+
+  // Встраивание на сайт: сообщаем родительской странице итог сметы и число разделов
+  useEffect(() => {
+    if (!embed || window.parent === window) return;
+    window.parent.postMessage({ type: 'home3d:estimate', total: total?.estimate.total ?? 0, sections: total?.included.length ?? 0, apartment: apartmentId }, '*');
+  }, [embed, total, apartmentId]);
 
   useEffect(() => {
     useApp.getState().init();
@@ -104,7 +110,7 @@ export function App() {
   const sectionsCount = total?.included.length ?? 0;
 
   return (
-    <div className={`app ${panel ? 'with-panel' : ''}`}>
+    <div className={`app ${panel ? 'with-panel' : ''} ${embed ? 'embed' : ''}`}>
       <header className="topbar">
         <div className="brand">
           <span className="logo" aria-hidden>
@@ -134,6 +140,11 @@ export function App() {
           ))}
         </div>
         <div className="top-right">
+          {embed && (
+            <a className="btn ghost sm" href={location.href.replace(/([?&])embed=1&?/, '$1').replace(/[?&]$/, '')} target="_blank" rel="noopener" title="Открыть конструктор на весь экран">
+              ⤢ На весь экран
+            </a>
+          )}
           <label className="toggle" title="Профессиональный режим показывает технические детали для мастеров">
             <input type="checkbox" checked={proMode} onChange={(e) => s.set('proMode', e.target.checked)} />
             <span>Для мастера</span>

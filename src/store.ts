@@ -52,6 +52,8 @@ interface State {
   walk: boolean;
   /** Объект под курсором (подсказка) */
   hover: string | null;
+  /** Встроено на сайт (?embed=1): компактная шапка, итог сметы отправляется родительской странице */
+  embed: boolean;
   // планирование
   sections: Record<string, SectionState>;
   overrides: Record<string, PriceOverride>;
@@ -103,6 +105,7 @@ export const useApp = create<State>()(
       closedDoors: {},
       walk: false,
       hover: null,
+      embed: false,
       sections: {},
       overrides: {},
       orders: [],
@@ -114,6 +117,7 @@ export const useApp = create<State>()(
           if (found) set({ apartmentId: found.apartment.id });
         }
         if (ctx.role) set({ role: ctx.role });
+        set({ embed: new URLSearchParams(location.search).get('embed') === '1' });
         const sheet = sheetFromUrl(location.search);
         if (sheet) saveSheetId(sheet);
         set({ launchSource: ctx.source });

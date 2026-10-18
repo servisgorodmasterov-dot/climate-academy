@@ -408,3 +408,9 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .hovertip span { color: #5b6b82; }
 .hovertip em { font-style: normal; font-weight: 700; color: var(--blue); }
 @media (max-width: 760px) { .walk-pad { right: 8px; bottom: 150px; grid-template-columns: repeat(3, 40px); } .walk-pad button { height: 40px; } }
+
+/* ---- Встраивание на сайт (?embed=1) ---- */
+.app.embed .apt-select, .app.embed .top-right select, .app.embed .top-right .toggle { display: none; }
+.app.embed .topbar { --top-h: 56px; }
+.app.embed .crumbs { display: none; }
+.btn.sm { padding: 7px 12px; font-size: 13px; text-decoration: none; }
