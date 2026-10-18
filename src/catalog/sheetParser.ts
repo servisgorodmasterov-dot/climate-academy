@@ -1,7 +1,14 @@
 // Преобразование «листов» (двумерных массивов строк) в каталог.
 // Одинаково работает для локальных CSV (демо) и ответа Google Sheets API (values.batchGet).
 import {
+  BASES,
+  RENDERERS,
   UNITS,
+  type Basis,
+  type CategoryDef,
+  type ObjectSlotDef,
+  type ObjectType,
+  type Renderer,
   type Catalog,
   type CatalogIssue,
   type ConsumableRule,
@@ -24,9 +31,16 @@ export const SHEETS = {
   kits: 'Комплектации',
   suppliers: 'Поставщики',
   consumables: 'Расходники',
+  categories: 'Категории',
+  objectTypes: 'Объекты',
+  objectSlots: 'Позиции объектов',
 } as const;
 export type SheetKey = keyof typeof SHEETS;
-export type SheetValues = Record<SheetKey, string[][]>;
+/** Листы конфигуратора объектов. Если их нет в таблице, берутся встроенные (демо) — старые таблицы продолжают работать. */
+export const CONFIG_SHEETS = ['categories', 'objectTypes', 'objectSlots'] as const;
+export type ConfigSheetKey = (typeof CONFIG_SHEETS)[number];
+export type CoreSheetKey = Exclude<SheetKey, ConfigSheetKey>;
+export type SheetValues = Record<CoreSheetKey, string[][]> & Partial<Record<ConfigSheetKey, string[][]>>;
 
 /** Обязательные колонки каждого листа. Порядок колонок в таблице может быть любым. */
 export const REQUIRED_COLUMNS: Record<SheetKey, string[]> = {
@@ -36,7 +50,17 @@ export const REQUIRED_COLUMNS: Record<SheetKey, string[]> = {
   kits: ['kit_id', 'academy', 'tier', 'slot', 'product_id'],
   suppliers: ['supplier_id', 'name', 'delivery_price'],
   consumables: ['product_id', 'for_slot', 'rate', 'rate_per'],
+  categories: ['category_id', 'name'],
+  objectTypes: ['type_id', 'category_id', 'name', 'renderer', 'placement', 'primary_slot'],
+  objectSlots: ['type_id', 'slot', 'label', 'qty', 'per'],
 };
+
+/** Есть ли в листе все обязательные колонки (пустой лист или чужой лист — нет). */
+export function hasRequiredColumns(sheet: SheetKey, values: string[][] | undefined) {
+  if (!values || !values.length) return false;
+  const header = values[0].map((h) => h.trim());
+  return REQUIRED_COLUMNS[sheet].every((c) => header.includes(c));
+}
 
 /** Простой и корректный CSV-парсер (кавычки, запятые и переводы строк внутри полей). */
 export function parseCsv(text: string): string[][] {
@@ -116,9 +140,17 @@ function toObjects(sheet: SheetKey, values: string[][] | undefined, issues: Cata
 const CATEGORIES: ProductCategory[] = ['material', 'equipment', 'consumable'];
 const TIER_IDS: Tier[] = ['econom', 'comfort', 'premium'];
 
-export function buildCatalog(values: SheetValues, opts: { status: DataStatus; sourceName: string }): Catalog {
+export function buildCatalog(values: SheetValues, opts: { status: DataStatus; sourceName: string; fallback?: Partial<SheetValues>; hidePurchase?: boolean }): Catalog {
   const issues: CatalogIssue[] = [];
   const S = SHEETS;
+  values = { ...values };
+  for (const k of CONFIG_SHEETS) {
+    if (hasRequiredColumns(k, values[k])) continue;
+    if (opts.fallback?.[k]) {
+      values[k] = opts.fallback[k];
+      issues.push({ sheet: S[k], row: 0, message: `Лист «${S[k]}» не найден — используется встроенный (демо). Добавьте лист, чтобы управлять им из таблицы.` });
+    }
+  }
 
   // --- Товары
   const products: Product[] = [];
@@ -185,7 +217,7 @@ export function buildCatalog(values: SheetValues, opts: { status: DataStatus; so
     prices.push({
       productId,
       sale,
-      purchase,
+      purchase: opts.hidePurchase ? null : purchase,
       currency: r.get('currency') || 'KZT',
       updatedAt: r.get('updated_at'),
       source: r.get('source') || opts.sourceName,
@@ -259,6 +291,86 @@ export function buildCatalog(values: SheetValues, opts: { status: DataStatus; so
     consumables.push({ productId, forSlot: r.get('for_slot'), rate, ratePer: r.get('rate_per'), condition: parseKeyValues(r.get('condition')), note: r.get('note') });
   }
 
+  // --- Категории
+  const categories: CategoryDef[] = [];
+  if (values.categories)
+    for (const r of toObjects('categories', values.categories, issues)) {
+      const id = r.get('category_id');
+      if (!id || r.get('active') === '0') continue;
+      categories.push({ id, name: r.get('name'), icon: r.get('icon') || '•', order: parseNumber(r.get('order')) ?? 99, description: r.get('description') });
+    }
+  categories.sort((a, b) => a.order - b.order);
+  const catIds = new Set(categories.map((c) => c.id));
+
+  // --- Типы объектов
+  const objectTypes: ObjectType[] = [];
+  if (values.objectTypes)
+    for (const r of toObjects('objectTypes', values.objectTypes, issues)) {
+      const id = r.get('type_id');
+      if (!id || r.get('active') === '0') continue;
+      const renderer = (r.get('renderer') || 'none') as Renderer;
+      if (!RENDERERS.includes(renderer)) {
+        issues.push({ sheet: S.objectTypes, row: r.row, message: `${id}: неизвестный вид отрисовки «${renderer}». Допустимо: ${RENDERERS.join(', ')}` });
+        continue;
+      }
+      const category = r.get('category_id');
+      if (catIds.size && !catIds.has(category)) issues.push({ sheet: S.objectTypes, row: r.row, message: `${id}: категория «${category}» не найдена на листе «${S.categories}»` });
+      const list = (v: string) => v.split('|').map((x) => x.trim()).filter(Boolean);
+      objectTypes.push({
+        id,
+        category,
+        name: r.get('name'),
+        icon: r.get('icon') || '•',
+        renderer,
+        placement: r.get('placement'),
+        primarySlot: r.get('primary_slot'),
+        description: r.get('description'),
+        lessonSteps: list(r.get('lesson_steps')),
+        mistakes: list(r.get('mistakes')),
+      });
+    }
+  const typeIds = new Set(objectTypes.map((t) => t.id));
+
+  // --- Позиции объектов
+  const isBasis = (b: string): b is Basis => Object.prototype.hasOwnProperty.call(BASES, b);
+  const objectSlots: ObjectSlotDef[] = [];
+  if (values.objectSlots)
+    for (const r of toObjects('objectSlots', values.objectSlots, issues)) {
+      const typeId = r.get('type_id');
+      const slot = r.get('slot');
+      if (!typeId || !slot) continue;
+      if (!typeIds.has(typeId)) {
+        issues.push({ sheet: S.objectSlots, row: r.row, message: `Позиция ${slot}: тип объекта «${typeId}» не найден на листе «${S.objectTypes}»` });
+        continue;
+      }
+      const per = r.get('per');
+      const workPer = r.get('work_per') || per;
+      const qty = parseNumber(r.get('qty'));
+      if (!isBasis(per) || !isBasis(workPer) || qty == null) {
+        issues.push({ sheet: S.objectSlots, row: r.row, message: `${typeId}/${slot}: нужна норма qty и база per (${Object.keys(BASES).join(', ')})` });
+        continue;
+      }
+      const def = r.get('default_product_id') || null;
+      if (def && !ids.has(def)) issues.push({ sheet: S.objectSlots, row: r.row, message: `${typeId}/${slot}: товар по умолчанию ${def} не найден` });
+      const workId = r.get('work_id') || null;
+      if (workId && !workIds.has(workId)) issues.push({ sheet: S.objectSlots, row: r.row, message: `${typeId}/${slot}: работа ${workId} не найдена` });
+      if (!products.some((p) => p.slot === slot)) issues.push({ sheet: S.objectSlots, row: r.row, message: `${typeId}/${slot}: на листе «${S.products}» нет товаров с этим slot` });
+      objectSlots.push({
+        typeId,
+        slot,
+        label: r.get('label') || slot,
+        qty,
+        per,
+        waste: parseNumber(r.get('waste')) ?? 0,
+        optional: r.get('optional') === '1',
+        defaultProductId: def && ids.has(def) ? def : null,
+        workId: workId && workIds.has(workId) ? workId : null,
+        workPer,
+        order: parseNumber(r.get('order')) ?? objectSlots.length,
+      });
+    }
+  objectSlots.sort((a, b) => a.order - b.order);
+
   const dates = [...prices.map((p) => p.updatedAt), ...works.map((w) => w.updatedAt)].filter(Boolean).sort();
   return {
     products,
@@ -267,6 +379,9 @@ export function buildCatalog(values: SheetValues, opts: { status: DataStatus; so
     kits,
     suppliers,
     consumables,
+    categories,
+    objectTypes,
+    objectSlots,
     issues,
     status: opts.status,
     sourceName: opts.sourceName,
@@ -281,4 +396,6 @@ export const findPrice = (c: Catalog, id: string) => c.prices.find((p) => p.prod
 export const findWork = (c: Catalog, id: string | null) => (id ? c.works.find((w) => w.id === id) : undefined);
 export const findSupplier = (c: Catalog, id: string) => c.suppliers.find((s) => s.id === id);
 export const productsForSlot = (c: Catalog, slot: string) => c.products.filter((p) => p.slot === slot);
+export const objectType = (c: Catalog, id: string | undefined) => (id ? c.objectTypes.find((t) => t.id === id) : undefined);
+export const slotsOfType = (c: Catalog, typeId: string) => c.objectSlots.filter((s) => s.typeId === typeId);
 export const kitFor = (c: Catalog, academy: string, tier: Tier) => c.kits.filter((k) => k.academy === academy && k.tier === tier);

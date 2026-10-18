@@ -3,8 +3,9 @@ import { persist } from 'zustand/middleware';
 import type { Catalog, Layout, PriceOverride, Role, Tier, UtilitySystem } from './core/types';
 import type { ObjectCategory } from './apartment/objects';
 import type { Selection } from './core/academy';
-import { selectionFromKit } from './core/academy';
-import { createCatalogProvider, DemoCatalogProvider } from './catalog/CatalogProvider';
+import { createCatalogProvider, DemoCatalogProvider, parseSheetRef, saveSheetId, sheetFromUrl } from './catalog/CatalogProvider';
+import { bindObjectTypes, selectionFor, withGeneratedObjects } from './objects/logic';
+import { setObjectCatalog } from './objects/academy';
 import { findApartment, listApartments, resolveLayout } from './apartment/layout';
 import type { Order, OrderStatus } from './integrations/gorodmasterov/orders';
 import { advance } from './integrations/gorodmasterov/orders';
@@ -45,6 +46,8 @@ interface State {
   activeSection: string | null;
   proMode: boolean;
   role: Role;
+  /** Двери, закрытые пользователем (по умолчанию двери приоткрыты, чтобы было видно комнаты) */
+  closedDoors: Record<string, boolean>;
   // планирование
   sections: Record<string, SectionState>;
   overrides: Record<string, PriceOverride>;
@@ -60,6 +63,11 @@ interface State {
   setSlot(sectionId: string, slot: string, productId: string | null): void;
   setParams(sectionId: string, params: unknown): void;
   setIncluded(sectionId: string, v: boolean): void;
+  /** Та же комплектация для всех объектов этого типа в квартире (все двери, все окна, стены всех комнат) */
+  applyToAll(sectionId: string): number;
+  toggleDoor(elementId: string): void;
+  /** Подключить Google Таблицу по ссылке (null — вернуться к демо-каталогу) */
+  connectSheet(ref: string | null): Promise<void>;
   setOverride(o: PriceOverride): void;
   clearOverride(productId: string): void;
   addOrder(o: Order): void;
@@ -88,6 +96,7 @@ export const useApp = create<State>()(
       activeSection: null,
       proMode: false,
       role: 'resident',
+      closedDoors: {},
       sections: {},
       overrides: {},
       orders: [],
@@ -99,6 +108,8 @@ export const useApp = create<State>()(
           if (found) set({ apartmentId: found.apartment.id });
         }
         if (ctx.role) set({ role: ctx.role });
+        const sheet = sheetFromUrl(location.search);
+        if (sheet) saveSheetId(sheet);
         set({ launchSource: ctx.source });
         get().setApartment(get().apartmentId);
         await get().reloadCatalog();
@@ -112,11 +123,20 @@ export const useApp = create<State>()(
           const demo = await new DemoCatalogProvider().load();
           set({ catalog: demo, catalogError: `${provider.label}: ${(e as Error).message}. Используется демонстрационный каталог.` });
         }
+        setObjectCatalog(get().catalog);
+        const l = get().layout;
+        if (l) set({ layout: bindObjectTypes(l, get().catalog) });
+      },
+
+      async connectSheet(ref) {
+        saveSheetId(ref ? parseSheetRef(ref) : null);
+        await get().reloadCatalog();
       },
 
       setApartment(id) {
         const found = findApartment(id) ?? listApartments()[0];
-        set({ apartmentId: found.apartment.id, layout: resolveLayout(found.apartment), focusRoom: null, selectedElement: null });
+        const layout = bindObjectTypes(withGeneratedObjects(resolveLayout(found.apartment)), get().catalog);
+        set({ apartmentId: found.apartment.id, layout, focusRoom: null, selectedElement: null });
       },
 
       set: (k, v) => set({ [k]: v } as Partial<State>),
@@ -131,7 +151,7 @@ export const useApp = create<State>()(
         const sections = { ...get().sections };
         if (!sections[sectionId] && catalog) {
           const tier: Tier = 'comfort';
-          sections[sectionId] = { id: sectionId, apartmentId: get().apartmentId, academy, roomId, tier, selection: selectionFromKit(catalog, academy, tier), params: defaultParams(), included: false };
+          sections[sectionId] = { id: sectionId, apartmentId: get().apartmentId, academy, roomId, tier, selection: selectionFor(catalog, academy, tier), params: defaultParams(), included: false };
         }
         set({ sections, activeSection: sectionId, panel: 'academy', selectedElement: elementId, academyTab: tab });
       },
@@ -140,7 +160,7 @@ export const useApp = create<State>()(
         const { sections, catalog } = get();
         const s = sections[sectionId];
         if (!s || !catalog) return;
-        set({ sections: { ...sections, [sectionId]: { ...s, tier, selection: selectionFromKit(catalog, s.academy, tier) } } });
+        set({ sections: { ...sections, [sectionId]: { ...s, tier, selection: selectionFor(catalog, s.academy, tier) } } });
       },
 
       setSlot(sectionId, slot, productId) {
@@ -164,6 +184,30 @@ export const useApp = create<State>()(
         if (s) set({ sections: { ...sections, [sectionId]: { ...s, included: v } } });
       },
 
+      applyToAll(sectionId) {
+        const { sections, layout } = get();
+        const src = sections[sectionId];
+        const el = layout?.elements.find((e) => e.id === src?.params?.elementId);
+        if (!src || !el?.typeId || !layout) return 0;
+        const next = { ...sections };
+        let n = 0;
+        for (const other of layout.elements) {
+          if (other.typeId !== el.typeId || other.id === el.id) continue;
+          const id = `${src.apartmentId}|${src.academy}:${other.id}`;
+          next[id] = { ...src, id, roomId: other.roomId, params: { ...src.params, elementId: other.id }, selection: { ...src.selection } };
+          n++;
+        }
+        set({ sections: next });
+        return n;
+      },
+
+      toggleDoor(elementId) {
+        const c = { ...get().closedDoors };
+        if (c[elementId]) delete c[elementId];
+        else c[elementId] = true;
+        set({ closedDoors: c });
+      },
+
       setOverride: (o) => set({ overrides: { ...get().overrides, [o.productId]: o } }),
       clearOverride(productId) {
         const o = { ...get().overrides };
@@ -180,7 +224,7 @@ export const useApp = create<State>()(
     }),
     {
       name: 'home-academy-state-v1',
-      partialize: (s) => ({ role: s.role, proMode: s.proMode, sections: s.sections, overrides: s.overrides, orders: s.orders, apartmentId: s.apartmentId }),
+      partialize: (s) => ({ closedDoors: s.closedDoors, role: s.role, proMode: s.proMode, sections: s.sections, overrides: s.overrides, orders: s.orders, apartmentId: s.apartmentId }),
     },
   ),
 );

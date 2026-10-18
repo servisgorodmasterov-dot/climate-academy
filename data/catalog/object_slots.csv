@@ -1,0 +1,15 @@
+type_id,slot,label,qty,per,waste,optional,default_product_id,work_id,work_per,order
+door.interior,door.leaf,Полотно,1,pcs,0,0,DR-NEO-WHITE,W-DR-INST,pcs,1
+door.interior,door.frame,Коробка,1,pcs,0,0,DR-FRAME-STD,,,2
+door.interior,door.casing,Наличник (с двух сторон),2,opening_perimeter_m,0.05,0,DR-CAS-70,,,3
+door.interior,door.hinges,Петли,2,pcs,0,0,DR-HNG-BUTT,,,4
+door.interior,door.handle,Ручка,1,pcs,0,0,DR-HDL-CHROME,,,5
+door.interior,door.latch,Защёлка / фиксатор,1,pcs,0,1,DR-LCH-MAG,,,6
+door.entrance,entr.door,Дверной блок,1,pcs,0,0,ENT-STEEL-GREY,W-ENT-INST,pcs,1
+door.entrance,entr.lock,Дополнительный замок,1,pcs,0,1,,W-ENT-LOCK,pcs,2
+door.entrance,entr.reveal,Откосы,1,opening_perimeter_m,0.1,1,ENT-REV-MDF,W-ENT-REVEAL,opening_perimeter_m,3
+window,win.unit,Окно (профиль + стеклопакет),1,opening_m2,0,0,WIN-PVC-WHITE,W-WIN-INST,opening_m2,1
+window,win.sill,Подоконник,1,opening_w,0.15,1,WIN-SILL-PVC,W-WIN-SILL,opening_w,2
+window,win.reveal,Откосы,1,opening_perimeter_m,0.1,1,WIN-REV-PVC,W-WIN-REV,opening_perimeter_m,3
+wall.finish,wall.finish,Финишная отделка,1,wall_m2,0.1,0,WL-PNT-WHITE,W-WL-PAINT,wall_m2,1
+wall.finish,wall.primer,Грунт,0.15,wall_m2,0,1,WL-PRIMER,W-WL-PRIME,wall_m2,2

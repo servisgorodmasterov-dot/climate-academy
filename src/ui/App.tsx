@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ROLE_LABELS, type LayoutElement, type Role, type Room, type UtilitySystem } from '../core/types';
-import { sectionIdFor } from '../core/academy';
+import { sectionIdFor, type Selection } from '../core/academy';
 import { academyById } from '../academies';
 import { findProduct } from '../catalog/sheetParser';
 import { ApartmentScene } from '../apartment/scene/ApartmentScene';
@@ -13,7 +13,8 @@ import { OrdersPanel } from './OrdersPanel';
 import { PassportPanel } from './PassportPanel';
 import { AboutPanel } from './AboutPanel';
 import { ObjectsPanel } from './ObjectsPanel';
-import { CATEGORIES, resolveSelectable, selectableObjects } from '../apartment/objects';
+import { CatalogBar } from './CatalogBar';
+import { categoriesOf, resolveSelectable, selectableObjects } from '../apartment/objects';
 import { money } from './format';
 
 const MODES: { id: ViewMode; label: string; hint: string }[] = [
@@ -51,13 +52,23 @@ export function App() {
     return out;
   }, [catalog, layout, s.sections, apartmentId]);
 
+  /** Выбор по объектам конфигуратора (двери, окна, стены) → для отрисовки в 3D */
+  const looks = useMemo(() => {
+    const out: Record<string, Selection | undefined> = {};
+    for (const sec of Object.values(s.sections)) {
+      const id = sec.params?.elementId as string | undefined;
+      if (sec.apartmentId === apartmentId && id) out[id] = sec.selection;
+    }
+    return out;
+  }, [s.sections, apartmentId]);
+
   if (!layout) return <div className="loading">Загрузка…</div>;
 
   const openAcademy = (academyId: string, room: Room | null, el: LayoutElement | null, tab: AcademyTab = 'card') => {
     const def = academyById(academyId);
     if (!def || !catalog) return;
     const sectionRoom = def.scope === 'room' ? room : null;
-    const id = `${apartmentId}|${sectionIdFor(def, sectionRoom)}`;
+    const id = `${apartmentId}|${sectionIdFor(def, sectionRoom, el)}`;
     const ctx = { catalog, layout, room: sectionRoom, element: el, proMode, role };
     useApp.getState().openSection(id, def.id, sectionRoom?.id ?? null, () => def.defaultParams(ctx), el?.id ?? null, tab);
   };
@@ -82,7 +93,7 @@ export function App() {
   };
 
   const selected = s.selectedElement ? layout.elements.find((e) => e.id === s.selectedElement) ?? null : null;
-  const selectedObj = selected ? selectableObjects(layout).find((o) => o.id === selected.id) ?? null : null;
+  const selectedObj = selected ? selectableObjects(layout, catalog).find((o) => o.id === selected.id) ?? null : null;
   const openSelected = (tab: AcademyTab) => {
     if (!selected?.academy) return;
     openAcademy(selected.academy, layout.rooms.find((r) => r.id === selected.roomId) ?? null, selected, tab);
@@ -137,7 +148,8 @@ export function App() {
       </header>
 
       <main className="stage">
-        <ApartmentScene layout={layout} floorColors={floorColors} onElement={onElement} onFloor={onFloor} />
+        <ApartmentScene layout={layout} floorColors={floorColors} looks={looks} onElement={onElement} onFloor={onFloor} />
+        <CatalogBar />
 
         <div className="overlay-top">
           <div className="crumbs">
@@ -202,7 +214,7 @@ export function App() {
             <span className="selbar-ico">{selectedObj.icon}</span>
             <div className="selbar-text">
               <b>{selectedObj.label}</b>
-              <span className="muted small">{CATEGORIES.find((c) => c.id === selectedObj.category)?.label} · {layout.rooms.find((r) => r.id === selectedObj.roomId)?.name}</span>
+              <span className="muted small">{categoriesOf(catalog).find((c) => c.id === selectedObj.category)?.name} · {layout.rooms.find((r) => r.id === selectedObj.roomId)?.name}</span>
             </div>
             <div className="selbar-actions">
               <button className={mode === 'encyclopedia' ? 'btn' : 'btn ghost'} onClick={() => openSelected('lesson')}>

@@ -10,7 +10,10 @@ export function contextFor(s: SectionState, catalog: Catalog, layout: Layout, pr
     catalog,
     layout,
     room: s.roomId ? layout.rooms.find((r) => r.id === s.roomId) ?? null : null,
-    element: elementId ? layout.elements.find((e) => e.id === elementId) ?? null : null,
+    element: (() => {
+      const id = s.params?.elementId ?? elementId;
+      return id ? layout.elements.find((e) => e.id === id) ?? null : null;
+    })(),
     proMode,
     role,
   };
@@ -21,6 +24,7 @@ export function buildSection(s: SectionState, catalog: Catalog, layout: Layout):
   if (!def) return null;
   const ctx = contextFor(s, catalog, layout, false, 'resident');
   if (def.scope === 'room' && !ctx.room) return null;
+  if (def.scope === 'element' && !ctx.element) return null;
   return def.buildSection(ctx, s.tier, s.params, s.selection);
 }
 

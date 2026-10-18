@@ -351,3 +351,38 @@ svg .radio { animation: dash 1.2s linear infinite; }
   .view-tools { bottom: 84px; }
   .app:has(.selbar) .view-tools { display: none; }
 }
+
+/* ---- Конфигуратор объектов ---- */
+.catalog-bar { position: absolute; left: 10px; top: 96px; bottom: 90px; width: 214px; display: flex; flex-direction: column; gap: 3px; padding: 8px; background: #ffffffe6; backdrop-filter: blur(14px); border-radius: 16px; box-shadow: 0 10px 30px #2645671f; overflow-y: auto; z-index: 12; }
+.catalog-bar h5 { margin: 4px 8px 6px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #7c8da5; }
+.catalog-bar button { display: flex; align-items: center; gap: 9px; border: 0; background: none; text-align: left; padding: 7px 9px; border-radius: 11px; font-size: 13.5px; color: var(--ink); min-height: 36px; }
+.catalog-bar button:hover { background: #f0f4f9; }
+.catalog-bar button.on { background: var(--blue-soft); color: var(--blue); font-weight: 700; }
+.catalog-bar button .n { margin-left: auto; font-size: 12px; color: #7c8da5; font-weight: 500; }
+.catalog-bar button.soon { opacity: .5; }
+.catalog-bar .cat-ico { width: 24px; text-align: center; font-size: 16px; }
+.catalog-toggle { display: none; position: absolute; left: 10px; bottom: 84px; z-index: 13; }
+.obj-lines { display: grid; gap: 10px; }
+.obj-line { padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.obj-line-head { display: flex; flex-direction: column; gap: 6px; }
+.obj-line select { width: 100%; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.mistakes { padding-left: 18px; font-size: 13.5px; display: grid; gap: 6px; }
+.steps h4 { margin-top: 14px; }
+.wall-layers { display: grid; gap: 3px; margin: 10px 0; }
+.wall-layers .wl { padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #2b2b2b; opacity: .35; transition: opacity .25s; box-shadow: inset 0 0 0 1px #0001; }
+.wall-layers .wl.on { opacity: 1; }
+.sheet-connect { padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fbfdff; margin-bottom: 14px; }
+.sheet-connect h4 { margin-top: 0; }
+.sheet-row { display: flex; gap: 8px; }
+.sheet-row input { flex: 1; min-width: 0; }
+.about ol.small { padding-left: 18px; display: grid; gap: 6px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.swatches button { width: 34px; height: 34px; border-radius: 10px; border: 2px solid #fff; box-shadow: 0 0 0 1px #0002; padding: 0; }
+.swatches button.on { box-shadow: 0 0 0 2px var(--blue); }
+@media (max-width: 1100px) { .catalog-bar { width: 190px; } }
+@media (max-width: 760px) {
+  .catalog-bar { display: none; top: auto; bottom: 84px; left: 8px; right: 8px; width: auto; max-height: 45vh; }
+  .catalog-bar.open { display: flex; }
+  .catalog-toggle { display: inline-flex; }
+}

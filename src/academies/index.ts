@@ -1,6 +1,7 @@
 // Реестр академий. Чтобы добавить направление (окна, сантехника, вентиляция...),
 // создайте папку academies/<id> с logic.ts и UI, добавьте товары/работы/комплектации в таблицу и зарегистрируйте здесь.
 import type { AcademyDefinition } from '../core/academy';
+import { objectAcademy } from '../objects/academy';
 import { buildFlooringSection, defaultFlooringParams, type FlooringParams } from './flooring/logic';
 import { FlooringCalculator, FlooringLesson } from './flooring/FlooringUI';
 import { buildClimateSection, defaultClimateParams, type ClimateParams } from './climate/logic';
@@ -70,5 +71,6 @@ const smarthome: AcademyDefinition<SmartHomeParams> = {
 };
 
 export const ACADEMIES: AcademyDefinition[] = [flooring, climate, smarthome];
-export const academyById = (id: string) => ACADEMIES.find((a) => a.id === id);
+/** Академии направлений + универсальный конфигуратор для любых типов объектов из таблицы (id вида obj:door.interior). */
+export const academyById = (id: string): AcademyDefinition | undefined => ACADEMIES.find((a) => a.id === id) ?? objectAcademy(id);
 export const academyForKind = (kind: string) => ACADEMIES.find((a) => a.elementKinds.includes(kind as never));

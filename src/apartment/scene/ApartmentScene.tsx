@@ -2,10 +2,10 @@ import { CameraControls, Environment, Html, Lightformer } from '@react-three/dre
 import { Canvas, useThree } from '@react-three/fiber';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import type { Layout, LayoutElement, Room } from '../../core/types';
+import { GEOMETRY_KINDS, type Layout, type LayoutElement, type Room } from '../../core/types';
 import { roomArea } from '../layout';
 import { selectableObjects } from '../objects';
-import { Structure } from './Structure';
+import { Structure, type ObjectLooks } from './Structure';
 import { Furniture } from './Furniture';
 import { Element } from './Elements';
 import { Utilities } from './Utilities';
@@ -14,6 +14,7 @@ import { useApp } from '../../store';
 export interface SceneProps {
   layout: Layout;
   floorColors: Record<string, string>;
+  looks: ObjectLooks;
   onElement: (el: LayoutElement) => void;
   onFloor: (room: Room) => void;
 }
@@ -40,9 +41,9 @@ export function ApartmentScene(props: SceneProps) {
   );
 }
 
-function SceneContent({ layout, floorColors, onElement, onFloor }: SceneProps) {
-  const { mode, focusRoom, ceilingHidden, wallsTransparent, xraySystems, selectedElement, categoryFilter } = useApp();
-  const objects = useMemo(() => selectableObjects(layout), [layout]);
+function SceneContent({ layout, floorColors, looks, onElement, onFloor }: SceneProps) {
+  const { mode, focusRoom, ceilingHidden, wallsTransparent, xraySystems, selectedElement, categoryFilter, catalog, closedDoors } = useApp();
+  const objects = useMemo(() => selectableObjects(layout, catalog), [layout, catalog]);
   const [W, D] = layout.size;
   const xray = mode === 'xray';
 
@@ -85,16 +86,21 @@ function SceneContent({ layout, floorColors, onElement, onFloor }: SceneProps) {
       <group position={[-W / 2, 0, -D / 2]}>
         <Structure
           layout={layout}
+          catalog={catalog}
           wallsTransparent={wallsTransparent}
           ceilingHidden={ceilingHidden}
           floorColors={floorColors}
+          looks={looks}
+          closedDoors={closedDoors}
           focusRoom={focusRoom}
+          selectedElement={selectedElement}
           xray={xray}
           onFloorClick={onFloor}
+          onElement={onElement}
         />
         {!xray && <Furniture items={layout.furniture} />}
         {layout.elements
-          .filter((e) => e.kind !== 'floor')
+          .filter((e) => e.kind !== 'floor' && !GEOMETRY_KINDS.includes(e.kind))
           .map((e) => (
             <Element key={e.id} el={e} selected={selectedElement === e.id} onSelect={onElement} xray={xray} />
           ))}
@@ -158,15 +164,29 @@ function CameraRig({ layout }: { layout: Layout }) {
     if (!cc || !selected) return;
     const el = layout.elements.find((e) => e.id === selected);
     if (!el || el.kind === 'floor') return;
+    if (el.kind === 'room_walls') return; // стены — остаёмся на виде комнаты
+    const room = rooms[el.roomId];
     const p = new THREE.Vector3(el.position[0] - W / 2, el.position[1], el.position[2] - D / 2);
-    // смотрим на объект со стороны его лицевой поверхности
     const rot = el.rotationY ?? 0;
     const sign = el.kind === 'ac_outdoor' ? -1 : 1;
     const face = new THREE.Vector3(Math.sin(rot) * sign, 0, Math.cos(rot) * sign);
+    if (GEOMETRY_KINDS.includes(el.kind) && room) {
+      // дверь/окно: камера внутри своей комнаты, на расстоянии до противоположной стены, чуть сбоку и выше
+      const [x0, z0, x1, z1] = room.rect;
+      const depth = Math.abs(face.x) > 0.5 ? x1 - x0 : z1 - z0;
+      const dist = Math.min(portrait ? 4.6 : 5, Math.max(1.6, depth - 0.4));
+      const side = new THREE.Vector3(face.z, 0, -face.x);
+      const to = p.clone().add(face.clone().multiplyScalar(dist)).add(side.multiplyScalar(0.5)).setY(1.55);
+      // не выходить за пределы комнаты
+      to.x = Math.min(Math.max(to.x, x0 - W / 2 + 0.35), x1 - W / 2 - 0.35);
+      to.z = Math.min(Math.max(to.z, z0 - D / 2 + 0.35), z1 - D / 2 - 0.35);
+      cc.setLookAt(to.x, to.y, to.z, p.x, Math.min(p.y, 1.3), p.z, true);
+      return;
+    }
     const dist = portrait ? 4.6 : 3.4;
     const to = p.clone().add(face.multiplyScalar(dist)).add(new THREE.Vector3(0.6, el.kind === 'leak_sensor' ? 2.2 : 1.4, 0));
     cc.setLookAt(to.x, to.y, to.z, p.x, p.y, p.z, true);
-  }, [selected, layout, W, D, portrait]);
+  }, [selected, layout, W, D, portrait, rooms]);
 
   return <CameraControls ref={ref} makeDefault minDistance={1.2} maxDistance={32} maxPolarAngle={Math.PI * 0.47} smoothTime={0.45} draggingSmoothTime={0.12} />;
 }

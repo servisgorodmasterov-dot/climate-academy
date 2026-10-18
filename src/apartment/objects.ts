@@ -1,19 +1,32 @@
 // Единая модель выбираемых объектов квартиры.
-// Всё, что можно выбрать (пол, кондиционер, датчик...), описывается здесь одинаково,
-// поэтому новые типы объектов и академии добавляются без изменения логики выбора.
-import type { ElementKind, Layout, LayoutElement } from '../core/types';
+// Всё, что можно выбрать (пол, дверь, окно, стены, кондиционер, датчик...), описывается одинаково,
+// поэтому новые типы объектов добавляются строками таблицы, без изменения логики выбора.
+import type { Catalog, CategoryDef, ElementKind, Layout, LayoutElement } from '../core/types';
+import { objectType } from '../catalog/sheetParser';
 
-export type ObjectCategory = 'finish' | 'climate' | 'smarthome' | 'engineering';
+export type ObjectCategory = string;
 
-export const CATEGORIES: { id: ObjectCategory; label: string; icon: string }[] = [
-  { id: 'finish', label: 'Отделка', icon: '▦' },
-  { id: 'climate', label: 'Климат', icon: '❄' },
-  { id: 'smarthome', label: 'Умный дом', icon: '◉' },
-  { id: 'engineering', label: 'Инженерия', icon: '⚙' },
-];
+/** Категории левого каталога по умолчанию — если в таблице нет листа «Категории». */
+export const DEFAULT_CATEGORIES: CategoryDef[] = [
+  ['doors', 'Двери', '🚪'],
+  ['windows', 'Окна', '🪟'],
+  ['floor', 'Напольные покрытия', '▦'],
+  ['walls', 'Стены и отделка', '🖌'],
+  ['ceiling', 'Потолки', '⬜'],
+  ['electric', 'Электрика', '⚡'],
+  ['plumbing', 'Сантехника', '🚿'],
+  ['furniture', 'Мебель', '🛋'],
+  ['climate', 'Кондиционирование', '❄'],
+  ['smarthome', 'Умный дом', '◉'],
+  ['lighting', 'Освещение', '💡'],
+  ['engineering', 'Инженерные коммуникации', '⚙'],
+].map(([id, name, icon], i) => ({ id, name, icon, order: i + 1, description: '' }));
 
-const KIND_META: Record<ElementKind, { category: ObjectCategory; icon: string; short: string }> = {
-  floor: { category: 'finish', icon: '▦', short: 'Пол' },
+export const categoriesOf = (catalog: Catalog | null): CategoryDef[] => (catalog?.categories.length ? catalog.categories : DEFAULT_CATEGORIES);
+
+/** Встроенные объекты планировки (у них своя 3D-модель и своя академия). */
+const KIND_META: Partial<Record<ElementKind, { category: ObjectCategory; icon: string; short: string }>> = {
+  floor: { category: 'floor', icon: '▦', short: 'Пол' },
   ac_indoor: { category: 'climate', icon: '❄', short: 'Кондиционер' },
   ac_outdoor: { category: 'climate', icon: '❄', short: 'Наружный блок' },
   smart_switch: { category: 'smarthome', icon: '⏻', short: 'Выключатель' },
@@ -39,15 +52,22 @@ export interface SelectableObject {
 }
 
 /** Выбираемыми считаются объекты, у которых есть академия (есть что изучить и посчитать). */
-export function selectableObjects(layout: Layout): SelectableObject[] {
-  return layout.elements
-    .filter((e) => !!e.academy && !e.partOf)
-    .map((e) => {
-      const m = KIND_META[e.kind];
-      const anchor: [number, number, number] =
-        e.kind === 'floor' ? [e.position[0], 0.05, e.position[2]] : [e.position[0], e.position[1] + (e.kind === 'leak_sensor' ? 0.12 : 0.22), e.position[2]];
-      return { id: e.id, element: e, category: m.category, icon: m.icon, short: m.short, label: e.label, roomId: e.roomId, anchor, academy: e.academy ?? null };
-    });
+export function selectableObjects(layout: Layout, catalog: Catalog | null = null): SelectableObject[] {
+  const out: SelectableObject[] = [];
+  for (const e of layout.elements) {
+    if (!e.academy || e.partOf) continue;
+    const t = catalog ? objectType(catalog, e.typeId) : undefined;
+    const m = t ? { category: t.category, icon: t.icon, short: t.name } : KIND_META[e.kind];
+    if (!m) continue;
+    const anchor: [number, number, number] =
+      e.kind === 'floor'
+        ? [e.position[0], 0.05, e.position[2]]
+        : e.kind === 'room_walls'
+          ? [e.position[0], 2.0, e.position[2]]
+          : [e.position[0], e.position[1] + (e.kind === 'leak_sensor' ? 0.12 : e.kind === 'door' || e.kind === 'entrance' ? 0.75 : 0.22), e.position[2]];
+    out.push({ id: e.id, element: e, category: m.category, icon: m.icon, short: m.short, label: e.label, roomId: e.roomId, anchor, academy: e.academy ?? null });
+  }
+  return out;
 }
 
 /** Касание считается выбором, только если палец/мышь почти не сдвинулись (иначе это вращение камеры). */

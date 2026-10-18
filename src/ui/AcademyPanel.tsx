@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { TIERS, type Product } from '../core/types';
 import { academyById } from '../academies';
+import { slotsOf } from '../core/academy';
 import { findPrice, findProduct, findWork, productsForSlot } from '../catalog/sheetParser';
 import { computeEstimate } from '../estimate/engine';
 import { buildSection, contextFor } from '../estimate/useEstimate';
@@ -69,7 +70,7 @@ export function AcademyPanel() {
         {tab === 'lesson' && <def.Lesson ctx={ctx} params={s.params} setParams={(p) => app.setParams(s.id, p)} selection={s.selection} tier={s.tier} />}
         {tab === 'variants' && (
           <div className="variants">
-            {def.slots.map((sl) => {
+            {slotsOf(def, catalog).map((sl) => {
               const list = productsForSlot(catalog, sl.slot);
               if (!list.length) return null;
               const cur = s.selection[sl.slot]?.productId ?? null;

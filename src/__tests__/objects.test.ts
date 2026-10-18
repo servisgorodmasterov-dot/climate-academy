@@ -10,7 +10,7 @@ describe('Модель выбираемых объектов', () => {
   });
   it('каждый объект относится к категории и помещению', () => {
     const cats = new Set(objs.map((o) => o.category));
-    expect([...cats].sort()).toEqual(['climate', 'finish', 'smarthome']);
+    expect([...cats].sort()).toEqual(['climate', 'floor', 'smarthome']);
     expect(objs.filter((o) => o.element.kind === 'floor')).toHaveLength(4); // плитка санузла без академии
   });
 });

@@ -40,9 +40,13 @@ export interface AcademyDefinition<P = any> {
   color: string;
   /** Какие объекты 3D-сцены открывают академию */
   elementKinds: ElementKind[];
-  /** room — отдельный раздел сметы на каждое помещение; apartment — один раздел на квартиру */
-  scope: 'room' | 'apartment';
+  /** room — раздел на каждое помещение; apartment — один раздел на квартиру; element — на каждый объект (дверь, окно) */
+  scope: 'room' | 'apartment' | 'element';
   slots: SlotDef[];
+  /** Позиции, заданные в таблице (для объектов конфигуратора). Если есть — заменяют slots. */
+  slotsFor?: (catalog: Catalog) => SlotDef[];
+  /** Начальная комплектация уровня tier (по умолчанию — строки листа «Комплектации»). */
+  initialSelection?: (catalog: Catalog, tier: Tier) => Selection;
   /** Позиция комплектации, карточку которой показывать по умолчанию */
   primarySlot: (el: LayoutElement | null) => string;
   defaultParams: (ctx: AcademyContext) => P;
@@ -51,9 +55,12 @@ export interface AcademyDefinition<P = any> {
   Calculator: ComponentType<AcademyViewProps<P>>;
 }
 
-export function sectionIdFor(def: AcademyDefinition, room: Room | null) {
+export function sectionIdFor(def: AcademyDefinition, room: Room | null, element: LayoutElement | null = null) {
+  if (def.scope === 'element' && element) return `${def.id}:${element.id}`;
   return def.scope === 'apartment' || !room ? `${def.id}:apartment` : `${def.id}:${room.id}`;
 }
+
+export const slotsOf = (def: AcademyDefinition, catalog: Catalog) => def.slotsFor?.(catalog) ?? def.slots;
 
 /** Комплектация уровня tier из листа «Комплектации». */
 export function selectionFromKit(catalog: Catalog, academy: string, tier: Tier): Selection {

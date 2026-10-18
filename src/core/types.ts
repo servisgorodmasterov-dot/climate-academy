@@ -89,6 +89,69 @@ export interface ConsumableRule {
   note: string;
 }
 
+// ---------- Конфигуратор объектов (листы «Категории», «Объекты», «Позиции объектов») ----------
+
+/** Раздел левого каталога: двери, окна, полы, стены… Порядок и названия задаются в таблице. */
+export interface CategoryDef {
+  id: string;
+  name: string;
+  icon: string;
+  order: number;
+  description: string;
+}
+
+/**
+ * Откуда берётся количество. Значения считаются из геометрии конкретного объекта квартиры:
+ * pcs — 1 на объект; opening_m2 / opening_w / opening_h / opening_perimeter_m — размеры проёма;
+ * wall_m2 — площадь стен помещения за вычетом дверей и окон; floor_m2; perimeter_m; ceiling_m2.
+ */
+export const BASES = {
+  pcs: 'шт. объектов',
+  opening_m2: 'площадь проёма, м²',
+  opening_w: 'ширина проёма, м',
+  opening_h: 'высота проёма, м',
+  opening_perimeter_m: 'периметр проёма (без порога), м',
+  wall_m2: 'площадь стен без проёмов, м²',
+  floor_m2: 'площадь пола, м²',
+  perimeter_m: 'периметр помещения, м',
+  ceiling_m2: 'площадь потолка, м²',
+} as const;
+export type Basis = keyof typeof BASES;
+
+/** Как объект выглядит в 3D. Новый вид отрисовки требует кода; новые модели и цвета — нет. */
+export const RENDERERS = ['door', 'entrance', 'window', 'wall', 'none'] as const;
+export type Renderer = (typeof RENDERERS)[number];
+
+/** Тип объекта квартиры: «Межкомнатная дверь», «Окно», «Отделка стен»… */
+export interface ObjectType {
+  id: string; // door.interior
+  category: string; // doors
+  name: string;
+  icon: string;
+  renderer: Renderer;
+  /** Какие места планировки становятся объектами этого типа: door | entrance | window | room_walls */
+  placement: string;
+  primarySlot: string;
+  description: string;
+  lessonSteps: string[];
+  mistakes: string[];
+}
+
+/** Позиция внутри объекта: полотно, коробка, наличник, ручка… или краска, грунт. */
+export interface ObjectSlotDef {
+  typeId: string;
+  slot: string;
+  label: string;
+  qty: number; // норма на единицу базы
+  per: Basis;
+  waste: number; // запас, доля (0.1 = 10 %)
+  optional: boolean;
+  defaultProductId: string | null;
+  workId: string | null;
+  workPer: Basis;
+  order: number;
+}
+
 export interface CatalogIssue {
   sheet: string;
   row: number;
@@ -102,6 +165,9 @@ export interface Catalog {
   kits: KitRow[];
   suppliers: Supplier[];
   consumables: ConsumableRule[];
+  categories: CategoryDef[];
+  objectTypes: ObjectType[];
+  objectSlots: ObjectSlotDef[];
   issues: CatalogIssue[];
   status: DataStatus;
   sourceName: string;
@@ -223,7 +289,15 @@ export type ElementKind =
   | 'smart_hub'
   | 'radiator'
   | 'electric_panel'
-  | 'riser';
+  | 'riser'
+  // создаются автоматически из геометрии планировки (проёмы и стены помещений)
+  | 'door'
+  | 'entrance'
+  | 'window'
+  | 'room_walls';
+
+/** Объекты, которые рисует каркас квартиры (стены и проёмы), а не отдельная 3D-модель. */
+export const GEOMETRY_KINDS: ElementKind[] = ['door', 'entrance', 'window', 'room_walls'];
 
 export interface LayoutElement {
   id: string;
@@ -235,6 +309,12 @@ export interface LayoutElement {
   /** Часть другого объекта (наружный блок → кондиционер): выбирается как основной объект */
   partOf?: string;
   label: string;
+  /** Тип объекта из листа «Объекты» (для объектов конфигуратора) */
+  typeId?: string;
+  /** Проём в стене, к которому привязан объект */
+  opening?: { wallId: string; index: number };
+  /** Все помещения, которые объект соединяет (дверь между комнатами) */
+  rooms?: string[];
 }
 
 export type UtilitySystem = 'electric' | 'water' | 'sewer' | 'heating' | 'ventilation' | 'ac' | 'smarthome';

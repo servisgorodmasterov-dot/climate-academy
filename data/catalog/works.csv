@@ -11,3 +11,15 @@ W-SH-SW,smarthome,sh.switch,Монтаж умного выключателя,pcs
 W-SH-SENS,smarthome,sh.sensor,Установка и привязка датчика,pcs,2000,2026-10-16,DEMO
 W-SH-NEUTRAL,smarthome,sh.cable,Подвод нейтрали к точке выключателя,pcs,6000,2026-10-16,DEMO
 W-SH-BOX,smarthome,sh.box,Замена подрозетника на глубокий,pcs,2500,2026-10-16,DEMO
+W-DR-INST,door.interior,door.leaf,"Установка межкомнатной двери под ключ (коробка, полотно, врезка фурнитуры, наличники)",pcs,25000,2026-10-18,DEMO
+W-ENT-INST,door.entrance,entr.door,Установка входной двери с демонтажом старой,pcs,35000,2026-10-18,DEMO
+W-ENT-LOCK,door.entrance,entr.lock,Врезка дополнительного замка,pcs,9000,2026-10-18,DEMO
+W-ENT-REVEAL,door.entrance,entr.reveal,Монтаж откосов входной двери,m,4000,2026-10-18,DEMO
+W-WIN-INST,window,win.unit,Монтаж окна с монтажным швом по ГОСТ,m2,9000,2026-10-18,DEMO
+W-WIN-SILL,window,win.sill,Установка подоконника,m,3500,2026-10-18,DEMO
+W-WIN-REV,window,win.reveal,Монтаж откосов окна,m,3000,2026-10-18,DEMO
+W-WL-PAINT,wall.finish,wall.finish,Окраска стен в 2 слоя,m2,1800,2026-10-18,DEMO
+W-WL-WP,wall.finish,wall.finish,Поклейка флизелиновых обоев,m2,1600,2026-10-18,DEMO
+W-WL-PLASTER,wall.finish,wall.finish,Нанесение декоративной штукатурки с лаком,m2,6500,2026-10-18,DEMO
+W-WL-PANEL,wall.finish,wall.finish,Монтаж реечных панелей,m2,4500,2026-10-18,DEMO
+W-WL-PRIME,wall.finish,wall.primer,Грунтование стен,m2,350,2026-10-18,DEMO
