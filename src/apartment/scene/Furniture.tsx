@@ -1,6 +1,6 @@
 // Процедурная мебель — временные модели. Их нужно заменить GLB-моделями (список и требования — docs/ASSETS.md).
-import { RoundedBox } from '@react-three/drei';
-import { useMemo, type ReactNode } from 'react';
+import { RoundedBox, useGLTF } from '@react-three/drei';
+import { Component, Suspense, useMemo, type ReactNode } from 'react';
 import * as THREE from 'three';
 import type { FurnitureItem } from '../../core/types';
 import { fabricTexture, sized } from './textures';
@@ -423,6 +423,73 @@ export interface FurnitureProps {
   ids?: Record<number, string>;
 }
 
+/**
+ * Настоящая 3D-модель из SketchUp, Базиса, Blender и т.п. в формате GLB.
+ * Ссылка задаётся у товара в таблице: attrs → glb=https://…/kuhnya.glb
+ * Модель автоматически вписывается в габарит предмета (длина × высота × глубина) и ставится на пол.
+ */
+function GlbModel({ url, size }: { url: string; size: [number, number, number] }) {
+  const { scene } = useGLTF(url, true);
+  const obj = useMemo(() => {
+    const o = scene.clone(true);
+    o.traverse((c) => {
+      const m = c as THREE.Mesh;
+      if (m.isMesh) {
+        m.castShadow = true;
+        m.receiveShadow = true;
+      }
+    });
+    // вписываем в габарит: масштаб по наибольшему отношению, центр по X/Z, низ на полу
+    const box = new THREE.Box3().setFromObject(o);
+    const dim = box.getSize(new THREE.Vector3());
+    const k = Math.min(size[0] / (dim.x || 1), size[1] / (dim.y || 1), size[2] / (dim.z || 1));
+    o.scale.setScalar(k);
+    const b2 = new THREE.Box3().setFromObject(o);
+    const c = b2.getCenter(new THREE.Vector3());
+    o.position.set(-c.x, -b2.min.y, -c.z);
+    return o;
+  }, [scene, size]);
+  return <primitive object={obj} />;
+}
+
+/** Если модель не загрузилась (нет файла, нет доступа) — показываем обычную процедурную мебель. */
+class ModelBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(e: unknown) {
+    console.warn('3D-модель не загрузилась, показана упрощённая:', e);
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+/** Габарит модели по типу предмета, м: длина × высота × глубина. */
+const MODEL_SIZE: Record<string, (f: FurnitureItem) => [number, number, number]> = {
+  kitchen_run: (f) => [f.length ?? 2.3, 2.25, 0.62],
+  bed: () => [1.75, 1.1, 2.15],
+  wardrobe: (f) => [f.length ?? 2, 2.4, 0.6],
+  hall_wardrobe: (f) => [f.length ?? 1.6, 2.4, 0.6],
+  sofa: () => [2.2, 0.9, 0.95],
+  dining_table: () => [1.4, 0.95, 1.6],
+};
+
+function FurnitureBody({ f, look }: { f: FurnitureItem; look: Look }) {
+  const procedural = REGISTRY[f.type]?.(f, look) ?? null;
+  const url = look.glb;
+  if (!url || !/^https?:\/\/|^\.?\//.test(url)) return <>{procedural}</>;
+  const size = (MODEL_SIZE[f.type] ?? (() => [1, 1, 1] as [number, number, number]))(f);
+  return (
+    <ModelBoundary key={url} fallback={procedural}>
+      <Suspense fallback={procedural}>
+        <GlbModel url={url} size={size} />
+      </Suspense>
+    </ModelBoundary>
+  );
+}
+
 export function Furniture({ items, hidden, looks = {}, selectable = {}, selected = null, onPick, ids = {} }: FurnitureProps) {
   const hover = useApp((s) => s.hover);
   return (
@@ -433,7 +500,7 @@ export function Furniture({ items, hidden, looks = {}, selectable = {}, selected
         const HOVER_ID = ids[i] ?? null;
         return (
           <group key={i} position={f.position} rotation={[0, f.rotationY, 0]}>
-            {REGISTRY[f.type]?.(f, looks[i] ?? {}) ?? null}
+            <FurnitureBody f={f} look={looks[i] ?? {}} />
             {hit && (
               <group position={[0, hit[1] / 2, 0]}>
                 <mesh
