@@ -175,7 +175,7 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality 
         {objects
           .filter((o) => (focusRoom ? o.roomId === focusRoom : categoryFilter !== 'all') && (categoryFilter === 'all' || o.category === categoryFilter))
           .map((o) => (
-            <Html key={o.id} position={o.anchor} center zIndexRange={[30, 10]}>
+            <Html key={o.id} position={o.anchor} center zIndexRange={[3, 2]}>
               <button
                 className={selectedElement === o.id ? 'pin on' : 'pin'}
                 onClick={() => onElement(o.element)}
@@ -188,7 +188,7 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality 
           ))}
         {!focusRoom &&
           layout.rooms.map((r) => (
-            <Html key={r.id} position={[(r.rect[0] + r.rect[2]) / 2, layout.ceilingHeight + 0.35, (r.rect[1] + r.rect[3]) / 2]} center zIndexRange={[20, 0]}>
+            <Html key={r.id} position={[(r.rect[0] + r.rect[2]) / 2, layout.ceilingHeight + 0.35, (r.rect[1] + r.rect[3]) / 2]} center zIndexRange={[1, 0]}>
               <button className="room-tag" onClick={() => useApp.getState().set('focusRoom', r.id)}>
                 {r.name} <span>{roomArea(r)} м²</span>
               </button>
