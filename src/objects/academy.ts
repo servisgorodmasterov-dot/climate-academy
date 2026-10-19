@@ -3,11 +3,13 @@
 import type { AcademyDefinition } from '../core/academy';
 import type { Catalog } from '../core/types';
 import { objectType, slotsOfType } from '../catalog/sheetParser';
-import { academyIdForType, buildObjectSection, objectSelection, typeIdFromAcademy } from './logic';
+import { academyIdForType, buildObjectSection, objectSelection, typeIdFromAcademy, type Layers } from './logic';
 import { ObjectCalculator, ObjectLesson } from './ObjectUI';
 
 export interface ObjectParams {
   elementId: string | null;
+  /** Толщины слоёв (штукатурка, шпаклёвка), мм — выбирает пользователь в расчёте */
+  layers?: Layers;
 }
 
 let current: Catalog | null = null;
@@ -43,7 +45,7 @@ export function objectAcademy(academyId: string): AcademyDefinition<ObjectParams
     buildSection: (ctx, tier, params, sel) => {
       const el = ctx.element ?? ctx.layout.elements.find((e) => e.id === params.elementId);
       if (!el) return { id: def.id, academy: def.id, label: def.title, tier, items: [], params: {} };
-      return buildObjectSection(ctx.catalog, ctx.layout, el, tier, sel, `${def.id}:${el.id}`);
+      return buildObjectSection(ctx.catalog, ctx.layout, el, tier, sel, `${def.id}:${el.id}`, params.layers);
     },
     Lesson: ObjectLesson,
     Calculator: ObjectCalculator,

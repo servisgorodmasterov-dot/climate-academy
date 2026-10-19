@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { TIERS, type Product } from '../core/types';
 import { academyById } from '../academies';
-import { slotsOf } from '../core/academy';
+import { slotsOf, type Selection } from '../core/academy';
 import { findPrice, findProduct, findWork, productsForSlot } from '../catalog/sheetParser';
 import { computeEstimate } from '../estimate/engine';
-import { buildSection, contextFor } from '../estimate/useEstimate';
+import { buildSection, contextFor, useTotalEstimate } from '../estimate/useEstimate';
 import { useApp } from '../store';
 import { money, qty as fq, unitLabel } from './format';
 import { PriceCompare } from './PriceCompare';
 import { EstimateTable } from './EstimateTable';
+import { selectionFor } from '../objects/logic';
 
 type Tab = 'card' | 'lesson' | 'variants' | 'calc';
 
@@ -24,6 +25,17 @@ export function AcademyPanel() {
   const ctx = useMemo(() => (s && catalog && layout ? contextFor(s, catalog, layout, proMode, role, selectedElement) : null), [s, catalog, layout, proMode, role, selectedElement]);
   const section = useMemo(() => (s && catalog && layout ? buildSection(s, catalog, layout) : null), [s, catalog, layout]);
   const est = useMemo(() => (section && catalog ? computeEstimate(catalog, [section], overrides) : null), [section, catalog, overrides]);
+  const all = useTotalEstimate();
+  /** Сколько стоил бы этот раздел с другой комплектацией — для цен на кнопках наборов и вариантов */
+  const totalWith = useMemo(() => {
+    const cache = new Map<string, number>();
+    return (sel: Selection, tier = s?.tier ?? 'comfort') => {
+      if (!s || !def || !ctx || !catalog) return 0;
+      const key = tier + JSON.stringify(sel);
+      if (!cache.has(key)) cache.set(key, computeEstimate(catalog, [def.buildSection(ctx, tier, s.params, sel)], overrides).total);
+      return cache.get(key)!;
+    };
+  }, [s, def, ctx, catalog, overrides]);
 
   if (!s || !def || !ctx || !catalog) return null;
   const app = useApp.getState();
@@ -43,12 +55,25 @@ export function AcademyPanel() {
           ✕
         </button>
       </header>
-      <div className="seg tiers" role="tablist" aria-label="Комплектация">
-        {TIERS.map((t) => (
-          <button key={t.id} className={s.tier === t.id ? 'on' : ''} onClick={() => app.setTier(s.id, t.id)}>
-            {t.label}
-          </button>
-        ))}
+      <div className="tiers-wrap">
+        <span className="muted small">Готовый набор — материалы и работы под ключ:</span>
+        <div className="seg tiers" role="tablist" aria-label="Комплектация">
+          {TIERS.map((t) => {
+            const kit = selectionFor(catalog, s.academy, t.id);
+            return (
+              <button key={t.id} className={s.tier === t.id && sameSel(s.selection, kit) ? 'on' : ''} onClick={() => app.setTier(s.id, t.id)}>
+                {t.label}
+                <small>{money(totalWith(kit, t.id))}</small>
+              </button>
+            );
+          })}
+          {!sameSel(s.selection, selectionFor(catalog, s.academy, s.tier)) && (
+            <button className="on custom" title={`Изменён вручную на основе набора «${TIERS.find((t) => t.id === s.tier)?.label}»`}>
+              Свой выбор
+              <small>{money(est?.total)}</small>
+            </button>
+          )}
+        </div>
       </div>
       <nav className="tabs">
         {(
@@ -70,6 +95,7 @@ export function AcademyPanel() {
         {tab === 'lesson' && <def.Lesson ctx={ctx} params={s.params} setParams={(p) => app.setParams(s.id, p)} selection={s.selection} tier={s.tier} />}
         {tab === 'variants' && (
           <div className="variants">
+            <p className="muted small">Цена справа — насколько изменится итог за {ctx.element ? 'этот объект' : 'это помещение'} (материал + работа). Под ней — цена за единицу.</p>
             {slotsOf(def, catalog).map((sl) => {
               const list = productsForSlot(catalog, sl.slot);
               if (!list.length) return null;
@@ -77,7 +103,10 @@ export function AcademyPanel() {
               const specKeys = [...new Set(list.flatMap((p) => Object.keys(p.specs)))].slice(0, proMode ? 8 : 3);
               return (
                 <section key={sl.slot}>
-                  <h4>{sl.label}</h4>
+                  <h4>
+                    {slotsOf(def, catalog).length > 2 ? `Шаг ${slotsOf(def, catalog).indexOf(sl) + 1}. ` : ''}
+                    {sl.label}
+                  </h4>
                   <div className="opts" role="radiogroup" aria-label={sl.label}>
                     {list.map((p) => (
                       <button key={p.id} role="radio" aria-checked={cur === p.id} className={cur === p.id ? 'opt sel' : 'opt'} onClick={() => app.setSlot(s.id, sl.slot, p.id)}>
@@ -95,9 +124,13 @@ export function AcademyPanel() {
                           </span>
                         </span>
                         <span className="price">
-                          {money(findPrice(catalog, p.id)?.sale)}
+                          {cur === p.id ? (
+                            <span className="sel-tag">выбрано</span>
+                          ) : (
+                            <Delta d={totalWith({ ...s.selection, [sl.slot]: { productId: p.id, workId: s.selection[sl.slot]?.workId ?? null } }) - (est?.total ?? 0)} />
+                          )}
                           <span className="muted small" style={{ display: 'block', fontWeight: 500 }}>
-                            за {unitLabel(p.unit)}
+                            {money(findPrice(catalog, p.id)?.sale)} за {unitLabel(p.unit)}
                           </span>
                         </span>
                       </button>
@@ -105,7 +138,8 @@ export function AcademyPanel() {
                     {sl.optional && (
                       <button role="radio" aria-checked={cur === null} className={cur === null ? 'opt sel' : 'opt'} onClick={() => app.setSlot(s.id, sl.slot, null)}>
                         <span className="radio" />
-                        <span className="body muted">Не включать в комплектацию</span>
+                        <span className="body muted">Не нужно — пропустить этот шаг</span>
+                        <span className="price">{cur === null ? <span className="sel-tag">выбрано</span> : <Delta d={totalWith({ ...s.selection, [sl.slot]: { productId: null, workId: null } }) - (est?.total ?? 0)} />}</span>
                       </button>
                     )}
                   </div>
@@ -122,14 +156,27 @@ export function AcademyPanel() {
         )}
       </div>
       <footer className="panel-foot">
-        <div>
-          <div className="muted small">Раздел сметы · {TIERS.find((t) => t.id === s.tier)?.label}</div>
+        <div className="foot-sum">
+          <div className="muted small">
+            {ctx.element?.label ?? def.title} · материалы {money((est?.totals.materials ?? 0) + (est?.totals.equipment ?? 0) + (est?.totals.consumables ?? 0))} + работа {money(est?.totals.works)}
+            {est?.totals.delivery ? ` + доставка ${money(est.totals.delivery)}` : ''}
+          </div>
           <b>{money(est?.total)}</b>
+          {s.included && all && (
+            <button className="link small" onClick={() => app.set('panel', 'estimate')}>
+              Всего в смете {money(all.estimate.total)} · открыть
+            </button>
+          )}
         </div>
         {s.included ? (
-          <button className="btn ghost" onClick={() => app.setIncluded(s.id, false)}>
-            ✓ В смете — убрать
-          </button>
+          <div className="foot-actions">
+            <button className="btn ghost" onClick={() => app.set('panel', 'estimate')}>
+              ✓ В смете
+            </button>
+            <button className="link danger" onClick={() => app.setIncluded(s.id, false)}>
+              убрать
+            </button>
+          </div>
         ) : (
           <button className="btn" onClick={() => app.setIncluded(s.id, true)}>
             Добавить в смету
@@ -283,4 +330,17 @@ function ProductCard({ product, sectionId, workId, need, onCompare, onVariants }
       </p>
     </article>
   );
+}
+
+/** Одинаковый ли выбор товаров (работы не сравниваем — они следуют за товаром). */
+function sameSel(a: Selection, b: Selection) {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const k of keys) if ((a[k]?.productId ?? null) !== (b[k]?.productId ?? null)) return false;
+  return true;
+}
+
+/** «+3 900 ₸» / «−2 100 ₸» — на сколько изменится итог. */
+function Delta({ d }: { d: number }) {
+  if (Math.abs(d) < 1) return <span className="delta">той же цены</span>;
+  return <span className={d > 0 ? 'delta up' : 'delta down'}>{d > 0 ? '+' : '−'}{money(Math.abs(d))}</span>;
 }

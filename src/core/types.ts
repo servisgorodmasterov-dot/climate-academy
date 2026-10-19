@@ -151,6 +151,14 @@ export interface ObjectSlotDef {
   workId: string | null;
   workPer: Basis;
   order: number;
+  /** Слой, мм: норма qty (или rate товара) задана на 1 мм толщины. null — позиция без слоя. */
+  layerMm: number | null;
+  /** Толщины на выбор, мм (колонка layer_options: «5|10|15|20»). */
+  layerOptions: number[];
+  /** Работа дорожает со слоя толще этого, мм: объём работ × (слой / work_layer_mm). */
+  workLayerMm: number | null;
+  /** Зачем нужен шаг и когда его можно пропустить — подсказка для клиента. */
+  hint: string;
 }
 
 /** Лист «Опт»: условия коллективной закупки. Свои пороги у каждого товара, работы и поставщика — без единого процента. */

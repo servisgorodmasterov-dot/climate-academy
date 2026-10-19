@@ -370,6 +370,13 @@ export function buildCatalog(values: SheetValues, opts: { status: DataStatus; so
         workId: workId && workIds.has(workId) ? workId : null,
         workPer,
         order: parseNumber(r.get('order')) ?? objectSlots.length,
+        layerMm: parseNumber(r.get('layer_mm')),
+        layerOptions: (r.get('layer_options') || '')
+          .split(/[|;]/)
+          .map((x) => parseNumber(x.trim()))
+          .filter((x): x is number => x != null && x > 0),
+        workLayerMm: parseNumber(r.get('work_layer_mm')),
+        hint: r.get('hint') || '',
       });
     }
   objectSlots.sort((a, b) => a.order - b.order);

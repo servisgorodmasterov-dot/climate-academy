@@ -5,3 +5,7 @@ FL-PRIMER-5,floor.screed,0.15,m2,screed=1,Ориентировочно 0.15 л/�
 FL-CLIP-50,floor.skirting,2,m,,Шаг крепежа около 0.5 м
 AC-DRAIN,ac.route,1,m,,Дренаж прокладывается вдоль трассы
 SH-CABLE-15,sh.switch,4,pcs,neutral_missing=1,Около 4 м кабеля на точку при подводе нейтрали от распределительной коробки
+WL-BEACON-6,wall.plaster,0.4,m2,,Маяки через 1.2–1.5 м: ≈0.4 шт на 1 м² стены
+WL-PRIMER,wall.plaster,0.15,m2,,Грунт перед штукатуркой
+WL-PRIMER,wall.putty.start,0.1,m2,,Грунт между слоями штукатурки и шпаклёвки
+WL-GLASS-GLUE,wall.mesh,0.25,m2,,Клей для стеклохолста ≈0.25 кг/м²

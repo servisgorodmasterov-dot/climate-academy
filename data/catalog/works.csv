@@ -27,3 +27,8 @@ W-KIT-INST,furniture.kitchen,kit.set,"Сборка и установка кух�
 W-BED-ASM,furniture.bed,bed.frame,Сборка кровати,pcs,8000,2026-10-18,DEMO
 W-WRD-ASM,furniture.wardrobe,wrd.body,Сборка и установка шкафа,m,9000,2026-10-18,DEMO
 W-SOFA-ASM,furniture.sofa,sofa.unit,Доставка на этаж и сборка дивана,pcs,6000,2026-10-18,DEMO
+W-WL-PLAST,wall.finish,wall.plaster,"Штукатурка стен по маякам вручную (слой до 20 мм, с грунтом и маяками)",m2,3200,2026-10-19,DEMO
+W-WL-PLAST-MACH,wall.finish,wall.plaster,Машинная штукатурка стен по маякам (слой до 20 мм),m2,2600,2026-10-19,DEMO
+W-WL-PUTTY-S,wall.finish,wall.putty.start,Стартовая шпаклёвка стен с грунтованием,m2,1300,2026-10-19,DEMO
+W-WL-GLASS,wall.finish,wall.mesh,Оклейка стен стеклохолстом,m2,900,2026-10-19,DEMO
+W-WL-PUTTY-F,wall.finish,wall.putty.finish,Финишная шпаклёвка в 2 слоя со шлифовкой,m2,1800,2026-10-19,DEMO

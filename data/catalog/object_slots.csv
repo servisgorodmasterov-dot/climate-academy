@@ -1,4 +1,4 @@
-type_id,slot,label,qty,per,waste,optional,default_product_id,work_id,work_per,order
+type_id,slot,label,qty,per,waste,optional,default_product_id,work_id,work_per,order,layer_mm,layer_options,work_layer_mm,hint
 door.interior,door.leaf,Полотно,1,pcs,0,0,DR-NEO-WHITE,W-DR-INST,pcs,1
 door.interior,door.frame,Коробка,1,pcs,0,0,DR-FRAME-STD,,,2
 door.interior,door.casing,Наличник (с двух сторон),2,opening_perimeter_m,0.05,0,DR-CAS-70,,,3
@@ -11,8 +11,6 @@ door.entrance,entr.reveal,Откосы,1,opening_perimeter_m,0.1,1,ENT-REV-MDF,W
 window,win.unit,Окно (профиль + стеклопакет),1,opening_m2,0,0,WIN-PVC-WHITE,W-WIN-INST,opening_m2,1
 window,win.sill,Подоконник,1,opening_w,0.15,1,WIN-SILL-PVC,W-WIN-SILL,opening_w,2
 window,win.reveal,Откосы,1,opening_perimeter_m,0.1,1,WIN-REV-PVC,W-WIN-REV,opening_perimeter_m,3
-wall.finish,wall.finish,Финишная отделка,1,wall_m2,0.1,0,WL-PNT-WHITE,W-WL-PAINT,wall_m2,1
-wall.finish,wall.primer,Грунт,0.15,wall_m2,0,1,WL-PRIMER,W-WL-PRIME,wall_m2,2
 furniture.kitchen,kit.set,Корпус и фасады (погонный метр),1,length_m,0,0,KIT-MODERN-WHITE,W-KIT-INST,length_m,1
 furniture.kitchen,kit.top,Столешница,1,length_m,0.1,0,KIT-TOP-STONE,,,2
 furniture.kitchen,kit.upper,Верхние шкафы,1,length_m,0,1,KIT-UPPER-STD,,,3
@@ -21,3 +19,9 @@ furniture.bed,bed.frame,Кровать с изголовьем,1,pcs,0,0,BED-SOF
 furniture.bed,bed.mattress,Матрас,1,pcs,0,1,MAT-ORTHO-M,,,2
 furniture.wardrobe,wrd.body,Корпус и фасады (погонный метр),1,length_m,0,0,WRD-SWING-WHITE,W-WRD-ASM,length_m,1
 furniture.sofa,sofa.unit,Диван,1,pcs,0,0,SOFA-GREY,W-SOFA-ASM,pcs,1
+wall.finish,wall.plaster,Штукатурка — выравнивание по маякам,0.9,wall_m2,0.05,1,WL-PLAST-GYPS,W-WL-PLAST,wall_m2,1,15,5|10|15|20|25|30|40,20,"Делает стены ровными и вертикальными. Нужна, если стена «гуляет» больше 3–5 мм под 2-метровым правилом. Средний слой ≈ половина самого большого отклонения + 5 мм на маяк."
+wall.finish,wall.putty.start,Стартовая шпаклёвка,1.0,wall_m2,0.05,1,WL-PUTTY-START,W-WL-PUTTY-S,wall_m2,2,2,1|2|3|5,3,"Закрывает поры и раковины после штукатурки, выравнивает мелкие неровности. Можно пропустить, если штукатурка машинная и затёрта гладко."
+wall.finish,wall.mesh,Стеклохолст (армирование),1.1,wall_m2,0,1,WL-GLASS-50,W-WL-GLASS,wall_m2,3,,,,Защищает покраску от мелких трещин. Рекомендуется в новостройках (дом даёт усадку). Под обои не нужен.
+wall.finish,wall.putty.finish,Финишная шпаклёвка,1.1,wall_m2,0.05,1,WL-PUTTY-FIN,W-WL-PUTTY-F,wall_m2,4,1,0.5|1|1.5|2,,"Гладкая поверхность под покраску: 2 тонких слоя и шлифовка. Под обои хватит одного слоя, под панели не нужна."
+wall.finish,wall.primer,Грунт перед финишем,0.15,wall_m2,0,1,WL-PRIMER,W-WL-PRIME,wall_m2,5,,,,"Выравнивает впитываемость: краска ляжет без пятен, обои не отклеятся. Пропускать нельзя."
+wall.finish,wall.finish,Финишная отделка,1,wall_m2,0.1,0,WL-PNT-WHITE,W-WL-PAINT,wall_m2,6,,,,"То, что видно: краска, обои, декоративная штукатурка или панели."

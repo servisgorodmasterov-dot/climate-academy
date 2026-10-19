@@ -4,13 +4,14 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useMemo, useRef, useState } from 'react';
 import type * as THREE from 'three';
 import type { AcademyViewProps } from '../core/academy';
+import type { Product } from '../core/types';
 import { BASES, type Basis } from '../core/types';
 import { findPrice, findProduct, findWork, productsForSlot, slotsOfType } from '../catalog/sheetParser';
 import { useApp } from '../store';
 import { money, qty as fq, unitLabel } from '../ui/format';
 import type { ObjectParams } from './academy';
 import { measure, openingOf } from './geometry';
-import { lookOf, objectLines, ruleFor, typeForElement } from './logic';
+import { lineCost, lookOf, objectLines, ruleFor, typeForElement } from './logic';
 import { DoorFrame, DoorHinges, DoorLeaf } from './models';
 
 type Props = AcademyViewProps<ObjectParams>;
@@ -153,11 +154,15 @@ function SwingingLeaf({ open, explode, children }: { open: boolean; explode: num
 
 /** Слои отделки стены — простая наглядная схема. */
 function WallLayers({ color, finish, step }: { color: string; finish: string; step: number }) {
+  const fin = finish === 'wallpaper' ? 'Обои' : finish === 'plaster' ? 'Декоративная штукатурка' : finish === 'panel' ? 'Реечные панели' : 'Краска, 2 слоя';
+  // слои совпадают с шагами урока: основание → штукатурка → старт → стеклохолст → финиш-шпаклёвка → грунт и финиш
   const layers = [
-    { name: 'Основание (бетон, кирпич, ГКЛ)', color: '#a7a39c' },
-    { name: 'Выравнивание и шпаклёвка', color: '#e3ded4' },
-    { name: 'Грунт', color: '#d9e6ef' },
-    { name: finish === 'wallpaper' ? 'Обои' : finish === 'plaster' ? 'Декоративная штукатурка' : finish === 'panel' ? 'Реечные панели' : 'Краска, 2 слоя', color },
+    { name: 'Основание (бетон, кирпич, газоблок) + грунт', color: '#a7a39c' },
+    { name: 'Штукатурка по маякам, 5–40 мм', color: '#d8d2c6' },
+    { name: 'Стартовая шпаклёвка, 1–3 мм', color: '#e6e1d7' },
+    { name: 'Стеклохолст (армирование)', color: '#eeeae2' },
+    { name: 'Финишная шпаклёвка + шлифовка', color: '#f4f2ed' },
+    { name: `Грунт и финиш: ${fin.toLowerCase()}`, color },
   ];
   return (
     <div className="wall-layers" aria-label="Слои отделки стены">
@@ -170,9 +175,39 @@ function WallLayers({ color, finish, step }: { color: string; finish: string; st
   );
 }
 
-// ---------- Калькулятор ----------
+// ---------- Калькулятор: весь процесс по шагам ----------
 
-export function ObjectCalculator({ ctx, selection }: Props) {
+const plural = (n: number, one: string, few: string, many: string) => {
+  const a = Math.abs(n) % 100;
+  const b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  if (b === 1) return one;
+  return many;
+};
+const CONTAINERS: [RegExp, [string, string, string]][] = [
+  [/мешок/i, ['мешок', 'мешка', 'мешков']],
+  [/ведро/i, ['ведро', 'ведра', 'вёдер']],
+  [/рулон/i, ['рулон', 'рулона', 'рулонов']],
+  [/банка/i, ['банка', 'банки', 'банок']],
+];
+/** «15 мешков по 30 кг» — как покупать материал. */
+function packText(p: Product, packs: number) {
+  if (p.packSize <= 1) return `${fq(packs)} ${unitLabel(p.unit)}`;
+  const c = CONTAINERS.find(([re]) => re.test(p.name))?.[1] ?? ['упаковка', 'упаковки', 'упаковок'];
+  return `${packs} ${plural(packs, ...c)} по ${fq(p.packSize)} ${unitLabel(p.unit)}`;
+}
+
+/** Подсказка «какой слой штукатурки»: по самому большому отклонению стены от правила 2 м. */
+const CURVES: { label: string; mm: number | null }[] = [
+  { label: 'Ровные, до 3 мм', mm: null },
+  { label: 'до 10 мм', mm: 10 },
+  { label: 'до 20 мм', mm: 15 },
+  { label: 'до 30 мм', mm: 20 },
+  { label: 'до 50 мм', mm: 30 },
+];
+
+export function ObjectCalculator({ ctx, selection, params, setParams }: Props) {
   const el = ctx.element;
   const app = useApp.getState();
   const sectionId = useApp((s) => s.activeSection);
@@ -181,75 +216,148 @@ export function ObjectCalculator({ ctx, selection }: Props) {
   const type = el ? typeForElement(ctx.catalog, el) : undefined;
   const m = useMemo(() => (el ? measure(ctx.layout, el) : null), [ctx.layout, el]);
   if (!el || !type || !m || !sectionId) return null;
-  const lines = objectLines(ctx.catalog, ctx.layout, el, selection);
+  const layers = params.layers ?? {};
+  const lines = objectLines(ctx.catalog, ctx.layout, el, selection, layers);
   const slots = slotsOfType(ctx.catalog, type.id);
   const used = new Set<Basis>(slots.flatMap((s) => [s.per, s.workPer]));
   const op = openingOf(ctx.layout, el);
   const sameType = ctx.layout.elements.filter((e) => e.typeId === type.id).length;
+  const costs = lines.map((l) => lineCost(ctx.catalog, l));
+  const sum = costs.reduce((a, c) => ({ mat: a.mat + c.material + c.consumables.reduce((x, y) => x + y.cost, 0), work: a.work + c.work }), { mat: 0, work: 0 });
+  const setLayer = (slot: string, mm: number) => setParams({ ...params, layers: { ...layers, [slot]: mm } });
+  const turn = (slot: string, on: boolean) => {
+    const def = slots.find((x) => x.slot === slot)?.defaultProductId ?? productsForSlot(ctx.catalog, slot)[0]?.id ?? null;
+    app.setSlot(sectionId, slot, on ? def : null);
+  };
+  const isProcess = lines.length > 2 || lines.some((l) => l.slot.layerMm != null);
 
   return (
     <div className="calc">
-      <h4>Размеры (из планировки)</h4>
-      <table className="spec">
-        <tbody>
-          {op && (
-            <tr>
-              <th>Проём</th>
-              <td>
-                {fq(m.opening_w)} × {fq(m.opening_h)} м
-              </td>
-            </tr>
-          )}
-          {(Object.keys(BASES) as Basis[])
-            .filter((b) => used.has(b) && b !== 'pcs' && b !== 'opening_w' && b !== 'opening_h')
-            .map((b) => (
-              <tr key={b}>
-                <th>{BASES[b][0].toUpperCase() + BASES[b].slice(1)}</th>
-                <td>{fq(m[b])}</td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
+      <div className="calc-size">
+        {(Object.keys(BASES) as Basis[])
+          .filter((b) => used.has(b) && b !== 'pcs' && b !== 'opening_w' && b !== 'opening_h')
+          .map((b) => (
+            <span key={b}>
+              {BASES[b][0].toUpperCase() + BASES[b].slice(1)}: <b>{fq(m[b])}</b>
+            </span>
+          ))}
+        {op && (
+          <span>
+            Проём: <b>{fq(m.opening_w)} × {fq(m.opening_h)} м</b>
+          </span>
+        )}
+      </div>
       {ctx.layout.isDemo && <p className="muted small">Размеры демо-планировки условные. Для реальной квартиры — по обмеру или чертежу.</p>}
 
-      <h4>Состав и количество</h4>
-      <div className="obj-lines">
-        {lines.map((l) => {
+      <h4>{isProcess ? 'Весь процесс по шагам' : 'Состав и количество'}</h4>
+      <div className="calc-steps">
+        {lines.map((l, i) => {
+          const c = costs[i];
+          const on = !!l.product;
           const options = productsForSlot(ctx.catalog, l.slot.slot);
-          const r = ruleFor(l.slot, l.product);
           const work = findWork(ctx.catalog, l.workId);
+          const workK = l.layer != null && l.slot.workLayerMm && l.layer > l.slot.workLayerMm ? l.layer / l.slot.workLayerMm : 1;
           return (
-            <div key={l.slot.slot} className="obj-line">
-              <div className="obj-line-head">
-                <b>{l.slot.label}</b>
-                <select
-                  value={l.product?.id ?? ''}
-                  onChange={(e) => app.setSlot(sectionId, l.slot.slot, e.target.value || null)}
-                  aria-label={l.slot.label}
-                >
-                  {l.slot.optional && <option value="">Не нужно</option>}
-                  {options.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} — {money(findPrice(ctx.catalog, p.id)?.sale)}/{unitLabel(p.unit)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {l.product && (
-                <div className="muted small">
-                  {fq(r.rate)} {unitLabel(l.product.unit)} × {fq(m[r.per])} ({BASES[r.per]}){r.waste ? ` + запас ${Math.round(r.waste * 100)} %` : ''} = <b>{fq(l.need)} {unitLabel(l.product.unit)}</b>
-                  {work && (
-                    <>
-                      {' '}
-                      · работа: {work.name.toLowerCase()} — {fq(l.workQty)} {unitLabel(work.unit)}
-                    </>
-                  )}
+            <section key={l.slot.slot} className={on ? 'calc-step' : 'calc-step off'}>
+              <header>
+                <span className="step-n">{i + 1}</span>
+                <b className="step-name">{l.slot.label}</b>
+                {on ? <b className="step-sum">{money(c.total)}</b> : <span className="muted small">не нужно</span>}
+                {l.slot.optional && (
+                  <label className="toggle" title={on ? 'Убрать шаг из расчёта' : 'Включить шаг'}>
+                    <input type="checkbox" checked={on} onChange={(e) => turn(l.slot.slot, e.target.checked)} />
+                  </label>
+                )}
+              </header>
+              {l.slot.hint && <p className="step-hint">{l.slot.hint}</p>}
+              {l.slot.slot === 'wall.plaster' && (
+                <div className="curve">
+                  <span className="muted small">Насколько кривые стены (правило 2 м)?</span>
+                  <div className="chips-row">
+                    {CURVES.map((cv) => {
+                      const active = cv.mm == null ? !on : on && l.layer === cv.mm;
+                      return (
+                        <button
+                          key={cv.label}
+                          className={active ? 'mini on' : 'mini'}
+                          onClick={() => {
+                            if (cv.mm == null) return turn(l.slot.slot, false);
+                            if (!on) turn(l.slot.slot, true);
+                            setLayer(l.slot.slot, cv.mm);
+                          }}
+                        >
+                          {cv.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
-            </div>
+              {on && l.product && (
+                <>
+                  <select value={l.product.id} onChange={(e) => app.setSlot(sectionId, l.slot.slot, e.target.value)} aria-label={l.slot.label}>
+                    {options.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} — {money(findPrice(ctx.catalog, p.id)?.sale)}/{unitLabel(p.unit)}
+                      </option>
+                    ))}
+                  </select>
+                  {l.layer != null && l.slot.layerOptions.length > 0 && (
+                    <div className="layer-row">
+                      <span>Толщина слоя</span>
+                      <div className="chips-row">
+                        {l.slot.layerOptions.map((mm) => (
+                          <button key={mm} className={l.layer === mm ? 'mini on' : 'mini'} onClick={() => setLayer(l.slot.slot, mm)}>
+                            {fq(mm)} мм
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="step-calc">
+                    <div>
+                      <span className="muted">Расход:</span> {fq(l.rate)} {unitLabel(l.product.unit)}/{l.per === 'wall_m2' || l.per.endsWith('m2') ? 'м²' : BASES[l.per]}
+                      {l.layer != null ? ' на 1 мм' : ''} × {fq(m[l.per])}
+                      {l.layer != null ? ` × ${fq(l.layer)} мм` : ''}
+                      {ruleFor(l.slot, l.product).waste ? ` + запас ${Math.round(ruleFor(l.slot, l.product).waste * 100)} %` : ''} = <b>{fq(l.need)} {unitLabel(l.product.unit)}</b>
+                    </div>
+                    <div>
+                      <span className="muted">Купить:</span> <b>{packText(l.product, c.packs)}</b> — {money(c.material)}
+                    </div>
+                    {c.consumables.map((cn) => (
+                      <div key={cn.product.id} className="muted">
+                        + {cn.product.name}: {packText(cn.product, cn.product.packSize > 1 ? Math.round(cn.buyQty / cn.product.packSize) : cn.buyQty)} — {money(cn.cost)}
+                      </div>
+                    ))}
+                    {work && (
+                      <div>
+                        <span className="muted">Работа:</span> {work.name.toLowerCase()} — {money(work.price)}/{unitLabel(work.unit)} × {fq(m[l.slot.workPer])}
+                        {workK > 1 ? ` × ${fq(Math.round(workK * 100) / 100)} (слой ${fq(l.layer!)} мм толще ${fq(l.slot.workLayerMm!)} мм)` : ''} = <b>{money(c.work)}</b>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </section>
           );
         })}
       </div>
+
+      <div className="calc-sum">
+        <div>
+          <span className="muted small">Материалы</span>
+          <b>{money(sum.mat)}</b>
+        </div>
+        <div>
+          <span className="muted small">Работа</span>
+          <b>{money(sum.work)}</b>
+        </div>
+        <div>
+          <span className="muted small">Всего по шагам</span>
+          <b>{money(sum.mat + sum.work)}</b>
+        </div>
+      </div>
+      <p className="muted small">В смете одинаковые материалы из всех шагов и комнат складываются и округляются до упаковки один раз, плюс доставка — поэтому итог сметы может немного отличаться.</p>
 
       <div className="row-actions">
         {sameType > 1 && (
@@ -257,14 +365,13 @@ export function ObjectCalculator({ ctx, selection }: Props) {
             Применить ко всем: {type.name.toLowerCase()} ({sameType})
           </button>
         )}
-        {(type.renderer === 'door') && (
+        {type.renderer === 'door' && (
           <button className="btn ghost" onClick={() => app.toggleDoor(el.id)}>
             {closed ? 'Открыть дверь в 3D' : 'Закрыть дверь в 3D'}
           </button>
         )}
       </div>
       {applied != null && <p className="muted small">Комплектация скопирована ещё на {applied} объект(а). Добавьте их в смету в списке «Объекты» или в смете.</p>}
-      <p className="muted small">Одинаковые товары из разных объектов складываются в смете в одну строку и округляются до упаковки один раз.</p>
     </div>
   );
 }

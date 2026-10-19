@@ -73,6 +73,30 @@ describe('конфигуратор объектов', () => {
     expect(fin.workId).toBe('W-WL-WP');
   });
 
+  it('отделка стен считается полным циклом: штукатурка по толщине слоя, шпаклёвки, грунт, финиш', () => {
+    const walls = layout.elements.find((e) => e.kind === 'room_walls' && e.roomId === 'living')!;
+    const m = measure(layout, walls);
+    const sel = objectSelection(catalog, 'wall.finish', 'comfort');
+    const lines = objectLines(catalog, layout, walls, sel);
+    expect(lines.map((l) => l.slot.slot)).toEqual(['wall.plaster', 'wall.putty.start', 'wall.mesh', 'wall.putty.finish', 'wall.primer', 'wall.finish']);
+    expect(lines.find((l) => l.slot.slot === 'wall.mesh')!.product).toBeUndefined(); // в «Комфорте» стеклохолста нет
+    const plaster = lines.find((l) => l.slot.slot === 'wall.plaster')!;
+    expect(plaster.layer).toBe(15);
+    expect(plaster.need).toBeCloseTo(0.9 * m.wall_m2 * 15 * 1.05, 1); // кг = расход на 1 мм × м² × мм + запас
+    expect(plaster.workQty).toBeCloseTo(m.wall_m2, 2);
+
+    // слой 30 мм: материала вдвое больше, работа ×1.5 (норма работы — до 20 мм)
+    const thick = objectLines(catalog, layout, walls, sel, { 'wall.plaster': 30 }).find((l) => l.slot.slot === 'wall.plaster')!;
+    expect(thick.need).toBeCloseTo(plaster.need * 2, 1);
+    expect(thick.workQty).toBeCloseTo(m.wall_m2 * 1.5, 1);
+
+    // маяки и грунт приходят расходниками; материал округляется до целых мешков
+    const est = computeEstimate(catalog, [buildObjectSection(catalog, layout, walls, 'comfort', sel, 's', { 'wall.plaster': 15 })]);
+    expect(est.lines.find((l) => l.refId === 'WL-BEACON-6')!.qty).toBe(Math.ceil(0.4 * m.wall_m2 - 1e-9));
+    expect(est.lines.find((l) => l.refId === 'WL-PLAST-GYPS')!.qty % 30).toBe(0);
+    expect(est.lines.find((l) => l.refId === 'WL-PRIMER')!.needQty).toBeCloseTo(m.wall_m2 * (0.15 + 0.15 + 0.1), 1);
+  });
+
   it('две двери с одинаковой комплектацией складываются в смете без дублей и округляются по упаковке', () => {
     const doors = layout.elements.filter((e) => e.kind === 'door').slice(0, 2);
     const sel = objectSelection(catalog, 'door.interior', 'econom');

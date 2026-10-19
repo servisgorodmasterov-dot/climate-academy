@@ -5,8 +5,8 @@ import type { Basis, Catalog, Layout, LayoutElement, ObjectSlotDef, Product, Tie
 import { BASES } from '../core/types';
 import type { Selection } from '../core/academy';
 import type { EstimateSection, SelectionItem } from '../estimate/engine';
-import { round2 } from '../estimate/engine';
-import { findProduct, objectType, slotsOfType } from '../catalog/sheetParser';
+import { consumablesFor, round2, roundToPack } from '../estimate/engine';
+import { findPrice, findProduct, findWork, objectType, slotsOfType } from '../catalog/sheetParser';
 import { generateObjectElements, measure } from './geometry';
 
 export const OBJECT_PREFIX = 'obj:';
@@ -92,28 +92,87 @@ export interface ObjectLine {
   need: number;
   workId: string | null;
   workQty: number;
+  /** Толщина слоя, мм (для штукатурки, шпаклёвки, стяжки) или null */
+  layer: number | null;
+  /** Норма на единицу базы (на 1 мм, если есть слой) */
+  rate: number;
+  /** База нормы (площадь стен и т. п.) */
+  per: Basis;
+  /** Значения баз для расходников: m2, m, pcs и mm — толщина слоя */
+  basis: Record<string, number>;
 }
 
+/** Толщины слоёв, выбранные пользователем: { 'wall.plaster': 15 } */
+export type Layers = Record<string, number>;
+
+/** Толщина слоя позиции: выбор пользователя или значение из таблицы. */
+export const layerOf = (slot: ObjectSlotDef, layers?: Layers) => (slot.layerMm == null ? null : layers?.[slot.slot] ?? slot.layerMm);
+
 /** Расчёт позиций одного объекта. */
-export function objectLines(catalog: Catalog, layout: Layout, el: LayoutElement, selection: Selection): ObjectLine[] {
+export function objectLines(catalog: Catalog, layout: Layout, el: LayoutElement, selection: Selection, layers?: Layers): ObjectLine[] {
   const t = typeForElement(catalog, el);
   if (!t) return [];
   const m = measure(layout, el);
+  const base = { ...m, m2: m.wall_m2 || m.opening_m2 || m.floor_m2, m: m.opening_perimeter_m || m.perimeter_m };
   return slotsOfType(catalog, t.id).map((slot) => {
+    const layer = layerOf(slot, layers);
+    const basis = { ...base, mm: layer ?? 0 };
     const choice = selection[slot.slot];
     const pid = choice === undefined ? slot.defaultProductId : choice.productId;
     const product = pid ? findProduct(catalog, pid) : undefined;
-    if (!product) return { slot, product: undefined, need: 0, workId: null, workQty: 0 };
+    if (!product) return { slot, product: undefined, need: 0, workId: null, workQty: 0, layer, rate: slot.qty, per: slot.per, basis };
     const r = ruleFor(slot, product);
-    return { slot, product, need: round2(r.rate * m[r.per] * (1 + r.waste)), workId: r.workId, workQty: round2(m[r.workPer]) };
+    // работа при слое толще нормы дорожает пропорционально толщине
+    const workK = layer != null && slot.workLayerMm && layer > slot.workLayerMm ? layer / slot.workLayerMm : 1;
+    return {
+      slot,
+      product,
+      need: round2(r.rate * m[r.per] * (layer ?? 1) * (1 + r.waste)),
+      workId: r.workId,
+      workQty: round2(m[r.workPer] * workK),
+      layer,
+      rate: r.rate,
+      per: r.per,
+      basis,
+    };
   });
 }
 
+export interface LineCost {
+  /** Сколько покупать (до целой упаковки) и сколько упаковок */
+  buyQty: number;
+  packs: number;
+  material: number;
+  consumables: { product: Product; need: number; buyQty: number; cost: number; note: string }[];
+  work: number;
+  total: number;
+}
+
+/** Стоимость одного шага отдельно: материал до целой упаковки, его расходники и работа. */
+export function lineCost(catalog: Catalog, line: ObjectLine): LineCost {
+  const empty = { buyQty: 0, packs: 0, material: 0, consumables: [], work: 0, total: 0 };
+  if (!line.product) return empty;
+  const p = line.product;
+  const buyQty = roundToPack(line.need, p.packSize);
+  const material = Math.round((findPrice(catalog, p.id)?.sale ?? 0) * buyQty);
+  const consumables = consumablesFor(catalog, { slot: line.slot.slot, productId: p.id, workId: line.workId, needQty: line.need, workQty: line.workQty, basis: line.basis }, {})
+    .map((c) => {
+      const cp = findProduct(catalog, c.productId);
+      if (!cp) return null;
+      const q = roundToPack(c.need, cp.packSize);
+      return { product: cp, need: c.need, buyQty: q, cost: Math.round((findPrice(catalog, cp.id)?.sale ?? 0) * q), note: c.note };
+    })
+    .filter((c): c is NonNullable<typeof c> => !!c);
+  const w = findWork(catalog, line.workId);
+  const work = Math.round((w?.price ?? 0) * (line.workId ? line.workQty : 0));
+  const total = material + consumables.reduce((a, c) => a + c.cost, 0) + work;
+  return { buyQty, packs: p.packSize > 1 ? Math.round(buyQty / p.packSize) : buyQty, material, consumables, work, total };
+}
+
 /** Раздел сметы для объекта: позиции идут в общий движок, где одинаковые товары складываются без дублей. */
-export function buildObjectSection(catalog: Catalog, layout: Layout, el: LayoutElement, tier: Tier, selection: Selection, sectionId: string): EstimateSection {
+export function buildObjectSection(catalog: Catalog, layout: Layout, el: LayoutElement, tier: Tier, selection: Selection, sectionId: string, layers?: Layers): EstimateSection {
   const t = typeForElement(catalog, el);
-  const m = measure(layout, el);
-  const items: SelectionItem[] = objectLines(catalog, layout, el, selection)
+  const items: SelectionItem[] = objectLines(catalog, layout, el, selection, layers)
     .filter((l) => l.product)
     .map((l) => ({
       slot: l.slot.slot,
@@ -121,7 +180,7 @@ export function buildObjectSection(catalog: Catalog, layout: Layout, el: LayoutE
       workId: l.workId,
       needQty: l.need,
       workQty: l.workId ? l.workQty : 0,
-      basis: { ...m, m2: m.wall_m2 || m.opening_m2 || m.floor_m2, m: m.opening_perimeter_m || m.perimeter_m },
+      basis: l.basis,
     }));
   return { id: sectionId, academy: academyIdForType(t?.id ?? 'unknown'), label: el.label, tier, items, params: { type: t?.id ?? '' } };
 }
