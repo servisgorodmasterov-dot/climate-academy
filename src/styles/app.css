@@ -62,7 +62,8 @@ p { line-height: 1.45; margin: 6px 0; }
 .toggle input:checked::after { transform: translateX(14px); }
 
 /* --- Сцена --- */
-.stage { position: relative; min-height: 0; }
+/* isolation: метки объектов из 3D (у них свой z-index) остаются внутри сцены и не рисуются поверх панелей */
+.stage { position: relative; min-height: 0; isolation: isolate; }
 .stage canvas { touch-action: none; }
 .overlay-top { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; z-index: 5; }
 .overlay-top > * { pointer-events: auto; }
@@ -465,3 +466,7 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .nav-pad .drag-mode button.on { background: var(--blue); color: #fff; }
 .nav-pad .drag-mode button:hover:not(.on) { background: var(--blue-soft); color: var(--blue); }
 @media (max-width: 760px) { .nav-pad .drag-mode { display: none; } }
+
+/* ---- Кнопка «← На сайт» в полноэкранном режиме ---- */
+.back-btn { white-space: nowrap; min-height: 34px; box-shadow: none; }
+@media (max-width: 760px) { .top-right .back-btn { padding: 6px 9px; font-size: 12px; min-height: 32px; } }

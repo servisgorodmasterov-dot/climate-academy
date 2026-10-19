@@ -18,6 +18,49 @@ import { CatalogBar } from './CatalogBar';
 import { categoriesOf, resolveSelectable, selectableObjects } from '../apartment/objects';
 import { money } from './format';
 
+// «На весь экран» из встроенного на сайт конструктора: открываем в той же вкладке (не в новой),
+// помечаем full=1 и запоминаем страницу сайта, чтобы кнопка «← На сайт» могла вернуть обратно.
+const params = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
+/** Страница сайта, с которой пришли (на телефоне сайт открывает конструктор вместо себя). Помним её при перезагрузке. */
+const siteBack: string | null = (() => {
+  if (typeof location === 'undefined') return null;
+  const ok = (u: string | null) => !!u && /^https?:\/\//.test(u) && new URL(u).origin !== location.origin;
+  let back = params.get('back');
+  if (!ok(back) && ok(document.referrer)) back = document.referrer;
+  try {
+    if (ok(back)) sessionStorage.setItem('home3d:back', back!);
+    else back = sessionStorage.getItem('home3d:back');
+  } catch {
+    /* хранилище недоступно — обойдёмся */
+  }
+  return ok(back) ? back : null;
+})();
+const isFull = params.get('full') === '1' || !!siteBack;
+
+function fullScreenUrl() {
+  const u = new URL(location.href);
+  u.searchParams.delete('embed');
+  u.searchParams.set('full', '1');
+  const site = document.referrer;
+  if (site && /^https?:\/\//.test(site)) u.searchParams.set('back', site);
+  return u.toString();
+}
+
+function goBackToSite() {
+  // обычно сайт — предыдущая страница в истории: возвращаемся туда же, где был пользователь
+  if (history.length > 1) {
+    history.back();
+    return;
+  }
+  if (siteBack) location.href = siteBack;
+  else {
+    const u = new URL(location.href);
+    u.searchParams.delete('full');
+    u.searchParams.delete('back');
+    location.href = u.toString();
+  }
+}
+
 const MODES: { id: ViewMode; label: string; hint: string }[] = [
   { id: 'apartment', label: 'Моя квартира', hint: 'Выберите комнату, затем объект по метке. Список всех объектов — кнопка «Объекты»' },
   { id: 'xray', label: 'Рентген', hint: 'Условная схема инженерных систем — не исполнительная документация' },
@@ -150,9 +193,14 @@ export function App() {
         </div>
         <div className="top-right">
           {embed && (
-            <a className="btn ghost sm" href={location.href.replace(/([?&])embed=1&?/, '$1').replace(/[?&]$/, '')} target="_blank" rel="noopener" title="Открыть конструктор на весь экран">
+            <a className="btn ghost sm" href={fullScreenUrl()} target="_top" title="Открыть конструктор на весь экран">
               ⤢ На весь экран
             </a>
+          )}
+          {!embed && isFull && (
+            <button className="btn ghost sm back-btn" onClick={goBackToSite} title="Вернуться на сайт">
+              ← На сайт
+            </button>
           )}
           <label className="toggle" title="Профессиональный режим показывает технические детали для мастеров">
             <input type="checkbox" checked={proMode} onChange={(e) => s.set('proMode', e.target.checked)} />
