@@ -587,3 +587,6 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .el-branch.light { background: #c99400; }
 .el-branch.power { background: #e0102a; }
 .el-legend { width: 320px; max-height: calc(100% - 200px); overflow: auto; }
+.pl-label { padding: 2px 7px; border-radius: 7px; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; background: #fff; border: 1px solid #1e88e5; color: #0d47a1; }
+.pl-label.riser { background: #607d8b; color: #fff; border-color: #607d8b; }
+.pl-label.meter, .pl-label.manifold { background: #1e88e5; color: #fff; }

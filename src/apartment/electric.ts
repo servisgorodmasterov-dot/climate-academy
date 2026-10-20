@@ -61,7 +61,7 @@ const SWITCH_H = 0.9;
 const CABLE_H = 2.55; // штроба под потолком
 
 /** Дверь комнаты: точка на стене внутри комнаты и нормаль внутрь. */
-function roomDoor(layout: Layout, room: Room): { pos: Vec3; normal: [number, number]; along: [number, number] } | null {
+export function roomDoor(layout: Layout, room: Room): { pos: Vec3; normal: [number, number]; along: [number, number] } | null {
   for (const w of layout.walls)
     for (const o of w.openings) {
       if (o.kind === 'window') continue;
@@ -84,7 +84,7 @@ interface RoomOpening {
   sill: number; // низ проёма от пола (дверь — 0)
   head: number;
 }
-const EDGE_INSET = 0.08;
+export const EDGE_INSET = 0.08;
 function roomEdges(room: Room) {
   const [x0, z0, x1, z1] = room.rect;
   return [
@@ -159,7 +159,7 @@ function perimeterSpots(layout: Layout, room: Room, n: number, h: number): { pos
 }
 
 /** Точка, прижатая к ближайшей стене комнаты с отступом EDGE_INSET (как стоят розетки). */
-function snapToWall(room: Room, x: number, z: number): [number, number] {
+export function snapToWall(room: Room, x: number, z: number): [number, number] {
   const edges = roomEdges(room);
   let best: { d: number; p: [number, number] } = { d: 1e9, p: [x, z] };
   for (const e of edges) {
@@ -174,7 +174,7 @@ function snapToWall(room: Room, x: number, z: number): [number, number] {
 }
 
 /** Маршрут вдоль стен от точки к точке по периметру (кратчайшей стороной), с обходом проёмов поверху. */
-function wallRoute(layout: Layout, room: Room, from: Vec3, to: Vec3, h: number, ceil: number): Vec3[] {
+export function wallRoute(layout: Layout, room: Room, from: Vec3, to: Vec3, h: number, ceil: number): Vec3[] {
   const edges = roomEdges(room);
   const ops = roomOpenings(layout, room);
   const L = edges.map((e) => Math.hypot(e.b[0] - e.a[0], e.b[1] - e.a[1]));

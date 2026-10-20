@@ -18,6 +18,7 @@ import { CatalogBar } from './CatalogBar';
 import { categoriesOf, resolveSelectable, selectableObjects } from '../apartment/objects';
 import { money } from './format';
 import { buildElectricScheme, countsFromSections } from '../apartment/electric';
+import { buildPlumbingScheme } from '../apartment/plumbing';
 import type { Layout } from '../core/types';
 
 // «На весь экран» из встроенного на сайт конструктора: открываем в той же вкладке (не в новой),
@@ -66,6 +67,7 @@ function goBackToSite() {
 const MODES: { id: ViewMode; label: string; hint: string }[] = [
   { id: 'apartment', label: 'Моя квартира', hint: 'Выберите комнату, затем объект по метке. Список всех объектов — кнопка «Объекты»' },
   { id: 'xray', label: 'Рентген', hint: 'Условная схема инженерных систем — не исполнительная документация' },
+  { id: 'plumbing', label: 'Сантехника', hint: 'Схема труб: холодная и горячая вода от стояка через счётчики и коллектор к приборам, канализация с уклоном к стояку' },
   { id: 'electric', label: 'Электрика', hint: 'Схема кабелей по вашему расчёту: наведите на линию — марка и сечение; нажмите точку — карточка комнаты' },
   { id: 'encyclopedia', label: 'Энциклопедия', hint: 'Выберите объект — главной станет кнопка «Как устроено»' },
 ];
@@ -333,6 +335,7 @@ export function App() {
         </div>
 
         {mode === 'electric' && <ElectricLegend layout={layout} />}
+        {mode === 'plumbing' && <PlumbingLegend layout={layout} />}
 
         {mode === 'xray' && (
           <div className="legend">
@@ -508,6 +511,51 @@ function ElectricLegend({ layout }: { layout: Layout }) {
         </div>
       </div>
       <p className="muted small">Наведите на линию — марка кабеля; нажмите на розетку или линию — откроется расчёт комнаты. Число точек меняется в карточке «Электрика».</p>
+    </div>
+  );
+}
+
+/** Легенда режима «Сантехника»: цвета, диаметры, длины, объяснение по шагам. */
+function PlumbingLegend({ layout }: { layout: Layout }) {
+  const step = useApp((st) => st.electricStep);
+  const scheme = useMemo(() => buildPlumbingScheme(layout), [layout]);
+  const fixtures = scheme.points.filter((p) => p.kind === 'fixture').map((p) => p.short).join(', ');
+  const STEPS = [
+    { t: 'Вся схема', d: 'Нажмите «Объяснить по шагам», чтобы увидеть, как вода приходит в квартиру и куда уходит.' },
+    { t: '1. Стояк', d: 'В санузле проходят общие для всего дома трубы: холодная вода, горячая вода и канализация 110 мм. Это стояк — его обслуживает управляющая компания, менять его самому нельзя.' },
+    { t: '2. Краны, фильтр, счётчики', d: 'От стояка в квартиру вода заходит через узел ввода: шаровой кран (перекрыть всю квартиру), фильтр грубой очистки, редуктор давления и счётчик — отдельно на холодную и горячую.' },
+    { t: '3. Коллектор', d: 'После счётчиков вода приходит в коллектор — «гребёнку». От него к каждому прибору идёт своя труба со своим краном: можно отключить один унитаз и не оставить без воды всю квартиру.' },
+    { t: '4. Холодная вода', d: 'Синие трубы (полипропилен 20 мм) идут от коллектора к каждому прибору в штробе стены, а в другую комнату — в стяжке пола под порогом.' },
+    { t: '5. Горячая вода', d: 'Красные трубы идут рядом с холодными — к ванне, раковине и кухонной мойке. Унитазу и стиральной машине горячая не нужна.' },
+    { t: '6. Канализация', d: 'Коричневые трубы ведут от приборов к стояку: от унитаза — 110 мм, от остальных — 50 мм. Они идут с уклоном 2–3 см на метр вниз к стояку, иначе вода будет стоять.' },
+  ];
+  return (
+    <div className="legend el-legend">
+      <b>Схема сантехники</b>
+      <div className="el-steps">
+        <div className="row-actions" style={{ margin: 0 }}>
+          {step === 0 ? (
+            <button className="btn" onClick={() => useApp.getState().set('electricStep', 1)}>▶ Объяснить по шагам</button>
+          ) : (
+            <>
+              <button className="btn ghost" disabled={step <= 1} onClick={() => useApp.getState().set('electricStep', step - 1)}>←</button>
+              <button className="btn" onClick={() => useApp.getState().set('electricStep', step >= 6 ? 0 : step + 1)}>{step >= 6 ? 'Показать всё' : 'Дальше →'}</button>
+            </>
+          )}
+        </div>
+        <div className="el-step-text">
+          <b>{STEPS[step].t}</b>
+          <span>{STEPS[step].d}</span>
+        </div>
+      </div>
+      <div className="el-row"><i style={{ background: '#1e88e5' }} /> Холодная вода — полипропилен 20 мм</div>
+      <div className="el-row"><i style={{ background: '#e53935' }} /> Горячая вода — полипропилен 20 мм армированный</div>
+      <div className="el-row"><i style={{ background: '#8d6e63', height: 6 }} /> Канализация — ПВХ 50 мм, унитаз 110 мм</div>
+      <div className="conf">
+        <div>Приборы: {fixtures}</div>
+        <div>Трубы: холодная ≈{Math.round(scheme.length.cold)} м · горячая ≈{Math.round(scheme.length.hot)} м · канализация ≈{Math.round(scheme.length.sewer)} м</div>
+      </div>
+      <p className="muted small">Наведите на трубу — материал и диаметр; на прибор или узел — что это и зачем.</p>
     </div>
   );
 }

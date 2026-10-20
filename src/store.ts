@@ -12,7 +12,7 @@ import type { Order, OrderStatus } from './integrations/gorodmasterov/orders';
 import { advance } from './integrations/gorodmasterov/orders';
 import { readLaunchContext } from './integrations/eshanyraq/bridge';
 
-export type ViewMode = 'apartment' | 'xray' | 'electric' | 'encyclopedia';
+export type ViewMode = 'apartment' | 'xray' | 'electric' | 'plumbing' | 'encyclopedia';
 export type Panel = 'academy' | 'objects' | 'estimate' | 'passport' | 'orders' | 'about' | null;
 export type AcademyTab = 'card' | 'lesson' | 'variants' | 'calc';
 

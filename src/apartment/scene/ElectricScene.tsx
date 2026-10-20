@@ -181,7 +181,7 @@ function ElPointMesh({ p, faded, hovered, onHover, onClick }: { p: ElPoint; fade
 }
 
 /** Бегущие точки вдоль кабеля — показывают, что ток идёт от щита к точкам. */
-function Flow({ points, color }: { points: [number, number, number][]; color: string }) {
+export function Flow({ points, color }: { points: [number, number, number][]; color: string }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const curve = useMemo(() => new THREE.CurvePath<THREE.Vector3>(), []);
   const total = useMemo(() => {
