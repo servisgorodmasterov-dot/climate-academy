@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLayout } from '../apartment/layout';
 import { buildElectricScheme, defaultCounts } from '../apartment/electric';
+import { openingPlace } from '../objects/geometry';
 
 const layout = getLayout('type-2k-68');
 
@@ -19,7 +20,7 @@ describe('схема электрики', () => {
       expect(trunkLine.points[trunkLine.points.length - 1]).toEqual(box.position); // магистраль заканчивается в коробке
       for (const g of ['sockets', 'light']) for (const l of s.lines.filter((x) => x.group === g && x.roomId === r.id)) expect(l.points[0]).toEqual(box.position); // ветки начинаются в коробке
       // все отрезки — по осям (прямые углы), без диагоналей
-      for (const l of s.lines.filter((x) => x.roomId === r.id)) for (let i = 1; i < l.points.length; i++) { const a = l.points[i - 1], b = l.points[i]; const axes = [a[0] !== b[0], a[1] !== b[1], a[2] !== b[2]].filter(Boolean).length; expect(axes).toBeLessThanOrEqual(1); }
+      for (const l of s.lines.filter((x) => x.roomId === r.id)) for (let i = 1; i < l.points.length; i++) { const a = l.points[i - 1], b = l.points[i]; const axes = [Math.abs(a[0] - b[0]) > 1e-6, Math.abs(a[1] - b[1]) > 1e-6, Math.abs(a[2] - b[2]) > 1e-6].filter(Boolean).length; expect(axes).toBeLessThanOrEqual(1); }
       expect(s.cableByRoom[r.id]).toBeGreaterThan(5);
       // розетки внутри комнаты, на высоте 30 см
       for (const p of s.points.filter((p) => p.kind === 'socket' && p.roomId === r.id)) {
@@ -40,5 +41,14 @@ describe('схема электрики', () => {
     expect(s.points.filter((p) => p.kind === 'switch' && p.roomId === 'living').length).toBe(2);
     expect(s.lines.find((l) => l.group === 'sockets' && l.roomId === 'living')!.cable).toBe('NYM 3×2.5');
     expect(s.lines.find((l) => l.group === 'light' && l.roomId === 'living')!.cable).toBe('NYM 3×1.5');
+  });
+
+  it('розетки, выключатели и кабели не попадают в дверные проёмы и в окна', () => {
+    const s = buildElectricScheme(layout, (r) => ({ ...defaultCounts(r), sockets: 12, power: r.type === 'kitchen' ? 2 : 0 }));
+    const ops: { x: number; z: number; w: number; h: boolean; sill: number; head: number }[] = [];
+    for (const w of layout.walls) for (const o of w.openings) { const p = openingPlace(layout, w, o); ops.push({ x: p.cx, z: p.cz, w: o.to - o.from, h: p.horizontal, sill: o.kind === 'window' ? o.sill ?? 0.9 : 0, head: o.head }); }
+    const inOpening = (x: number, z: number, y: number) => ops.some((o) => y > o.sill + 0.05 && y < o.head - 0.05 && (o.h ? Math.abs(z - o.z) < 0.25 && Math.abs(x - o.x) < o.w / 2 : Math.abs(x - o.x) < 0.25 && Math.abs(z - o.z) < o.w / 2));
+    for (const p of s.points) if (p.kind !== 'box' && p.kind !== 'panel') expect(inOpening(p.position[0], p.position[2], p.position[1]), `точка ${p.id} в проёме`).toBe(false);
+    for (const l of s.lines) if (l.group === 'sockets') for (let i = 1; i < l.points.length; i++) { const a = l.points[i - 1], b = l.points[i]; for (let t = 0; t <= 1; t += 0.05) { const x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t, z = a[2] + (b[2] - a[2]) * t; expect(inOpening(x, z, y), `линия ${l.id} сегмент ${i} y=${y.toFixed(2)} в проёме`).toBe(false); } }
   });
 });

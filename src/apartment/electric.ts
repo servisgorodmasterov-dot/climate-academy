@@ -75,43 +75,187 @@ function roomDoor(layout: Layout, room: Room): { pos: Vec3; normal: [number, num
   return null;
 }
 
-/** Точки вдоль периметра комнаты, равномерно, с отступом от углов и дверей. */
-function perimeterSpots(layout: Layout, room: Room, n: number, h: number): { pos: Vec3; normal: [number, number] }[] {
+/** Все проёмы комнаты: положение на периметре (расстояние вдоль обхода), ширина, вид, высота низа (окно — подоконник). */
+interface RoomOpening {
+  edge: number; // индекс стены в обходе
+  from: number; // вдоль стены, м
+  to: number;
+  kind: 'door' | 'window' | 'entrance';
+  sill: number; // низ проёма от пола (дверь — 0)
+  head: number;
+}
+const EDGE_INSET = 0.08;
+function roomEdges(room: Room) {
   const [x0, z0, x1, z1] = room.rect;
-  const inset = 0.08;
-  const edges: { a: [number, number]; b: [number, number]; normal: [number, number] }[] = [
-    { a: [x0, z0], b: [x1, z0], normal: [0, 1] },
-    { a: [x1, z0], b: [x1, z1], normal: [-1, 0] },
-    { a: [x1, z1], b: [x0, z1], normal: [0, -1] },
-    { a: [x0, z1], b: [x0, z0], normal: [1, 0] },
+  return [
+    { a: [x0, z0] as [number, number], b: [x1, z0] as [number, number], normal: [0, 1] as [number, number] },
+    { a: [x1, z0] as [number, number], b: [x1, z1] as [number, number], normal: [-1, 0] as [number, number] },
+    { a: [x1, z1] as [number, number], b: [x0, z1] as [number, number], normal: [0, -1] as [number, number] },
+    { a: [x0, z1] as [number, number], b: [x0, z0] as [number, number], normal: [1, 0] as [number, number] },
   ];
-  const total = edges.reduce((s, e) => s + Math.hypot(e.b[0] - e.a[0], e.b[1] - e.a[1]), 0);
-  const door = roomDoor(layout, room);
-  const doorW = doorWidthInRoom(layout, room) || 0.9;
+}
+function roomOpenings(layout: Layout, room: Room): RoomOpening[] {
+  const edges = roomEdges(room);
+  const out: RoomOpening[] = [];
+  for (const w of layout.walls)
+    for (const o of w.openings) {
+      const p = openingPlace(layout, w, o);
+      if (p.plus?.id !== room.id && p.minus?.id !== room.id) continue;
+      // к какой стене комнаты относится проём
+      edges.forEach((e, ei) => {
+        const horizontal = e.a[1] === e.b[1];
+        if (horizontal !== p.horizontal) return;
+        const fixed = horizontal ? e.a[1] : e.a[0];
+        const pf = horizontal ? p.cz : p.cx;
+        if (Math.abs(fixed - pf) > w.thickness / 2 + 0.05) return;
+        const len = Math.hypot(e.b[0] - e.a[0], e.b[1] - e.a[1]);
+        const dir = horizontal ? Math.sign(e.b[0] - e.a[0]) : Math.sign(e.b[1] - e.a[1]);
+        const center = horizontal ? (p.cx - e.a[0]) * dir : (p.cz - e.a[1]) * dir;
+        const half = (o.to - o.from) / 2;
+        if (center + half < 0 || center - half > len) return;
+        out.push({ edge: ei, from: Math.max(0, center - half), to: Math.min(len, center + half), kind: o.kind, sill: o.kind === 'window' ? o.sill ?? 0.9 : 0, head: o.head });
+      });
+    }
+  return out;
+}
+
+/** Точки вдоль периметра комнаты: равномерно по свободным участкам стен, не ближе 25 см к проёмам и углам. */
+function perimeterSpots(layout: Layout, room: Room, n: number, h: number): { pos: Vec3; normal: [number, number] }[] {
+  const edges = roomEdges(room);
+  const ops = roomOpenings(layout, room);
+  const GAP = 0.25;
+  // свободные отрезки на каждой стене (на высоте h: окно мешает только если h ниже подоконника+0.1... розетки под окном допустимы, но не в дверях)
+  const free: { edge: number; from: number; to: number }[] = [];
+  edges.forEach((e, ei) => {
+    const len = Math.hypot(e.b[0] - e.a[0], e.b[1] - e.a[1]);
+    const blocks = ops.filter((o) => o.edge === ei && (o.kind !== 'window' || h > o.sill - 0.15)).map((o) => [o.from - GAP, o.to + GAP] as [number, number]).sort((x, y) => x[0] - y[0]);
+    let cur = 0.2;
+    for (const [bf, bt] of blocks) {
+      if (bf > cur) free.push({ edge: ei, from: cur, to: Math.min(bf, len - 0.2) });
+      cur = Math.max(cur, bt);
+    }
+    if (cur < len - 0.2) free.push({ edge: ei, from: cur, to: len - 0.2 });
+  });
+  const usable = free.filter((f) => f.to - f.from > 0.15);
+  const total = usable.reduce((s, f) => s + (f.to - f.from), 0);
   const out: { pos: Vec3; normal: [number, number] }[] = [];
-  let tries = 0;
-  for (let i = 0; i < n && tries < n * 4; i++) {
-    tries++;
+  if (!usable.length || total <= 0) return out;
+  for (let i = 0; i < n; i++) {
     let d = ((i + 0.5) / n) * total;
-    for (const e of edges) {
-      const len = Math.hypot(e.b[0] - e.a[0], e.b[1] - e.a[1]);
+    for (const f of usable) {
+      const len = f.to - f.from;
       if (d > len) {
         d -= len;
         continue;
       }
-      const t = Math.min(Math.max(d / len, 0.08), 0.92);
-      const x = e.a[0] + (e.b[0] - e.a[0]) * t + e.normal[0] * inset;
-      const z = e.a[1] + (e.b[1] - e.a[1]) * t + e.normal[1] * inset;
-      // не ставить в дверной проём
-      if (door && Math.hypot(x - door.pos[0], z - door.pos[2]) < doorW / 2 + 0.25) {
-        n++;
-        break;
-      }
-      out.push({ pos: [x, h, z], normal: e.normal });
+      const e = edges[f.edge];
+      const L = Math.hypot(e.b[0] - e.a[0], e.b[1] - e.a[1]);
+      const t = (f.from + d) / L;
+      out.push({ pos: [e.a[0] + (e.b[0] - e.a[0]) * t + e.normal[0] * EDGE_INSET, h, e.a[1] + (e.b[1] - e.a[1]) * t + e.normal[1] * EDGE_INSET], normal: e.normal });
       break;
     }
   }
-  return out.slice(0, Math.max(0, out.length));
+  return out;
+}
+
+/** Точка, прижатая к ближайшей стене комнаты с отступом EDGE_INSET (как стоят розетки). */
+function snapToWall(room: Room, x: number, z: number): [number, number] {
+  const edges = roomEdges(room);
+  let best: { d: number; p: [number, number] } = { d: 1e9, p: [x, z] };
+  for (const e of edges) {
+    const dx = e.b[0] - e.a[0], dz = e.b[1] - e.a[1];
+    const L2 = dx * dx + dz * dz;
+    const t = Math.min(1, Math.max(0, ((x - e.a[0]) * dx + (z - e.a[1]) * dz) / L2));
+    const px = e.a[0] + dx * t + e.normal[0] * EDGE_INSET, pz = e.a[1] + dz * t + e.normal[1] * EDGE_INSET;
+    const d = Math.hypot(x - px, z - pz);
+    if (d < best.d) best = { d, p: [px, pz] };
+  }
+  return best.p;
+}
+
+/** Маршрут вдоль стен от точки к точке по периметру (кратчайшей стороной), с обходом проёмов поверху. */
+function wallRoute(layout: Layout, room: Room, from: Vec3, to: Vec3, h: number, ceil: number): Vec3[] {
+  const edges = roomEdges(room);
+  const ops = roomOpenings(layout, room);
+  const L = edges.map((e) => Math.hypot(e.b[0] - e.a[0], e.b[1] - e.a[1]));
+  const P = L.reduce((a, b) => a + b, 0);
+  // параметр вдоль периметра для точки у стены
+  const param = (p: Vec3) => {
+    let best = { d: 1e9, s: 0 };
+    let acc = 0;
+    edges.forEach((e, i) => {
+      const dx = e.b[0] - e.a[0], dz = e.b[1] - e.a[1];
+      const t = Math.min(1, Math.max(0, ((p[0] - e.a[0]) * dx + (p[2] - e.a[1]) * dz) / (L[i] * L[i])));
+      const x = e.a[0] + dx * t + e.normal[0] * EDGE_INSET, z = e.a[1] + dz * t + e.normal[1] * EDGE_INSET;
+      const d = Math.hypot(p[0] - x, p[2] - z);
+      if (d < best.d) best = { d, s: acc + t * L[i] };
+      acc += L[i];
+    });
+    return best.s;
+  };
+  const at = (sParam: number, y: number): Vec3 => {
+    let sp = ((sParam % P) + P) % P;
+    for (let i = 0; i < edges.length; i++) {
+      if (sp <= L[i] + 1e-9) {
+        const e = edges[i];
+        const t = sp / L[i];
+        // в углу сдвигаем по обеим нормалям, чтобы отрезки между стенами шли строго по осям
+        const prev = edges[(i + edges.length - 1) % edges.length].normal;
+        const next = edges[(i + 1) % edges.length].normal;
+        const cornerA = t < 1e-6 ? prev : [0, 0];
+        const cornerB = t > 1 - 1e-6 ? next : [0, 0];
+        return [e.a[0] + (e.b[0] - e.a[0]) * t + (e.normal[0] + cornerA[0] + cornerB[0]) * EDGE_INSET, y, e.a[1] + (e.b[1] - e.a[1]) * t + (e.normal[1] + cornerA[1] + cornerB[1]) * EDGE_INSET];
+      }
+      sp -= L[i];
+    }
+    return [edges[0].a[0], y, edges[0].a[1]];
+  };
+  // проёмы в параметрах периметра
+  const offs = edges.map((_, i) => L.slice(0, i).reduce((a, b) => a + b, 0));
+  const blocks = ops.filter((o) => o.kind !== 'window' || h > o.sill - 0.15).map((o) => ({ from: offs[o.edge] + o.from - 0.1, to: offs[o.edge] + o.to + 0.1 }));
+  const path: Vec3[] = [];
+  const s0 = param(from), s1 = param(to);
+  // стартуем из точки на периметре в тех же координатах, что и остальной маршрут (иначе в углу получается косой отрезок)
+  const start = at(s0, h);
+  if (Math.abs(start[0] - from[0]) > 1e-6 || Math.abs(start[2] - from[2]) > 1e-6) {
+    if (Math.abs(start[0] - from[0]) > 1e-6 && Math.abs(start[2] - from[2]) > 1e-6) path.push([from[0], h, start[2]]);
+    path.push(start);
+  }
+  // идём в сторону, где короче (с учётом замыкания периметра)
+  let delta = s1 - s0;
+  if (delta > P / 2) delta -= P;
+  if (delta < -P / 2) delta += P;
+  const dir = Math.sign(delta) || 1;
+  // ключевые параметры: углы стен и границы проёмов между s0 и s1
+  const marks: number[] = [];
+  for (let i = 0; i < edges.length; i++) marks.push(offs[i]);
+  for (const bl of blocks) marks.push(bl.from, bl.to);
+  const inRange = (m: number) => {
+    let d = m - s0;
+    if (dir > 0) { d = ((d % P) + P) % P; return d > 1e-6 && d < Math.abs(delta) - 1e-6; }
+    d = ((-d % P) + P) % P; return d > 1e-6 && d < Math.abs(delta) - 1e-6;
+  };
+  const sorted = marks.filter(inRange).sort((a, b) => { const da = ((dir * (a - s0)) % P + P) % P; const db = ((dir * (b - s0)) % P + P) % P; return da - db; });
+  let cur = s0;
+  let up = false;
+  const over = (sp: number) => blocks.some((bl) => sp > bl.from && sp < bl.to);
+  for (const m of sorted) {
+    const mid = (cur + m) / 2;
+    const needUp = over(((mid % P) + P) % P);
+    if (needUp && !up) { path.push(at(cur, h), at(cur, ceil)); up = true; }
+    if (!needUp && up) { path.push(at(cur, ceil), at(cur, h)); up = false; }
+    path.push(at(m, up ? ceil : h));
+    cur = m;
+  }
+  const needUp = over((((cur + s1) / 2 % P) + P) % P);
+  if (needUp && !up) { path.push(at(cur, h), at(cur, ceil)); up = true; }
+  if (!needUp && up) { path.push(at(cur, ceil), at(cur, h)); up = false; }
+  if (up) path.push(at(s1, ceil));
+  const last = path[path.length - 1] ?? from;
+  // довести до цели по осям
+  if (last && Math.abs(last[0] - to[0]) > 1e-6 && Math.abs(last[2] - to[2]) > 1e-6) path.push([last[0], h, to[2]]);
+  path.push([to[0], h, to[2]]);
+  return path;
 }
 
 /** Потолочные точки сеткой по площади. */
@@ -162,20 +306,19 @@ export function buildElectricScheme(layout: Layout, counts: (room: Room) => Room
     sockets.forEach((sp, i) => points.push({ id: `sock-${room.id}-${i}`, kind: 'socket', roomId: room.id, position: sp.pos, normal: sp.normal, label: `Розетка ${i + 1} · ${room.name}` }));
     if (sockets.length) {
       // кабель идёт по стене: коробка → вниз у стены → вдоль стен (через углы) к каждой розетке
-      // путь вдоль стен строго по осям: одна точка на той же стене — прямая; на другой стене — через угол
-      const onX = (p: Vec3) => Math.abs(p[0] - x0) < 0.2 || Math.abs(p[0] - x1) < 0.2; // точка на левой/правой стене
-      const wallPath = (from: Vec3, to: Vec3): Vec3[] => {
-        if (Math.abs(from[0] - to[0]) < 1e-6 || Math.abs(from[2] - to[2]) < 1e-6) return [to];
-        // угол: X берём у того, кто на боковой стене, Z — у того, кто на передней/задней
-        const corner: Vec3 = onX(from) ? [from[0], from[1], to[2]] : [to[0], from[1], from[2]];
-        return [corner, to];
-      };
-      // от коробки к стене двери (в её плоскость), затем вниз до высоты розеток
-      const wall: Vec3 = door ? [door.pos[0] + door.normal[0] * 0.08, SOCKET_H, door.pos[2] + door.normal[1] * 0.08] : [box[0], SOCKET_H, box[2]];
-      const pts: Vec3[] = [box, [wall[0], CABLE_H, wall[2]], wall];
+      // спуск от коробки — сбоку от двери (не над проёмом), затем шлейф вдоль стен с обходом проёмов поверху
+      // door.pos уже на внутренней грани стены; розетки стоят с отступом EDGE_INSET от этой грани
+      const side = door ? snapToWall(room, door.pos[0] + door.along[0] * ((doorWidthInRoom(layout, room) || 0.9) / 2 + 0.3), door.pos[2] + door.along[1] * ((doorWidthInRoom(layout, room) || 0.9) / 2 + 0.3)) : [box[0], box[2]];
+      const wallTop: Vec3 = [side[0], CABLE_H, side[1]];
+      const wall: Vec3 = [side[0], SOCKET_H, side[1]];
+      // коробка стоит в 25 см от стены, боковая точка — у стены: сначала к стене, потом вдоль неё, потом вниз
+      const toWall: Vec3 = door ? [door.normal[0] ? side[0] : box[0], CABLE_H, door.normal[1] ? side[1] : box[2]] : box;
+      const pts: Vec3[] = [box, toWall, wallTop, wall];
+
       let cur = wall;
       for (const sp of sockets) {
-        for (const q of wallPath(cur, sp.pos)) pts.push(q);
+        const seg = wallRoute(layout, room, cur, sp.pos, SOCKET_H, CABLE_H);
+        for (const q of seg) pts.push(q);
         cur = sp.pos;
       }
       lines.push({ id: `sock-${room.id}`, roomId: room.id, group: 'sockets', points: pts, label: `Группа розеток · ${room.name}: ${cab}, автомат 16 А — шлейфом от коробки`, cable: cab });
