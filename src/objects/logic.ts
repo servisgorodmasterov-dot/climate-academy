@@ -159,7 +159,8 @@ export function lineCost(catalog: Catalog, line: ObjectLine): LineCost {
     .map((c) => {
       const cp = findProduct(catalog, c.productId);
       if (!cp) return null;
-      const q = roundToPack(c.need, cp.packSize);
+      // расходники (грунт, маяки) общие для всех шагов: в шаге считаем по расходу, до упаковки округляет смета
+      const q = cp.packSize <= 1 ? Math.ceil(c.need - 1e-9) : c.need;
       return { product: cp, need: c.need, buyQty: q, cost: Math.round((findPrice(catalog, cp.id)?.sale ?? 0) * q), note: c.note };
     })
     .filter((c): c is NonNullable<typeof c> => !!c);

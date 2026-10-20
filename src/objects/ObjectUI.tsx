@@ -326,7 +326,7 @@ export function ObjectCalculator({ ctx, selection, params, setParams }: Props) {
                     </div>
                     {c.consumables.map((cn) => (
                       <div key={cn.product.id} className="muted">
-                        + {cn.product.name}: {packText(cn.product, cn.product.packSize > 1 ? Math.round(cn.buyQty / cn.product.packSize) : cn.buyQty)} — {money(cn.cost)}
+                        + {cn.product.name}: {fq(cn.buyQty)} {unitLabel(cn.product.unit)} — {money(cn.cost)}
                       </div>
                     ))}
                     {work && (

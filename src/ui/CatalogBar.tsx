@@ -7,7 +7,9 @@ import { useApp } from '../store';
 export function CatalogBar() {
   const { layout, catalog, categoryFilter, panel } = useApp();
   const app = useApp.getState();
-  const [open, setOpen] = useState(false);
+  // на широком экране каталог открыт сразу, на узком — по кнопке
+  const wide = () => typeof window !== 'undefined' && window.innerWidth >= 1100 && !useApp.getState().embed;
+  const [open, setOpen] = useState(wide);
   const objects = useMemo(() => (layout ? selectableObjects(layout, catalog) : []), [layout, catalog]);
   if (!layout || panel) return null;
   const cats = categoriesOf(catalog);
@@ -15,7 +17,7 @@ export function CatalogBar() {
     app.set('categoryFilter', id);
     app.set('selectedElement', null);
     if (id !== 'all') app.set('focusRoom', null);
-    setOpen(false);
+    if (!wide()) setOpen(false);
   };
   return (
     <>

@@ -96,7 +96,7 @@ export function AcademyPanel() {
         {tab === 'variants' && (
           <div className="variants">
             <p className="muted small">Цена справа — насколько изменится итог за {ctx.element ? 'этот объект' : 'это помещение'} (материал + работа). Под ней — цена за единицу.</p>
-            {slotsOf(def, catalog).map((sl) => {
+            {slotsOf(def, catalog).map((sl, si, allSlots) => {
               const list = productsForSlot(catalog, sl.slot);
               if (!list.length) return null;
               const cur = s.selection[sl.slot]?.productId ?? null;
@@ -104,7 +104,7 @@ export function AcademyPanel() {
               return (
                 <section key={sl.slot}>
                   <h4>
-                    {slotsOf(def, catalog).length > 2 ? `Шаг ${slotsOf(def, catalog).indexOf(sl) + 1}. ` : ''}
+                    {allSlots.length > 2 ? `Шаг ${si + 1}. ` : ''}
                     {sl.label}
                   </h4>
                   <div className="opts" role="radiogroup" aria-label={sl.label}>

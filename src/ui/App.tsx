@@ -231,6 +231,11 @@ export function App() {
             {catalog?.status === 'demo' && <span className="badge demo">Демо-цены</span>}
           </div>
           <div className="rooms" role="tablist" aria-label="Помещения">
+            {s.categoryFilter !== 'all' && (
+              <button className="chip filter-chip" title="Показать метки всех объектов" onClick={() => s.set('categoryFilter', 'all')}>
+                Показано: {categoriesOf(catalog).find((c) => c.id === s.categoryFilter)?.icon} {categoriesOf(catalog).find((c) => c.id === s.categoryFilter)?.name ?? s.categoryFilter} ✕
+              </button>
+            )}
             <button className={!focusRoom ? 'chip on' : 'chip'} onClick={() => (s.set('focusRoom', null), s.set('selectedElement', null))}>
               Вся квартира
             </button>
@@ -242,11 +247,9 @@ export function App() {
           </div>
         </div>
 
-        {compact && (
-          <button className="chip tools-btn" aria-expanded={toolsOpen} onClick={() => setToolsOpen(!toolsOpen)}>
-            {toolsOpen ? '✕ Закрыть' : '⚙ Вид'}
-          </button>
-        )}
+        <button className="chip tools-btn" aria-expanded={toolsOpen} onClick={() => setToolsOpen(!toolsOpen)}>
+          {toolsOpen ? '✕ Закрыть' : '⚙ Вид'}
+        </button>
         <div className="view-tools">
           {compact && (
             <div className="seg modes-inline" role="tablist" aria-label="Режим просмотра">
