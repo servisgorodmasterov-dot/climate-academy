@@ -209,6 +209,24 @@ const CURVES: { label: string; mm: number | null }[] = [
   { label: 'до 50 мм', mm: 30 },
 ];
 
+/** «Насколько ровный пол?» — по перепаду (правило 2 м) сразу включает стяжку и наливной пол с нужной толщиной. */
+const FLOOR_LEVELS: { label: string; screed: number | null; self: number | null }[] = [
+  { label: 'Ровный, до 2 мм', screed: null, self: null },
+  { label: '2–10 мм', screed: null, self: 5 },
+  { label: '10–30 мм', screed: 40, self: 5 },
+  { label: '30–60 мм', screed: 60, self: 5 },
+  { label: 'больше 60 мм', screed: 80, self: 5 },
+];
+const WET_LEVELS: { label: string; screed: number | null }[] = [
+  { label: 'Ровный, до 3 мм', screed: null },
+  { label: 'до 10 мм', screed: 20 },
+  { label: 'до 30 мм', screed: 40 },
+  { label: 'больше 30 мм', screed: 50 },
+];
+
+/** Единица нормы: «кг/м²», «м/м» (плинтус на метр периметра), «шт». */
+const perUnit = (b: Basis) => (b.endsWith('m2') ? 'м²' : b.endsWith('_m') || b === 'opening_w' || b === 'opening_h' ? 'м' : 'шт');
+
 export function ObjectCalculator({ ctx, selection, params, setParams }: Props) {
   const el = ctx.element;
   const app = useApp.getState();
@@ -250,6 +268,38 @@ export function ObjectCalculator({ ctx, selection, params, setParams }: Props) {
         )}
       </div>
       {ctx.layout.isDemo && <p className="muted small">Размеры демо-планировки условные. Для реальной квартиры — по обмеру или чертежу.</p>}
+
+      {(() => {
+        const screed = lines.find((l) => l.slot.slot === 'floor.screed.base' || l.slot.slot === 'floor.wet.screed');
+        if (!screed) return null;
+        const self = lines.find((l) => l.slot.slot === 'floor.self');
+        const levels = self ? FLOOR_LEVELS : WET_LEVELS.map((x) => ({ ...x, self: null }));
+        const apply = (v: { screed: number | null; self: number | null }) => {
+          const next = { ...layers };
+          turn(screed.slot.slot, v.screed != null);
+          if (v.screed != null) next[screed.slot.slot] = v.screed;
+          if (self) {
+            turn(self.slot.slot, v.self != null);
+            if (v.self != null) next[self.slot.slot] = v.self;
+          }
+          setParams({ ...params, layers: next });
+        };
+        const now = (v: { screed: number | null; self: number | null }) =>
+          (v.screed == null ? !screed.product : !!screed.product && screed.layer === v.screed) && (!self || (v.self == null ? !self.product : !!self.product && self.layer === v.self));
+        return (
+          <div className="curve level-pick">
+            <b className="small">Насколько ровный пол? (перепад под правилом 2 м)</b>
+            <div className="chips-row">
+              {levels.map((v) => (
+                <button key={v.label} className={now(v) ? 'mini on' : 'mini'} onClick={() => apply(v)}>
+                  {v.label}
+                </button>
+              ))}
+            </div>
+            <span className="muted small">Включит нужные шаги выравнивания и подставит толщину — её можно поправить в шаге.</span>
+          </div>
+        );
+      })()}
 
       <h4>{isProcess ? 'Весь процесс по шагам' : 'Состав и количество'}</h4>
       <div className="calc-steps">
@@ -318,7 +368,7 @@ export function ObjectCalculator({ ctx, selection, params, setParams }: Props) {
                   )}
                   <div className="step-calc">
                     <div>
-                      <span className="muted">Расход:</span> {fq(l.rate)} {unitLabel(l.product.unit)}/{l.per === 'wall_m2' || l.per.endsWith('m2') ? 'м²' : BASES[l.per]}
+                      <span className="muted">Расход:</span> {fq(l.rate)} {unitLabel(l.product.unit)}/{perUnit(l.per)}
                       {l.layer != null ? ' на 1 мм' : ''} × {fq(m[l.per])}
                       {l.layer != null ? ` × ${fq(l.layer)} мм` : ''}
                       {ruleFor(l.slot, l.product).waste ? ` + запас ${Math.round(ruleFor(l.slot, l.product).waste * 100)} %` : ''} = <b>{fq(l.need)} {unitLabel(l.product.unit)}</b>
