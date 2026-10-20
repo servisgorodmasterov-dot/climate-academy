@@ -7,6 +7,7 @@ import { primaryProduct } from '../objects/logic';
 import { ApartmentScene, isMobile } from '../apartment/scene/ApartmentScene';
 import { findApartment, listApartments, roomArea, totalArea } from '../apartment/layout';
 import { useTotalEstimate } from '../estimate/useEstimate';
+import { NETS } from './netsMenu';
 import { useApp, useAppState, NET_MODES, SYSTEM_META, type AcademyTab, type ViewMode } from '../store';
 import { AcademyPanel } from './AcademyPanel';
 import { EstimatePanel } from './EstimatePanel';
@@ -71,14 +72,6 @@ const MODES: { id: ViewMode; label: string; hint: string }[] = [
   { id: 'apartment', label: 'Моя квартира', hint: 'Выберите комнату, затем объект по метке. Список всех объектов — кнопка «Объекты»' },
   { id: 'electric', label: 'Сети', hint: 'Инженерные сети: выберите систему — электрика, сантехника, отопление, умный дом' },
   { id: 'encyclopedia', label: 'Энциклопедия', hint: 'Выберите объект — главной станет кнопка «Как устроено»' },
-];
-/** Системы внутри режима «Сети». */
-const NETS: { id: ViewMode; label: string; icon: string; hint: string }[] = [
-  { id: 'electric', label: 'Электрика', icon: '⚡', hint: 'Кабели от щита через распредкоробки к розеткам и свету. Наведите на линию — марка и сечение' },
-  { id: 'plumbing', label: 'Сантехника', icon: '🚿', hint: 'Вода из подъезда в гидроузел (счётчики, коллектор) и к приборам, канализация с уклоном' },
-  { id: 'heating', label: 'Отопление', icon: '♨', hint: 'Ввод из подъезда в гидроузел, от гребёнки трубы в полу к каждому радиатору, полотенцесушитель' },
-  { id: 'smart', label: 'Умный дом', icon: '◉', hint: 'Хаб и устройства: защита от протечек, свет, умные карнизы, термоголовки' },
-  { id: 'xray', label: 'Все сразу', icon: '▦', hint: 'Все инженерные системы условно, одним видом' },
 ];
 const isNet = (m: ViewMode) => NET_MODES.includes(m);
 
@@ -207,7 +200,7 @@ export function App() {
           </div>
         </div>
         <div className="seg modes" role="tablist" aria-label="Режим просмотра">
-          {MODES.map((m) => (
+          {MODES.filter((m) => compact || m.id !== 'electric').map((m) => (
             <button key={m.id} className={(m.id === 'electric' ? isNet(mode) : mode === m.id) ? 'on' : ''} onClick={() => (m.id === 'electric' && isNet(mode) ? undefined : (s.set('mode', m.id), s.set('electricStep', 0), say(m.hint)))}>
               {m.label}
             </button>
@@ -243,7 +236,7 @@ export function App() {
         <CatalogBar />
 
         <div className="overlay-top">
-          {isNet(mode) && (
+          {compact && isNet(mode) && (
             <div className="seg net-switch" role="tablist" aria-label="Инженерная система">
               {NETS.map((n) => (
                 <button key={n.id} className={mode === n.id ? 'on' : ''} onClick={() => (s.set('mode', n.id), s.set('electricStep', 0), say(n.hint))}>
@@ -262,7 +255,7 @@ export function App() {
             {catalog?.status === 'demo' && <span className="badge demo">Демо-цены</span>}
           </div>
           <div className="rooms" role="tablist" aria-label="Помещения">
-            {s.categoryFilter !== 'all' && (
+            {s.categoryFilter !== 'all' && !isNet(mode) && (
               <button className="chip filter-chip" title="Показать метки всех объектов" onClick={() => s.set('categoryFilter', 'all')}>
                 Показано: {categoriesOf(catalog).find((c) => c.id === s.categoryFilter)?.icon} {categoriesOf(catalog).find((c) => c.id === s.categoryFilter)?.name ?? s.categoryFilter} ✕
               </button>
@@ -493,7 +486,7 @@ function ElectricLegend({ layout }: { layout: Layout }) {
     { t: '1. Щит', d: 'В прихожей стоит электрощит. В нём автоматы: по одному на каждую линию. Если где-то замыкание — отключится только эта линия, а не вся квартира.' },
     { t: '2. Кабель в каждую комнату', d: 'От щита по потолку (в штробе) в каждую комнату идут два кабеля: потолще 3×2.5 мм² для розеток и потоньше 3×1.5 мм² для света. Они приходят в распредкоробку над дверью.' },
     { t: '3. Выключатель', d: 'Из коробки кабель спускается по стене к выключателю у двери. Выключатель разрывает провод, который идёт к светильникам.' },
-    { t: '4. Светильники', d: 'От коробки по потолку кабель идёт к каждому светильнику. Сколько их — задаётся в карточке «Освещение» и «Электрика».' },
+    { t: '4. Светильники и карнизы', d: 'От коробки по потолку кабель идёт к каждому светильнику. Сколько их — задаётся в карточке «Освещение» и «Электрика». К каждому окну — кабель 3×1.5 мм² для мотора умного карниза: его прокладывают сразу, до натяжного потолка, даже если карниз поставите позже.' },
     { t: '5. Розетки', d: 'Кабель для розеток спускается по стене до высоты 30 см и идёт шлейфом вдоль стен: от одной розетки к следующей. Поэтому розетки по периметру дешевле, чем разбросанные.' },
     { t: '6. Мощная техника и кондиционеры', d: 'Плита, духовка, бойлер получают свой кабель 3×4 мм² от щита и автомат 25 А. Каждый кондиционер — тоже на своей линии: кабель 3×2.5 мм² и отдельный автомат 16 А. Тогда при включении кондиционера не выбивает розетки, а при ремонте блока не обесточивается комната.' },
   ];
@@ -522,6 +515,7 @@ function ElectricLegend({ layout }: { layout: Layout }) {
       <div className="el-row"><i style={{ background: '#ffc400' }} /> Свет — 3×1.5 мм², автомат 10 А</div>
       <div className="el-row"><i style={{ background: '#e0102a' }} /> Силовые линии (плита, бойлер) — 3×4 мм², автомат 25 А</div>
       <div className="el-row"><i style={{ background: '#00acc1' }} /> Кондиционеры — своя линия 3×2.5 мм², автомат 16 А</div>
+      <div className="el-row"><i style={{ background: '#00897b' }} /> Умные карнизы — 3×1.5 мм² от распредкоробки</div>
       <div className="conf">
         <div>Точек: розеток {n('socket')} · выключателей {n('switch')} · выводов света {n('light')} · силовых {n('power')}</div>
         <div>

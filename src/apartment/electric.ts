@@ -6,7 +6,7 @@ import { doorWidthInRoom, roomArea } from './layout';
 import { openingPlace } from '../objects/geometry';
 
 export type Vec3 = [number, number, number];
-export type ElPointKind = 'socket' | 'switch' | 'light' | 'panel' | 'power' | 'box' | 'ac';
+export type ElPointKind = 'socket' | 'switch' | 'light' | 'panel' | 'power' | 'box' | 'ac' | 'cornice';
 
 export interface ElPoint {
   id: string;
@@ -17,12 +17,14 @@ export interface ElPoint {
   normal?: [number, number];
   label: string;
   cable?: string;
+  /** для карниза — рейка над окном */
+  rail?: [Vec3, Vec3];
 }
 
 export interface ElLine {
   id: string;
   roomId: string;
-  group: 'sockets' | 'light' | 'trunk' | 'power' | 'ac';
+  group: 'sockets' | 'light' | 'trunk' | 'power' | 'ac' | 'cornice';
   points: Vec3[];
   label: string;
   /** марка и сечение: «ВВГнг(А)-LS 3×2.5» */
@@ -384,7 +386,42 @@ export function buildElectricScheme(layout: Layout, counts: (room: Room) => Room
       lines.push({ id: `ac-${ac.id}`, roomId: ac.roomId, group: 'ac', points: pp, label: `Щит → кондиционер · ${room?.name ?? ''}: ВВГнг(А)-LS 3×2.5, отдельный автомат 16 А`, cable: 'ВВГнг(А)-LS 3×2.5' });
       cableByRoom[ac.roomId] = Math.round(((cableByRoom[ac.roomId] ?? 0) + len(pp)) * 10) / 10;
     });
+  // Умные карнизы: к мотору каждого карниза — кабель 3×1.5 мм² от распредкоробки комнаты (группа света, автомат 10 А).
+  // Закладывается до натяжного потолка, вывод — у края окна под потолком.
+  for (const c of cornicePlaces(layout)) {
+    const box = points.find((q) => q.kind === 'box' && q.roomId === c.roomId);
+    if (!box) continue;
+    const bp = box.position;
+    const y = CABLE_H - 0.08;
+    const path: Vec3[] = [bp, [bp[0], y, bp[2]], [c.b[0], y, bp[2]], [c.b[0], y, c.b[2]], c.b];
+    const room = layout.rooms.find((x) => x.id === c.roomId);
+    points.push({ id: c.id, kind: 'cornice', roomId: c.roomId, position: c.b, rail: [c.a, c.b], label: `Умный карниз · ${room?.name ?? ''}: вывод 220 В для мотора, длина карниза ${c.width.toFixed(1)} м`, cable: 'ВВГнг(А)-LS 3×1.5' });
+    lines.push({ id: `pw-${c.id}`, roomId: c.roomId, group: 'cornice', points: path, label: `Распредкоробка → мотор карниза · ${room?.name ?? ''}: ВВГнг(А)-LS 3×1.5, от группы света (автомат 10 А). Закладывают до натяжного потолка`, cable: 'ВВГнг(А)-LS 3×1.5' });
+    cableByRoom[c.roomId] = Math.round(((cableByRoom[c.roomId] ?? 0) + len(path)) * 10) / 10;
+  }
   return { panel, points, lines, cableByRoom };
+}
+
+/** Карниз над каждым окном: рейка под потолком со стороны комнаты, мотор у правого края. */
+export function cornicePlaces(layout: Layout): { id: string; roomId: string; a: Vec3; b: Vec3; width: number }[] {
+  const H = layout.ceilingHeight;
+  const out: { id: string; roomId: string; a: Vec3; b: Vec3; width: number }[] = [];
+  for (const w of layout.walls)
+    for (const o of w.openings) {
+      if (o.kind !== 'window') continue;
+      const p = openingPlace(layout, w, o);
+      const room = p.plus ?? p.minus;
+      if (!room) continue;
+      const side = room === p.plus ? 1 : -1;
+      const n: [number, number] = p.horizontal ? [0, side] : [side, 0];
+      const off = w.thickness / 2 + 0.12;
+      const y = Math.min(H - 0.06, o.head + 0.2);
+      const halfW = (o.to - o.from) / 2 + 0.2;
+      const a: Vec3 = p.horizontal ? [p.cx - halfW, y, p.cz + n[1] * off] : [p.cx + n[0] * off, y, p.cz - halfW];
+      const b: Vec3 = p.horizontal ? [p.cx + halfW, y, p.cz + n[1] * off] : [p.cx + n[0] * off, y, p.cz + halfW];
+      out.push({ id: `cornice-${w.id}-${o.from}`, roomId: room.id, a, b, width: halfW * 2 });
+    }
+  return out;
 }
 
 /** Количество точек из состояния раздела «Электрика» комнаты (как в расчёте). */

@@ -64,4 +64,18 @@ describe('схема электрики', () => {
       expect(Math.hypot(l.points[0][0] - s.panel[0], l.points[0][2] - s.panel[2])).toBeLessThan(0.3); // от щита, не от коробки
     }
   });
+
+  it('к каждому окну — кабель к мотору умного карниза от распредкоробки комнаты', () => {
+    const s = buildElectricScheme(layout, defaultCounts);
+    const windows = layout.walls.reduce((n, w) => n + w.openings.filter((o) => o.kind === 'window').length, 0);
+    const lines = s.lines.filter((l) => l.group === 'cornice');
+    expect(lines.length).toBe(windows);
+    for (const l of lines) {
+      const box = s.points.find((p) => p.kind === 'box' && p.roomId === l.roomId)!;
+      expect(l.points[0]).toEqual(box.position);
+      expect(l.cable).toContain('3×1.5');
+      const end = l.points[l.points.length - 1];
+      expect(s.points.find((p) => p.kind === 'cornice' && p.position === end)).toBeTruthy();
+    }
+  });
 });

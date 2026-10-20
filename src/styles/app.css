@@ -586,6 +586,8 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .el-branch.sockets { background: #ff6a00; }
 .el-branch.light { background: #c99400; }
 .el-branch.power { background: #e0102a; }
+.el-branch.ac { background: #00acc1; }
+.el-branch.cornice { background: #00897b; }
 .el-legend { width: 320px; max-height: calc(100% - 200px); overflow: auto; }
 .pl-label { padding: 2px 7px; border-radius: 7px; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; background: #fff; border: 1px solid #1e88e5; color: #0d47a1; }
 .pl-label.riser { background: #607d8b; color: #fff; border-color: #607d8b; }
@@ -595,3 +597,5 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .net-label { background: #fff; border: 1.5px solid; padding: 2px 7px; border-radius: 7px; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; }
 @media (max-width: 760px) { .net-switch { overflow-x: auto; max-width: 100%; } .net-switch button { padding: 6px 8px; font-size: 12px; } }
 .el-num.ac { background: #00acc1; }
+.catalog-bar .net-tag { font-size: 10px; font-weight: 700; color: #00897b; background: #e0f2f1; border-radius: 6px; padding: 1px 6px; margin-left: 6px; }
+.catalog-bar button.on .net-tag { background: #fff; }

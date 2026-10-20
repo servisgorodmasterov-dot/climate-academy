@@ -9,20 +9,21 @@ import { buildElectricScheme, countsFromSections, type ElLine, type ElPoint } fr
 import { useApp } from '../../store';
 
 // цвета заметно разные: магистраль синяя, розетки оранжевые, свет жёлтый, силовые красные
-const COLORS: Record<ElLine['group'], string> = { trunk: '#1e6fff', sockets: '#ff6a00', light: '#ffc400', power: '#e0102a', ac: '#00acc1' };
-const WIDTH: Record<ElLine['group'], number> = { trunk: 5.5, sockets: 3, light: 2.4, power: 3.8, ac: 3.6 };
+const COLORS: Record<ElLine['group'], string> = { trunk: '#1e6fff', sockets: '#ff6a00', light: '#ffc400', power: '#e0102a', ac: '#00acc1', cornice: '#00897b' };
+const WIDTH: Record<ElLine['group'], number> = { trunk: 5.5, sockets: 3, light: 2.4, power: 3.8, ac: 3.6, cornice: 2.6 };
 
 const socketMat = new THREE.MeshStandardMaterial({ color: '#fff7e0', roughness: 0.4, emissive: '#ff6a00', emissiveIntensity: 0.5 });
 const switchMat = new THREE.MeshStandardMaterial({ color: '#fffbe8', roughness: 0.4, emissive: '#ffc400', emissiveIntensity: 0.5 });
 const lightMat = new THREE.MeshBasicMaterial({ color: '#ffc400' });
 const powerMat = new THREE.MeshStandardMaterial({ color: '#ffe3e0', roughness: 0.4, emissive: '#e53935', emissiveIntensity: 0.4 });
+const corniceMat = new THREE.MeshStandardMaterial({ color: '#e0f2f1', roughness: 0.4, emissive: '#00897b', emissiveIntensity: 0.5 });
 const acMat = new THREE.MeshStandardMaterial({ color: '#e0f7fa', roughness: 0.4, emissive: '#00acc1', emissiveIntensity: 0.5 });
 const panelMat = new THREE.MeshStandardMaterial({ color: '#1e6fff', roughness: 0.5, emissive: '#1e6fff', emissiveIntensity: 0.35 });
 const boxMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.4, emissive: '#1e6fff', emissiveIntensity: 0.15 });
 
 /** Что показывать на шаге пошагового объяснения (0 — всё сразу). */
-const STEP_GROUPS: Record<number, ElLine['group'][]> = { 1: [], 2: ['trunk'], 3: ['trunk', 'light'], 4: ['trunk', 'light'], 5: ['trunk', 'light', 'sockets'], 6: ['trunk', 'light', 'sockets', 'power', 'ac'] };
-const STEP_POINTS: Record<number, ElPoint['kind'][]> = { 1: ['panel'], 2: ['panel', 'box'], 3: ['panel', 'box', 'switch'], 4: ['panel', 'box', 'switch', 'light'], 5: ['panel', 'box', 'switch', 'light', 'socket'], 6: ['panel', 'box', 'switch', 'light', 'socket', 'power', 'ac'] };
+const STEP_GROUPS: Record<number, ElLine['group'][]> = { 1: [], 2: ['trunk'], 3: ['trunk', 'light'], 4: ['trunk', 'light', 'cornice'], 5: ['trunk', 'light', 'cornice', 'sockets'], 6: ['trunk', 'light', 'cornice', 'sockets', 'power', 'ac'] };
+const STEP_POINTS: Record<number, ElPoint['kind'][]> = { 1: ['panel'], 2: ['panel', 'box'], 3: ['panel', 'box', 'switch'], 4: ['panel', 'box', 'switch', 'light', 'cornice'], 5: ['panel', 'box', 'switch', 'light', 'cornice', 'socket'], 6: ['panel', 'box', 'switch', 'light', 'cornice', 'socket', 'power', 'ac'] };
 
 export function ElectricScene({ layout, focusRoom, onPickRoom }: { layout: Layout; focusRoom: string | null; onPickRoom: (roomId: string) => void }) {
   const step = useApp((s) => s.electricStep);
@@ -151,6 +152,18 @@ function ElPointMesh({ p, faded, hovered, onHover, onClick }: { p: ElPoint; fade
         {tip}
       </group>
     );
+  if (p.kind === 'cornice')
+    return (
+      <group>
+        {p.rail && <Line points={p.rail} color="#00897b" lineWidth={6} transparent opacity={op * 0.9} depthTest={false} renderOrder={5} />}
+        <group position={p.position}>
+          <mesh material={corniceMat} {...common} renderOrder={6}>
+            <boxGeometry args={[0.1, 0.07, 0.07]} />
+          </mesh>
+          {tip}
+        </group>
+      </group>
+    );
   if (p.kind === 'light')
     return (
       <group position={p.position}>
@@ -215,7 +228,7 @@ export function Flow({ points, color }: { points: [number, number, number][]; co
 
 /** Подпись ветки человеческим языком у её середины. */
 function BranchLabel({ line }: { line: ElLine }) {
-  const text = line.group === 'sockets' ? 'к розеткам' : line.group === 'power' ? 'к плите / бойлеру' : line.id.startsWith('sw-') ? 'к выключателю' : 'к светильникам';
+  const text = line.group === 'sockets' ? 'к розеткам' : line.group === 'power' ? 'к плите / бойлеру' : line.group === 'cornice' ? 'к карнизу' : line.group === 'ac' ? 'к кондиционеру' : line.id.startsWith('sw-') ? 'к выключателю' : 'к светильникам';
   const i = Math.floor(line.points.length / 2);
   const a = line.points[Math.max(0, i - 1)];
   const b = line.points[i];

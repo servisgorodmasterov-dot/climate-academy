@@ -2,8 +2,7 @@
 // Строятся из планировки и расчёта (число секций радиатора). Условные схемы для понимания, не проект.
 import type { Layout, LayoutElement, Room } from '../core/types';
 import { roomArea } from './layout';
-import { openingPlace } from '../objects/geometry';
-import { buildElectricScheme, defaultCounts, snapToWall, type Vec3 } from './electric';
+import { buildElectricScheme, cornicePlaces, defaultCounts, snapToWall, type Vec3 } from './electric';
 import { buildPlumbingScheme, entryPoint, floorRoute } from './plumbing';
 
 export interface NetLine {
@@ -127,7 +126,6 @@ export function buildSmartScheme(layout: Layout): NetScheme {
   const hubEl = layout.elements.find((e) => e.kind === 'smart_hub');
   if (!hubEl) return { lines, points, stats: [] };
   const hub: Vec3 = [...hubEl.position] as Vec3;
-  const H = layout.ceilingHeight;
   points.push({ id: 'hub', roomId: hubEl.roomId, kind: 'hub', position: hub, short: 'Хаб умного дома', label: 'Центр системы: по радио (Zigbee) связан со всеми датчиками и устройствами. Сценарии работают даже без интернета', step: 1 });
   const radio = (id: string, roomId: string, to: Vec3, title: string, label: string, step: number) => lines.push({ id: `z-${id}`, roomId, group: 'zigbee', points: [hub, to], title, label, wireless: true, step });
 
@@ -154,37 +152,21 @@ export function buildSmartScheme(layout: Layout): NetScheme {
     radio(e.id, e.roomId, e.position, 'Zigbee', 'Хаб ↔ умный выключатель', 3);
   }
 
-  // умные карнизы на каждом окне: рейка под потолком, мотор с краю, питание кабелем от распредкоробки
+  // умные карнизы на каждом окне: рейка под потолком, мотор с краю, питание — тот же кабель, что в схеме электрики
   const el = buildElectricScheme(layout, (r) => ({ ...defaultCounts(r), power: 0 }));
   let cornices = 0;
   let cable = 0;
-  for (const w of layout.walls)
-    for (const o of w.openings) {
-      if (o.kind !== 'window') continue;
-      const p = openingPlace(layout, w, o);
-      const room = p.plus ?? p.minus;
-      if (!room) continue;
-      const side = room === p.plus ? 1 : -1;
-      const n: [number, number] = p.horizontal ? [0, side] : [side, 0];
-      const off = w.thickness / 2 + 0.12;
-      const y = Math.min(H - 0.06, o.head + 0.2);
-      const halfW = (o.to - o.from) / 2 + 0.2;
-      const a: Vec3 = p.horizontal ? [p.cx - halfW, y, p.cz + n[1] * off] : [p.cx + n[0] * off, y, p.cz - halfW];
-      const b: Vec3 = p.horizontal ? [p.cx + halfW, y, p.cz + n[1] * off] : [p.cx + n[0] * off, y, p.cz + halfW];
-      const id = `cornice-${w.id}-${o.from}`;
-      cornices++;
-      lines.push({ id, roomId: room.id, group: 'cornice', points: [a, b], title: 'Карниз с электроприводом', label: `Шторы открываются и закрываются сами: по расписанию, на рассвете, по команде с телефона. Длина ${(halfW * 2).toFixed(1)} м`, step: 4 });
-      points.push({ id, roomId: room.id, kind: 'cornice', position: b, short: 'Умный карниз', label: 'Мотор карниза: питание 220 В кабелем от распредкоробки, команды — по Zigbee от хаба', step: 4 });
-      radio(id, room.id, b, 'Zigbee', 'Хаб → мотор карниза', 4);
-      // питание: от распредкоробки комнаты под потолком прямыми углами к мотору
-      const box = el.points.find((q) => q.kind === 'box' && q.roomId === room.id);
-      if (box) {
-        const bp = box.position;
-        const path: Vec3[] = [bp, [b[0], bp[1], bp[2]], [b[0], bp[1], b[2]], b];
-        lines.push({ id: `pw-${id}`, roomId: room.id, group: 'power', points: path, title: 'Питание карниза', label: 'Кабель 3×1.5 мм² от распредкоробки комнаты к мотору карниза (закладывается до натяжного потолка!)', step: 4 });
-        cable += len(path);
-      }
+  for (const c of cornicePlaces(layout)) {
+    cornices++;
+    lines.push({ id: c.id, roomId: c.roomId, group: 'cornice', points: [c.a, c.b], title: 'Карниз с электроприводом', label: `Шторы открываются и закрываются сами: по расписанию, на рассвете, по команде с телефона. Длина ${c.width.toFixed(1)} м`, step: 4 });
+    points.push({ id: c.id, roomId: c.roomId, kind: 'cornice', position: c.b, short: 'Умный карниз', label: 'Мотор карниза: питание 220 В кабелем от распредкоробки, команды — по Zigbee от хаба', step: 4 });
+    radio(c.id, c.roomId, c.b, 'Zigbee', 'Хаб → мотор карниза', 4);
+    const pw = el.lines.find((l) => l.id === `pw-${c.id}`);
+    if (pw) {
+      lines.push({ id: pw.id, roomId: c.roomId, group: 'power', points: pw.points, title: 'Питание карниза', label: 'Кабель 3×1.5 мм² от распредкоробки комнаты к мотору карниза (закладывается до натяжного потолка!)', step: 4 });
+      cable += len(pw.points);
     }
+  }
 
   // термоголовки на радиаторах
   const heat = buildHeatingScheme(layout);
