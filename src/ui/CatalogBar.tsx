@@ -2,7 +2,7 @@
 // Выбор категории подсвечивает её объекты в 3D и в списке «Объекты».
 import { useMemo, useState } from 'react';
 import { categoriesOf, selectableObjects } from '../apartment/objects';
-import { useApp, useAppState } from '../store';
+import { useApp, useAppState, NET_MODES } from '../store';
 
 export function CatalogBar() {
   const { layout, catalog, categoryFilter, panel } = useAppState();
@@ -12,7 +12,7 @@ export function CatalogBar() {
   const [open, setOpen] = useState(wide);
   const objects = useMemo(() => (layout ? selectableObjects(layout, catalog) : []), [layout, catalog]);
   const mode = useApp((s) => s.mode);
-  if (!layout || panel || mode === 'electric' || mode === 'plumbing' || mode === 'xray') return null;
+  if (!layout || panel || NET_MODES.includes(mode)) return null;
   const cats = categoriesOf(catalog);
   const pick = (id: string | 'all') => {
     app.set('categoryFilter', id);

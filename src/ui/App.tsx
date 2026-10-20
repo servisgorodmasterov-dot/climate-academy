@@ -7,7 +7,7 @@ import { primaryProduct } from '../objects/logic';
 import { ApartmentScene, isMobile } from '../apartment/scene/ApartmentScene';
 import { findApartment, listApartments, roomArea, totalArea } from '../apartment/layout';
 import { useTotalEstimate } from '../estimate/useEstimate';
-import { useApp, useAppState, SYSTEM_META, type AcademyTab, type ViewMode } from '../store';
+import { useApp, useAppState, NET_MODES, SYSTEM_META, type AcademyTab, type ViewMode } from '../store';
 import { AcademyPanel } from './AcademyPanel';
 import { EstimatePanel } from './EstimatePanel';
 import { OrdersPanel } from './OrdersPanel';
@@ -19,6 +19,8 @@ import { categoriesOf, resolveSelectable, selectableObjects } from '../apartment
 import { money } from './format';
 import { buildElectricScheme, countsFromSections } from '../apartment/electric';
 import { buildPlumbingScheme } from '../apartment/plumbing';
+import { buildHeatingScheme, buildSmartScheme } from '../apartment/nets';
+import { NET_COLORS, NET_STEPS } from '../apartment/scene/NetScene';
 import type { Layout } from '../core/types';
 
 // «На весь экран» из встроенного на сайт конструктора: открываем в той же вкладке (не в новой),
@@ -64,13 +66,21 @@ function goBackToSite() {
   }
 }
 
+/** Верхний переключатель: квартира, инженерные сети, энциклопедия. */
 const MODES: { id: ViewMode; label: string; hint: string }[] = [
   { id: 'apartment', label: 'Моя квартира', hint: 'Выберите комнату, затем объект по метке. Список всех объектов — кнопка «Объекты»' },
-  { id: 'xray', label: 'Рентген', hint: 'Условная схема инженерных систем — не исполнительная документация' },
-  { id: 'plumbing', label: 'Сантехника', hint: 'Схема труб: холодная и горячая вода от стояка через счётчики и коллектор к приборам, канализация с уклоном к стояку' },
-  { id: 'electric', label: 'Электрика', hint: 'Схема кабелей по вашему расчёту: наведите на линию — марка и сечение; нажмите точку — карточка комнаты' },
+  { id: 'electric', label: 'Сети', hint: 'Инженерные сети: выберите систему — электрика, сантехника, отопление, умный дом' },
   { id: 'encyclopedia', label: 'Энциклопедия', hint: 'Выберите объект — главной станет кнопка «Как устроено»' },
 ];
+/** Системы внутри режима «Сети». */
+const NETS: { id: ViewMode; label: string; icon: string; hint: string }[] = [
+  { id: 'electric', label: 'Электрика', icon: '⚡', hint: 'Кабели от щита через распредкоробки к розеткам и свету. Наведите на линию — марка и сечение' },
+  { id: 'plumbing', label: 'Сантехника', icon: '🚿', hint: 'Холодная и горячая вода от стояка через счётчики и коллектор к приборам, канализация с уклоном' },
+  { id: 'heating', label: 'Отопление', icon: '♨', hint: 'Стояки, подача и обратка к радиаторам, краны и байпас, полотенцесушитель' },
+  { id: 'smart', label: 'Умный дом', icon: '◉', hint: 'Хаб и устройства: защита от протечек, свет, умные карнизы, термоголовки' },
+  { id: 'xray', label: 'Все сразу', icon: '▦', hint: 'Все инженерные системы условно, одним видом' },
+];
+const isNet = (m: ViewMode) => NET_MODES.includes(m);
 
 export function App() {
   const s = useAppState();
@@ -198,7 +208,7 @@ export function App() {
         </div>
         <div className="seg modes" role="tablist" aria-label="Режим просмотра">
           {MODES.map((m) => (
-            <button key={m.id} className={mode === m.id ? 'on' : ''} onClick={() => (s.set('mode', m.id), s.set('electricStep', 0), say(m.hint))}>
+            <button key={m.id} className={(m.id === 'electric' ? isNet(mode) : mode === m.id) ? 'on' : ''} onClick={() => (m.id === 'electric' && isNet(mode) ? undefined : (s.set('mode', m.id), s.set('electricStep', 0), say(m.hint)))}>
               {m.label}
             </button>
           ))}
@@ -233,6 +243,15 @@ export function App() {
         <CatalogBar />
 
         <div className="overlay-top">
+          {isNet(mode) && (
+            <div className="seg net-switch" role="tablist" aria-label="Инженерная система">
+              {NETS.map((n) => (
+                <button key={n.id} className={mode === n.id ? 'on' : ''} onClick={() => (s.set('mode', n.id), s.set('electricStep', 0), say(n.hint))}>
+                  <span aria-hidden>{n.icon}</span> {n.label}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="crumbs">
             {apt && (
               <span>
@@ -266,7 +285,7 @@ export function App() {
           {compact && (
             <div className="seg modes-inline" role="tablist" aria-label="Режим просмотра">
               {MODES.map((m) => (
-                <button key={m.id} className={mode === m.id ? 'on' : ''} onClick={() => (s.set('mode', m.id), s.set('electricStep', 0), say(m.hint))}>
+                <button key={m.id} className={(m.id === 'electric' ? isNet(mode) : mode === m.id) ? 'on' : ''} onClick={() => (m.id === 'electric' && isNet(mode) ? undefined : (s.set('mode', m.id), s.set('electricStep', 0), say(m.hint)))}>
                   {m.label}
                 </button>
               ))}
@@ -336,6 +355,7 @@ export function App() {
 
         {mode === 'electric' && <ElectricLegend layout={layout} />}
         {mode === 'plumbing' && <PlumbingLegend layout={layout} />}
+        {(mode === 'heating' || mode === 'smart') && <NetLegend layout={layout} kind={mode} />}
 
         {mode === 'xray' && (
           <div className="legend">
@@ -556,6 +576,60 @@ function PlumbingLegend({ layout }: { layout: Layout }) {
         <div>Трубы: холодная ≈{Math.round(scheme.length.cold)} м · горячая ≈{Math.round(scheme.length.hot)} м · канализация ≈{Math.round(scheme.length.sewer)} м</div>
       </div>
       <p className="muted small">Наведите на трубу — материал и диаметр; на прибор или узел — что это и зачем.</p>
+    </div>
+  );
+}
+
+/** Легенда схем отопления и умного дома: шаги, цвета, итоги. */
+function NetLegend({ layout, kind }: { layout: Layout; kind: 'heating' | 'smart' }) {
+  const step = useApp((st) => st.electricStep);
+  const scheme = useMemo(() => (kind === 'heating' ? buildHeatingScheme(layout) : buildSmartScheme(layout)), [layout, kind]);
+  const STEPS = NET_STEPS[kind];
+  const last = STEPS.length - 1;
+  const rows: [string, string][] =
+    kind === 'heating'
+      ? [
+          ['riser', 'Стояк отопления (общедомовой)'],
+          ['supply', 'Подача — горячая, сверху в радиатор'],
+          ['return', 'Обратка — остывшая, снизу в стояк'],
+          ['bypass', 'Байпас — перемычка для соседей'],
+          ['radiator', 'Радиатор / полотенцесушитель'],
+        ]
+      : [
+          ['zigbee', 'Радиосвязь с хабом (Zigbee) — без проводов'],
+          ['cornice', 'Умный карниз с мотором'],
+          ['power', 'Кабель питания карниза 3×1.5 мм²'],
+        ];
+  return (
+    <div className="legend el-legend">
+      <b>{kind === 'heating' ? 'Схема отопления' : 'Схема умного дома'}</b>
+      <div className="el-steps">
+        <div className="row-actions" style={{ margin: 0 }}>
+          {step === 0 ? (
+            <button className="btn" onClick={() => useApp.getState().set('electricStep', 1)}>▶ Объяснить по шагам</button>
+          ) : (
+            <>
+              <button className="btn ghost" disabled={step <= 1} onClick={() => useApp.getState().set('electricStep', step - 1)}>←</button>
+              <button className="btn" onClick={() => useApp.getState().set('electricStep', step >= last ? 0 : step + 1)}>{step >= last ? 'Показать всё' : 'Дальше →'}</button>
+            </>
+          )}
+        </div>
+        <div className="el-step-text">
+          <b>{STEPS[Math.min(step, last)].t}</b>
+          <span>{STEPS[Math.min(step, last)].d}</span>
+        </div>
+      </div>
+      {rows.map(([g, t]) => (
+        <div key={g} className="el-row">
+          <i style={{ background: NET_COLORS[g], ...(g === 'zigbee' ? { backgroundImage: 'repeating-linear-gradient(90deg, #fff 0 3px, transparent 3px 6px)' } : {}) }} /> {t}
+        </div>
+      ))}
+      <div className="conf">
+        {scheme.stats.map((x) => (
+          <div key={x}>{x}</div>
+        ))}
+      </div>
+      <p className="muted small">Наведите на линию или узел — что это и зачем.</p>
     </div>
   );
 }

@@ -590,3 +590,7 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .pl-label { padding: 2px 7px; border-radius: 7px; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; background: #fff; border: 1px solid #1e88e5; color: #0d47a1; }
 .pl-label.riser { background: #607d8b; color: #fff; border-color: #607d8b; }
 .pl-label.meter, .pl-label.manifold { background: #1e88e5; color: #fff; }
+.net-switch { align-self: flex-start; box-shadow: var(--shadow); background: #ffffffee; backdrop-filter: blur(10px); }
+.net-switch button { display: inline-flex; align-items: center; gap: 5px; }
+.net-label { background: #fff; border: 1.5px solid; padding: 2px 7px; border-radius: 7px; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; }
+@media (max-width: 760px) { .net-switch { overflow-x: auto; max-width: 100%; } .net-switch button { padding: 6px 8px; font-size: 12px; } }

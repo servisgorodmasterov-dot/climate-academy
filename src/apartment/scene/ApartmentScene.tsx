@@ -14,7 +14,8 @@ import { Element } from './Elements';
 import { Utilities } from './Utilities';
 import { ElectricScene } from './ElectricScene';
 import { PlumbingScene } from './PlumbingScene';
-import { useApp, useAppState } from '../../store';
+import { NetScene } from './NetScene';
+import { NET_MODES, useApp, useAppState } from '../../store';
 import { lookOf } from '../../objects/logic';
 import { useGameControls } from './gameControls';
 
@@ -81,7 +82,7 @@ export function ApartmentScene(props: SceneProps) {
 function KeepAlive() {
   const { invalidate, gl } = useThree();
   const until = useRef(0);
-  const xray = useApp((s) => s.mode === 'xray' || s.mode === 'electric' || s.mode === 'plumbing'); // в этих режимах есть анимация линий
+  const xray = useApp((s) => NET_MODES.includes(s.mode)); // в режимах сетей есть анимация линий
   useEffect(() => {
     const bump = () => {
       until.current = performance.now() + 1500;
@@ -138,7 +139,8 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality 
   const [W, D] = layout.size;
   const xray = mode === 'xray';
   const plumbing = mode === 'plumbing';
-  const electric = mode === 'electric' || plumbing; // общий «прозрачный» вид
+  const otherNet = mode === 'heating' || mode === 'smart' ? mode : null;
+  const electric = mode === 'electric' || plumbing || !!otherNet; // общий «прозрачный» вид
 
   return (
     <>
@@ -204,13 +206,14 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality 
         />
         {!xray && !electric && <Furniture items={layout.furniture} looks={furnLooks.looks} selectable={furnLooks.selectable} selected={furnLooks.selected} ids={furnLooks.ids} onPick={(i) => { const el = layout.elements.find((e) => e.furniture === i); if (el) onElement(el); }} />}
         {layout.elements
-          .filter((e) => e.kind !== 'floor' && !GEOMETRY_KINDS.includes(e.kind) && (!electric || (plumbing ? false : e.kind === 'electric_panel')))
+          .filter((e) => e.kind !== 'floor' && !GEOMETRY_KINDS.includes(e.kind) && (!electric || (mode === 'electric' && e.kind === 'electric_panel')))
           .map((e) => (
             <Element key={e.id} el={e} selected={selectedElement === e.id} onSelect={onElement} xray={xray || electric} />
           ))}
         {xray && <Utilities runs={layout.utilities} systems={xraySystems} />}
         {plumbing && <PlumbingScene layout={layout} focusRoom={focusRoom} />}
-        {electric && !plumbing && (
+        {otherNet && <NetScene layout={layout} kind={otherNet} focusRoom={focusRoom} />}
+        {mode === 'electric' && (
           <ElectricScene
             layout={layout}
             focusRoom={focusRoom}
@@ -221,7 +224,7 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality 
           />
         )}
         {objects
-          .filter((o) => (plumbing ? false : electric ? o.element.kind === 'room_electric' : (focusRoom ? o.roomId === focusRoom : categoryFilter !== 'all') && (categoryFilter === 'all' || o.category === categoryFilter)))
+          .filter((o) => (plumbing || otherNet ? false : electric ? o.element.kind === 'room_electric' : (focusRoom ? o.roomId === focusRoom : categoryFilter !== 'all') && (categoryFilter === 'all' || o.category === categoryFilter)))
           .map((o) => (
             <Html key={o.id} position={o.anchor} center zIndexRange={[3, 2]}>
               <button
