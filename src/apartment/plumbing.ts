@@ -148,7 +148,7 @@ export function buildPlumbingScheme(layout: Layout): PlScheme {
 
   // 1. В квартире — только канализационный стояк. Вода приходит из подъезда (поэтажный узел).
   const rs: Vec3 = [R[0], 0, R[2] + 0.05];
-  lines.push({ id: 'riser-sewer', roomId: rRoom.id, group: 'sewer', points: [[rs[0], 0, rs[2]], [rs[0], H, rs[2]]], label: 'Канализационный стояк (общедомовой) — проходит через квартиру', pipe: 'ПВХ 110 мм' });
+  lines.push({ id: 'riser-sewer', roomId: rRoom.id, group: 'sewer', points: [[rs[0], H, rs[2]], [rs[0], 0, rs[2]]], label: 'Канализационный стояк (общедомовой) — проходит через квартиру', pipe: 'ПВХ 110 мм' });
   points.push({ id: 'riser', kind: 'riser', roomId: rRoom.id, position: [R[0], 1.9, R[2] + 0.05], label: 'Канализационный стояк: сюда уходят стоки от всех приборов', short: 'Стояк канализации' });
 
   // 2. Ввод из подъезда: поэтажный узел (стояки ХВС, ГВС, отопления, общие краны) → в полу в гидроузел

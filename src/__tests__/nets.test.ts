@@ -11,13 +11,18 @@ describe('схема отопления', () => {
     const coll = s.points.find((p) => p.kind === 'collector')!;
     expect(coll).toBeTruthy();
     expect(layout.rooms.find((r) => r.id === coll.roomId)!.type).toBe('bath');
-    expect(s.lines.find((l) => l.id === 'heat-in-supply')).toBeTruthy();
-    expect(s.lines.find((l) => l.id === 'heat-in-return')).toBeTruthy();
+    const inS = s.lines.find((l) => l.id === 'heat-in-supply')!;
+    const inR = s.lines.find((l) => l.id === 'heat-in-return')!;
+    const d = (p: number[]) => Math.hypot(p[0] - coll.position[0], p[2] - coll.position[2]);
+    expect(d(inS.points[inS.points.length - 1])).toBeLessThan(0.15); // подача из подъезда приходит в коллектор
+    expect(d(inR.points[0])).toBeLessThan(0.15); // обратка уходит из коллектора в подъезд
     expect(s.lines.some((l) => l.group === 'riser' || l.group === 'bypass')).toBe(false);
     for (const r of rads) {
       for (const id of [`sup-${r.id}`, `ret-${r.id}`]) {
-        const l = s.lines.find((x) => x.id === id)!;
-        expect(l, id).toBeTruthy();
+        const l0 = s.lines.find((x) => x.id === id)!;
+        expect(l0, id).toBeTruthy();
+        // направление потока: подача — от коллектора к радиатору, обратка — от радиатора к коллектору
+        const l = id.startsWith('ret') ? { ...l0, points: [...l0.points].reverse() } : l0;
         // начинается у коллектора, идёт в полу, заканчивается снизу радиатора
         expect(Math.hypot(l.points[0][0] - coll.position[0], l.points[0][2] - coll.position[2])).toBeLessThan(0.1);
         expect(l.points.slice(1, -1).every((p) => p[1] < 0)).toBe(true);

@@ -70,7 +70,7 @@ export function buildHeatingScheme(layout: Layout, sectionsOf: SectionsOf = defa
         const s0: Vec3 = [entry.out[0] + entry.t[0] * k, 1.0, entry.out[2] + entry.t[1] * k];
         const inn: Vec3 = [entry.inn[0] + entry.t[0] * k, y, entry.inn[2] + entry.t[1] * k];
         const path: Vec3[] = [s0, [s0[0], y, s0[2]], inn, ...floorRoute(layout, hall, bath, inn, [coll[0] + dz, y, coll[2]], y).slice(1), [coll[0] + dz, coll[1], coll[2]]];
-        lines.push({ id: `heat-in-${g}`, roomId: bath.id, group: g, points: path, title, label: g === 'supply' ? 'Горячая вода от стояка отопления в подъезде (там кран и счётчик тепла) — в полу в гидроузел' : 'Остывшая вода из коллектора обратно в стояк в подъезде', step: 1 });
+        lines.push({ id: `heat-in-${g}`, roomId: bath.id, group: g, points: g === 'return' ? [...path].reverse() : path, title, label: g === 'supply' ? 'Горячая вода от стояка отопления в подъезде (там кран и счётчик тепла) — в полу в гидроузел' : 'Остывшая вода из коллектора обратно в стояк в подъезде', step: 1 });
         pipes += len(path);
       }
       points.push({ id: 'heat-entry', roomId: entry.roomId, kind: 'entry', position: [entry.out[0] + entry.t[0] * 0.2, 1.15, entry.out[2] + entry.t[1] * 0.2], short: 'Подъезд: стояк отопления', label: 'Поэтажный узел в подъезде: стояки отопления, краны на квартиру и счётчик тепла. Общедомовое — трогать только через УК', step: 1 });
@@ -95,7 +95,7 @@ export function buildHeatingScheme(layout: Layout, sectionsOf: SectionsOf = defa
         const c0: Vec3 = [coll[0] + dz, coll[1], coll[2]];
         const route = floorRoute(layout, bath, room, [c0[0], y, c0[2]], [end[0], y, end[2]], y);
         const path: Vec3[] = [c0, ...route, [end[0], bottom, end[2]]];
-        lines.push({ id: `${g === 'supply' ? 'sup' : 'ret'}-${el.id}`, roomId: el.roomId, group: g, points: path, title: g === 'supply' ? 'Подача' : 'Обратка', label: g === 'supply' ? 'Горячая вода от коллектора в гидроузле — в полу, в радиатор снизу' : 'Остывшая вода из радиатора — в полу обратно в коллектор', step: 2 });
+        lines.push({ id: `${g === 'supply' ? 'sup' : 'ret'}-${el.id}`, roomId: el.roomId, group: g, points: g === 'return' ? [...path].reverse() : path, title: g === 'supply' ? 'Подача' : 'Обратка', label: g === 'supply' ? 'Горячая вода от коллектора в гидроузле — в полу, в радиатор снизу' : 'Остывшая вода из радиатора — в полу обратно в коллектор', step: 2 });
         pipes += len(path);
       }
     }
