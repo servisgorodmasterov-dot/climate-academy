@@ -206,7 +206,113 @@ function Fridge() {
   );
 }
 
-function KitchenRun({ length = 2.3, sink = 0.6, stove = -0.3, look = {} }: { length?: number; sink?: number; stove?: number; look?: Look }) {
+/**
+ * Кухня из настоящих 3D-модулей (Furniture Kit by Kenney, CC0): нижние шкафы, ящики, мойка, плита,
+ * навесные шкафы, вытяжка, холодильник. Модули у Kenney в масштабе 0.43 м за секцию — умножаем на K,
+ * чтобы секция стала 60 см, а столешница — 90 см. Цвета материалов перекрашиваются под выбранный товар:
+ * wood/woodDark → фасад, metal → ручки, столешница рисуется своя (цвет из каталога).
+ */
+const KIT_BASE = './models/kitchen/';
+const KIT_K = 0.6 / 0.43; // секция 60 см
+const KIT_MODULES = ['kitchenCabinet', 'kitchenCabinetDrawer', 'kitchenSink', 'kitchenStove', 'kitchenCabinetUpper', 'kitchenCabinetUpperDouble', 'hoodModern', 'kitchenFridge'] as const;
+type KitModule = (typeof KIT_MODULES)[number];
+
+function useKitModule(name: KitModule, look: Look) {
+  const { scene } = useGLTF(`${KIT_BASE}${name}.glb`, true);
+  return useMemo(() => {
+    const o = scene.clone(true);
+    const facade = look.facade ? new THREE.Color(look.facade) : null;
+    const dark = facade ? facade.clone().multiplyScalar(0.82) : null;
+    const handle = look.handle ? new THREE.Color(look.handle) : null;
+    const rough = look.style === 'panel' ? 0.65 : 0.4;
+    o.traverse((c) => {
+      const m = c as THREE.Mesh;
+      if (!m.isMesh) return;
+      m.castShadow = true;
+      m.receiveShadow = true;
+      const src = m.material as THREE.MeshStandardMaterial;
+      const mat = src.clone();
+      const n = src.name;
+      if (n === 'wood' && facade) mat.color.copy(facade), (mat.roughness = rough);
+      else if (n === 'woodDark') {
+        if (dark) mat.color.copy(dark);
+        mat.roughness = rough;
+      } else if (n === 'metal') {
+        if (handle) mat.color.copy(handle);
+        mat.metalness = 0.6;
+        mat.roughness = 0.35;
+      } else if (n === 'metalLight' || n === 'metalMedium' || n === 'metalDark') {
+        mat.metalness = 0.5;
+        mat.roughness = 0.3;
+      } else if (n === 'glass') {
+        mat.transparent = true;
+        mat.opacity = 0.5;
+        mat.roughness = 0.1;
+      }
+      m.material = mat;
+    });
+    // в локальных координатах модуля: X от 0 до 0.43 (вправо), Z от -глубины до ~0 (перед — у Z≈0)
+    o.scale.setScalar(KIT_K);
+    return o;
+  }, [scene, look.facade, look.handle, look.style]);
+}
+
+/** Один модуль, поставленный левым краем в x, передом к +Z. */
+function KitPiece({ name, x, y = 0, look, mirror }: { name: KitModule; x: number; y?: number; look: Look; mirror?: boolean }) {
+  const obj = useKitModule(name, look);
+  const inst = useMemo(() => obj.clone(true), [obj]);
+  // модуль нарисован передом к -Z... у Kenney фасад смотрит в +Z (bbox по Z: -0.48..0), поэтому разворот не нужен; сдвигаем так, чтобы задняя стенка была у Z = -0.3
+  return <primitive object={inst} position={[x + (mirror ? 0.6 : 0), y, 0.3]} rotation={[0, mirror ? Math.PI : 0, 0]} scale={mirror ? [-1, 1, 1] : [1, 1, 1]} />;
+}
+
+function KitchenRunGlb({ length = 2.3, sink = 0.6, stove = -0.3, look = {} }: { length?: number; sink?: number; stove?: number; look?: Look }) {
+  const n = Math.max(2, Math.round(length / 0.6));
+  const w = length / n; // реальная ширина секции под длину ряда
+  const top = useColorMat(look.top, M.stone, look.top && look.top < '#888888' ? 0.2 : 0.3);
+  const upper = look.upper !== undefined ? look.upper === '1' : true;
+  const tall = look.tall === '1';
+  const sinkIdx = Math.min(n - 1, Math.max(0, Math.round((sink + length / 2) / w - 0.5)));
+  let stoveIdx = Math.min(n - 1, Math.max(0, Math.round((stove + length / 2) / w - 0.5)));
+  if (stoveIdx === sinkIdx) stoveIdx = stoveIdx === 0 ? 1 : stoveIdx - 1;
+  const kind = (i: number): KitModule => (i === sinkIdx ? 'kitchenSink' : i === stoveIdx ? 'kitchenStove' : i % 2 ? 'kitchenCabinetDrawer' : 'kitchenCabinet');
+  const sx = w / 0.6; // растяжение секции до нужной ширины
+  return (
+    <group>
+      {/* цоколь */}
+      <B args={[length, 0.1, 0.55]} position={[0, 0.05, -0.02]} material={M.graphite} />
+      {/* нижний ряд */}
+      {Array.from({ length: n }).map((_, i) => (
+        <group key={i} position={[-length / 2 + i * w, 0, 0]} scale={[sx, 1, 1]}>
+          <KitPiece name={kind(i)} x={0} look={look} />
+        </group>
+      ))}
+      {/* столешница из каталога (цвет выбранного товара) */}
+      <B args={[length + 0.02, 0.04, 0.62]} position={[0, 0.9, 0.01]} material={top} />
+      {/* фартук */}
+      <B args={[length, 0.6, 0.02]} position={[0, 1.2, -0.3]} material={top} cast={false} />
+      {/* навесные шкафы: над плитой — вытяжка, остальные секции — шкафы */}
+      {upper &&
+        Array.from({ length: n }).map((_, i) => (
+          <group key={`u${i}`} position={[-length / 2 + i * w, tall ? 1.5 : 1.5, 0]} scale={[sx, tall ? 1.3 : 1, 1]}>
+            {i === stoveIdx ? <KitPiece name="hoodModern" x={0} y={0.1} look={look} /> : <KitPiece name="kitchenCabinetUpper" x={0} look={look} />}
+          </group>
+        ))}
+    </group>
+  );
+}
+
+/** Пока модули грузятся или если файл недоступен — старая упрощённая кухня. */
+function KitchenRun(props: { length?: number; sink?: number; stove?: number; look?: Look }) {
+  return (
+    <ModelBoundary fallback={<KitchenRunSimple {...props} />}>
+      <Suspense fallback={<KitchenRunSimple {...props} />}>
+        <KitchenRunGlb {...props} />
+      </Suspense>
+    </ModelBoundary>
+  );
+}
+
+function KitchenRunSimple({ length = 2.3, sink = 0.6, stove = -0.3, look = {} }: { length?: number; sink?: number; stove?: number; look?: Look }) {
   const n = Math.max(2, Math.round(length / 0.6));
   const facade = useColorMat(look.facade, M.whiteMatte, look.style === 'panel' ? 0.6 : 0.35);
   const body = useColorMat(look.facade ? `#${new THREE.Color(look.facade).multiplyScalar(0.9).getHexString()}` : undefined, M.white, 0.5);
