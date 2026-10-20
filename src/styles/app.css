@@ -599,3 +599,6 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .el-num.ac { background: #00acc1; }
 .catalog-bar .net-tag { font-size: 10px; font-weight: 700; color: #00897b; background: #e0f2f1; border-radius: 6px; padding: 1px 6px; margin-left: 6px; }
 .catalog-bar button.on .net-tag { background: #fff; }
+/* схема сети: справа легенда — кнопки камеры сдвигаем левее, чтобы не закрывали текст */
+.stage:has(.el-legend) .nav-pad { right: 346px; }
+.app.with-panel .stage:has(.el-legend) .nav-pad { right: calc(var(--panel-w) + 24px); }
