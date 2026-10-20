@@ -224,7 +224,7 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality 
           />
         )}
         {objects
-          .filter((o) => (plumbing || otherNet ? false : electric ? o.element.kind === 'room_electric' : (focusRoom ? o.roomId === focusRoom : categoryFilter !== 'all') && (categoryFilter === 'all' || o.category === categoryFilter)))
+          .filter((o) => (electric ? false : (focusRoom ? o.roomId === focusRoom : categoryFilter !== 'all') && (categoryFilter === 'all' || o.category === categoryFilter)))
           .map((o) => (
             <Html key={o.id} position={o.anchor} center zIndexRange={[3, 2]}>
               <button
