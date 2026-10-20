@@ -140,7 +140,8 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality 
   const xray = mode === 'xray';
   const plumbing = mode === 'plumbing';
   const otherNet = mode === 'heating' || mode === 'smart' ? mode : null;
-  const electric = mode === 'electric' || plumbing || !!otherNet; // общий «прозрачный» вид
+  const lighting = mode === 'lighting';
+  const electric = mode === 'electric' || lighting || plumbing || !!otherNet; // общий «прозрачный» вид
 
   return (
     <>
@@ -206,19 +207,20 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality 
         />
         {!xray && !electric && <Furniture items={layout.furniture} looks={furnLooks.looks} selectable={furnLooks.selectable} selected={furnLooks.selected} ids={furnLooks.ids} onPick={(i) => { const el = layout.elements.find((e) => e.furniture === i); if (el) onElement(el); }} />}
         {layout.elements
-          .filter((e) => e.kind !== 'floor' && !GEOMETRY_KINDS.includes(e.kind) && (!electric || (mode === 'electric' && e.kind === 'electric_panel')))
+          .filter((e) => e.kind !== 'floor' && !GEOMETRY_KINDS.includes(e.kind) && (!electric || ((mode === 'electric' || lighting) && e.kind === 'electric_panel')))
           .map((e) => (
             <Element key={e.id} el={e} selected={selectedElement === e.id} onSelect={onElement} xray={xray || electric} />
           ))}
         {xray && <Utilities runs={layout.utilities} systems={xraySystems} />}
         {plumbing && <PlumbingScene layout={layout} focusRoom={focusRoom} />}
         {otherNet && <NetScene layout={layout} kind={otherNet} focusRoom={focusRoom} />}
-        {mode === 'electric' && (
+        {(mode === 'electric' || lighting) && (
           <ElectricScene
             layout={layout}
             focusRoom={focusRoom}
+            lightOnly={lighting}
             onPickRoom={(roomId) => {
-              const el = layout.elements.find((e) => e.kind === 'room_electric' && e.roomId === roomId);
+              const el = layout.elements.find((e) => e.kind === (lighting ? 'room_light' : 'room_electric') && e.roomId === roomId);
               if (el) onElement(el);
             }}
           />

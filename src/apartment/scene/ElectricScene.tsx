@@ -25,10 +25,13 @@ const boxMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.4
 const STEP_GROUPS: Record<number, ElLine['group'][]> = { 1: [], 2: ['trunk'], 3: ['trunk', 'light'], 4: ['trunk', 'light', 'cornice'], 5: ['trunk', 'light', 'cornice', 'sockets'], 6: ['trunk', 'light', 'cornice', 'sockets', 'power', 'ac'] };
 const STEP_POINTS: Record<number, ElPoint['kind'][]> = { 1: ['panel'], 2: ['panel', 'box'], 3: ['panel', 'box', 'switch'], 4: ['panel', 'box', 'switch', 'light', 'cornice'], 5: ['panel', 'box', 'switch', 'light', 'cornice', 'socket'], 6: ['panel', 'box', 'switch', 'light', 'cornice', 'socket', 'power', 'ac'] };
 
-export function ElectricScene({ layout, focusRoom, onPickRoom }: { layout: Layout; focusRoom: string | null; onPickRoom: (roomId: string) => void }) {
+export function ElectricScene({ layout, focusRoom, onPickRoom, lightOnly = false }: { layout: Layout; focusRoom: string | null; onPickRoom: (roomId: string) => void; lightOnly?: boolean }) {
   const step = useApp((s) => s.electricStep);
-  const showLine = (l: ElLine) => step === 0 || (STEP_GROUPS[step] ?? []).includes(l.group) && !(step === 3 && l.group === 'light' && !l.id.startsWith('sw-'));
-  const showPoint = (p: ElPoint) => step === 0 || (STEP_POINTS[step] ?? []).includes(p.kind);
+  // режим «Освещение»: только щит, кабель света к коробке, выключатели и светильники
+  const LIGHT_LINES: ElLine['group'][] = ['trunk', 'light'];
+  const LIGHT_POINTS: ElPoint['kind'][] = ['panel', 'box', 'switch', 'light'];
+  const showLine = (l: ElLine) => (!lightOnly || LIGHT_LINES.includes(l.group)) && (step === 0 || (STEP_GROUPS[step] ?? []).includes(l.group) && !(step === 3 && l.group === 'light' && !l.id.startsWith('sw-')));
+  const showPoint = (p: ElPoint) => (!lightOnly || LIGHT_POINTS.includes(p.kind)) && (step === 0 || (STEP_POINTS[step] ?? []).includes(p.kind));
   const sections = useApp((s) => s.sections);
   const apartmentId = useApp((s) => s.apartmentId);
   const products = useApp((s) => s.catalog?.products);
@@ -72,8 +75,8 @@ export function ElectricScene({ layout, focusRoom, onPickRoom }: { layout: Layou
             {on && (
               <Html position={l.points[Math.floor(l.points.length / 2)]} center zIndexRange={[3, 2]}>
                 <div className="el-tip" style={{ borderColor: COLORS[l.group] }}>
-                  <b>{l.cable}</b>
-                  <span>{l.label}</span>
+                  <b>{lightOnly && l.group === 'trunk' ? l.cable.split(' + ')[1] ?? l.cable : l.cable}</b>
+                  <span>{lightOnly && l.group === 'trunk' ? `Щит → распредкоробка: кабель освещения, автомат 10 А (вместе с ним идёт кабель розеток — он в «Электрике»)` : l.label}</span>
                 </div>
               </Html>
             )}
@@ -91,7 +94,7 @@ export function ElectricScene({ layout, focusRoom, onPickRoom }: { layout: Layou
           const b = l.points[2];
           return (
             <Html key={`lbl-${l.id}`} position={[(a[0] + b[0]) / 2, a[1] + 0.1, (a[2] + b[2]) / 2]} center zIndexRange={[2, 1]}>
-              <div className="el-label">→ {l.roomId && l.label.split('«')[1]?.split('»')[0]}: {l.cable}</div>
+              <div className="el-label">→ {l.roomId && l.label.split('«')[1]?.split('»')[0]}: {lightOnly ? `свет ${l.cable.split(' + ')[1] ?? ''}` : l.cable}</div>
             </Html>
           );
         })}

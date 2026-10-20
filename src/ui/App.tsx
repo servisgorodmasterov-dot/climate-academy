@@ -347,6 +347,7 @@ export function App() {
         </div>
 
         {mode === 'electric' && <ElectricLegend layout={layout} />}
+        {mode === 'lighting' && <LightingLegend layout={layout} />}
         {mode === 'plumbing' && <PlumbingLegend layout={layout} />}
         {(mode === 'heating' || mode === 'smart') && <NetLegend layout={layout} kind={mode} />}
 
@@ -526,6 +527,59 @@ function ElectricLegend({ layout }: { layout: Layout }) {
         </div>
       </div>
       <p className="muted small">Наведите на линию — марка кабеля; нажмите на розетку или линию — откроется расчёт комнаты. Число точек меняется в карточке «Электрика».</p>
+    </div>
+  );
+}
+
+/** Легенда режима «Освещение»: только свет — выключатели, кабели, точки света по комнатам. */
+function LightingLegend({ layout }: { layout: Layout }) {
+  const { sections, apartmentId, catalog } = useAppState();
+  const focusRoom = useApp((st) => st.focusRoom);
+  const step = useApp((st) => st.electricStep);
+  const scheme = useMemo(() => buildElectricScheme(layout, countsFromSections(layout, sections as any, apartmentId, catalog?.products)), [layout, sections, apartmentId, catalog]);
+  const rooms = layout.rooms.filter((r) => !focusRoom || r.id === focusRoom);
+  const cnt = (k: string, roomId: string) => scheme.points.filter((p) => p.kind === k && p.roomId === roomId).length;
+  const lineLen = (pts: number[][]) => pts.reduce((s, p, i) => (i ? s + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1], p[2] - pts[i - 1][2]) : 0), 0);
+  const cable = (roomId: string) => scheme.lines.filter((l) => l.roomId === roomId && (l.group === 'light' || l.group === 'trunk')).reduce((s, l) => s + lineLen(l.points), 0);
+  const total = rooms.reduce((s, r) => s + cable(r.id), 0);
+  const STEPS = [
+    { t: 'Вся схема', d: 'Нажмите «Объяснить по шагам», чтобы увидеть, как свет подключён в каждой комнате.' },
+    { t: '1. Щит', d: 'Свет всей квартиры — на отдельных автоматах 10 А в щите. Если перегорит лампа и выбьет автомат, розетки продолжат работать.' },
+    { t: '2. Кабель в комнату', d: 'От щита по потолку в каждую комнату идёт кабель освещения 3×1.5 мм² — в распредкоробку над дверью.' },
+    { t: '3. Выключатель', d: 'Из коробки кабель спускается к выключателю у двери (высота 90 см). Выключатель разрывает фазу — провод, который идёт к светильникам. Двухклавишный выключатель — две группы света (например, люстра и споты).' },
+    { t: '4. Светильники', d: 'От коробки по потолку кабель идёт к каждой точке света. Под натяжной потолок выводы делают заранее — по одному на каждый светильник. Нажмите на комнату — откроется расчёт освещения.' },
+  ];
+  const last = STEPS.length - 1;
+  return (
+    <div className="legend el-legend">
+      <b>Схема освещения</b>
+      <div className="el-steps">
+        <div className="row-actions" style={{ margin: 0 }}>
+          {step === 0 ? (
+            <button className="btn" onClick={() => useApp.getState().set('electricStep', 1)}>▶ Объяснить по шагам</button>
+          ) : (
+            <>
+              <button className="btn ghost" disabled={step <= 1} onClick={() => useApp.getState().set('electricStep', step - 1)}>←</button>
+              <button className="btn" onClick={() => useApp.getState().set('electricStep', step >= last ? 0 : step + 1)}>{step >= last ? 'Показать всё' : 'Дальше →'}</button>
+            </>
+          )}
+        </div>
+        <div className="el-step-text">
+          <b>{STEPS[Math.min(step, last)].t}</b>
+          <span>{STEPS[Math.min(step, last)].d}</span>
+        </div>
+      </div>
+      <div className="el-row"><i style={{ background: '#1e6fff' }} /> Щит → распредкоробка комнаты</div>
+      <div className="el-row"><i style={{ background: '#ffc400' }} /> Свет — 3×1.5 мм², автомат 10 А</div>
+      <div className="conf">
+        {rooms.map((r) => (
+          <div key={r.id}>
+            <b>{r.name}</b>: светильников {cnt('light', r.id)} · выключателей {cnt('switch', r.id)} · кабеля ≈{Math.round(cable(r.id))} м
+          </div>
+        ))}
+        {!focusRoom && <div>Всего кабеля освещения ≈{Math.round(total)} м</div>}
+      </div>
+      <p className="muted small">Наведите на линию — марка кабеля; нажмите на светильник, выключатель или линию — откроется расчёт освещения комнаты.</p>
     </div>
   );
 }

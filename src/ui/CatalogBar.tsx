@@ -6,7 +6,7 @@ import { categoriesOf, selectableObjects } from '../apartment/objects';
 import { useApp, useAppState, NET_MODES } from '../store';
 import type { ViewMode } from '../store';
 
-const CAT_NET: Record<string, ViewMode> = { electric: 'electric', plumbing: 'plumbing', engineering: 'heating', smarthome: 'smart' };
+const CAT_NET: Record<string, ViewMode> = { electric: 'electric', plumbing: 'plumbing', engineering: 'heating', smarthome: 'smart', lighting: 'lighting' };
 
 export function CatalogBar() {
   const { layout, catalog, categoryFilter, panel } = useAppState();

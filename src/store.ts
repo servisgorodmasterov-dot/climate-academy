@@ -12,9 +12,9 @@ import type { Order, OrderStatus } from './integrations/gorodmasterov/orders';
 import { advance } from './integrations/gorodmasterov/orders';
 import { readLaunchContext } from './integrations/eshanyraq/bridge';
 
-export type ViewMode = 'apartment' | 'xray' | 'electric' | 'plumbing' | 'heating' | 'smart' | 'encyclopedia';
+export type ViewMode = 'apartment' | 'xray' | 'electric' | 'plumbing' | 'heating' | 'smart' | 'lighting' | 'encyclopedia';
 /** Режимы «Сети»: квартира прозрачная, видна одна инженерная система */
-export const NET_MODES: ViewMode[] = ['electric', 'plumbing', 'heating', 'smart', 'xray'];
+export const NET_MODES: ViewMode[] = ['electric', 'lighting', 'plumbing', 'heating', 'smart', 'xray'];
 export type Panel = 'academy' | 'objects' | 'estimate' | 'passport' | 'orders' | 'about' | null;
 export type AcademyTab = 'card' | 'lesson' | 'variants' | 'calc';
 
