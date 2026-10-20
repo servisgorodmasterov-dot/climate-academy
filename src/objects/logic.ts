@@ -170,7 +170,7 @@ export function lineCost(catalog: Catalog, line: ObjectLine): LineCost {
       const cp = findProduct(catalog, c.productId);
       if (!cp) return null;
       // расходники (грунт, маяки) общие для всех шагов: в шаге считаем по расходу, до упаковки округляет смета
-      const q = cp.packSize <= 1 ? Math.ceil(c.need - 1e-9) : c.need;
+      const q = cp.packSize <= 1 || cp.unit === 'pcs' ? Math.ceil(c.need - 1e-9) : c.need;
       return { product: cp, need: c.need, buyQty: q, cost: Math.round((findPrice(catalog, cp.id)?.sale ?? 0) * q), note: c.note };
     })
     .filter((c): c is NonNullable<typeof c> => !!c);
