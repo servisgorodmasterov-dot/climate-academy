@@ -1,0 +1,3 @@
+Модели кухонных модулей — Furniture Kit by Kenney (https://kenney.nl/assets/furniture-kit).
+Лицензия CC0 1.0 (общественное достояние): можно использовать в любых, в том числе коммерческих, проектах без указания автора.
+Файлы GLB взяты из репозитория github.com/mr-akashdesai/kitchen-kreation (MIT).
