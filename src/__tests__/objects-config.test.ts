@@ -13,7 +13,7 @@ const layout = bindObjectTypes(withGeneratedObjects(base), catalog);
 describe('конфигуратор объектов', () => {
   it('демо-каталог читает листы «Категории», «Объекты» и «Позиции объектов» без замечаний', () => {
     expect(catalog.categories.length).toBeGreaterThanOrEqual(12);
-    expect(catalog.objectTypes.map((t) => t.id)).toEqual(['door.interior', 'door.entrance', 'window', 'wall.finish', 'furniture.kitchen', 'furniture.bed', 'furniture.wardrobe', 'furniture.sofa', 'wall.wet', 'floor.wet']);
+    expect(catalog.objectTypes.map((t) => t.id)).toEqual(['door.interior', 'door.entrance', 'window', 'wall.finish', 'furniture.kitchen', 'furniture.bed', 'furniture.wardrobe', 'furniture.sofa', 'wall.wet', 'floor.wet', 'floor.dry']);
     expect(catalog.issues.filter((i) => ['Объекты', 'Позиции объектов', 'Категории'].includes(i.sheet))).toEqual([]);
     expect(catalog.issues.filter((i) => /Нет цены/.test(i.message))).toEqual([]);
   });
@@ -103,15 +103,31 @@ describe('конфигуратор объектов', () => {
     expect(walls('bath').typeId).toBe('wall.wet');
     expect(walls('living').typeId).toBe('wall.finish');
     expect(floor('bath').typeId).toBe('floor.wet');
-    expect(floor('living').academy).toBe('flooring'); // ламинат — прежний модуль пола
+    expect(floor('living').typeId).toBe('floor.dry'); // жилые комнаты — пол под ламинат
     const f = floor('bath');
     const m = measure(layout, f);
     const lines = objectLines(catalog, layout, f, objectSelection(catalog, 'floor.wet', 'comfort'));
     expect(lines.map((l) => l.product?.id)).toEqual(['SCR-CPS', 'WP-MASTIC', 'GLUE-PRO', 'PG-60-GREY', 'GROUT-CEM']);
     expect(lines[0].need).toBeCloseTo(2.0 * m.floor_m2 * 40 * 1.05, 1); // пескобетон: 2 кг/м² на мм × 40 мм
     const est = computeEstimate(catalog, [buildObjectSection(catalog, layout, f, 'comfort', objectSelection(catalog, 'floor.wet', 'comfort'), 's')]);
-    expect(est.lines.find((l) => l.refId === 'WL-PRIMER')!.needQty).toBeCloseTo(0.15 * m.floor_m2, 2); // грунт — по площади пола, не стен
+    expect(est.lines.find((l) => l.refId === 'WL-PRIMER')!.needQty).toBeCloseTo(0.3 * m.floor_m2, 1); // грунт под стяжку и под гидроизоляцию — по площади пола, не стен
     expect(est.lines.find((l) => l.refId === 'WP-TAPE')!.needQty).toBeCloseTo(m.perimeter_m, 1);
+  });
+
+  it('пол под ламинат: стяжка и наливной пол по толщине слоя, маяки, демпферная лента, грунт', () => {
+    const f = layout.elements.find((e) => e.kind === 'floor' && e.roomId === 'living')!;
+    const m = measure(layout, f);
+    const sel = objectSelection(catalog, 'floor.dry', 'premium');
+    const lines = objectLines(catalog, layout, f, sel, { 'floor.screed.base': 60, 'floor.self': 5 });
+    expect(lines.map((l) => l.slot.slot)).toEqual(['floor.screed.base', 'floor.self', 'floor.vapor', 'floor.underlay', 'floor.laminate', 'floor.skirting']);
+    expect(lines[0].need).toBeCloseTo(2.0 * m.floor_m2 * 60 * 1.05, 1); // пескобетон, 60 мм
+    expect(lines[0].workQty).toBeCloseTo(m.floor_m2 * 1.2, 2); // слой 60 мм толще нормы 50 мм
+    expect(lines[1].need).toBeCloseTo(1.5 * m.floor_m2 * 5 * 1.05, 1); // финишный наливной, 5 мм
+    expect(lines[5].need).toBeCloseTo(m.perimeter_m * 1.05, 2); // плинтус по периметру
+    const est = computeEstimate(catalog, [buildObjectSection(catalog, layout, f, 'premium', sel, 's', { 'floor.screed.base': 60, 'floor.self': 5 })]);
+    expect(est.lines.find((l) => l.refId === 'DAMPER-TAPE')!.needQty).toBeCloseTo(m.perimeter_m, 1);
+    expect(est.lines.find((l) => l.refId === 'WL-PRIMER')!.needQty).toBeCloseTo(m.floor_m2 * (0.15 + 0.2), 1);
+    expect(est.lines.find((l) => l.refId === 'FL-FILM-200')!.needQty).toBeCloseTo(m.floor_m2 * 1.15, 1); // плёнка один раз, без старого правила
   });
 
   it('две двери с одинаковой комплектацией складываются в смете без дублей и округляются по упаковке', () => {

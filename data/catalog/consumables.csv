@@ -16,3 +16,9 @@ WL-PRIMER,floor.waterproof,0.15,m2,,Грунт под гидроизоляцию
 WL-PRIMER,wall.tile.glue,0.15,m2,,Грунт под плиточный клей
 TILE-CROSS,wall.tile,8,m2,,Крестики/СВП ≈8 шт на м²
 TILE-CROSS,floor.tile,6,m2,,Крестики/СВП ≈6 шт на м²
+WL-BEACON-6,floor.screed.base,0.3,m2,,Маяки через 1–1.2 м: ≈0.3 шт на 1 м² пола
+DAMPER-TAPE,floor.screed.base,1,m,,Демпферная лента по периметру комнаты
+WL-PRIMER,floor.screed.base,0.15,m2,,Грунт перед стяжкой
+WL-PRIMER,floor.self,0.2,m2,,Грунт перед наливным полом (обязательно — иначе пузыри)
+WL-PRIMER,floor.wet.screed,0.15,m2,,Грунт перед стяжкой
+WL-BEACON-6,floor.wet.screed,0.3,m2,,Маяки для стяжки

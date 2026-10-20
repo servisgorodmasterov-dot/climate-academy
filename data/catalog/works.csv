@@ -39,3 +39,4 @@ W-TILE-WALL-XL,wall.wet,wall.tile,Облицовка стен крупным ф�
 W-TILE-FLOOR,floor.wet,floor.tile,Укладка плитки на пол (с затиркой),m2,6800,2026-10-20,DEMO
 W-SCREED-WET,floor.wet,floor.wet.screed,Стяжка пола по маякам с уклоном (слой до 50 мм),m2,2800,2026-10-20,DEMO
 W-SCREED-SELF,floor.wet,floor.wet.screed,Наливной пол (самонивелир),m2,1500,2026-10-20,DEMO
+W-SCREED-DRY,floor.dry,floor.screed.base,Стяжка пола по маякам (слой до 50 мм),m2,2500,2026-10-20,DEMO
