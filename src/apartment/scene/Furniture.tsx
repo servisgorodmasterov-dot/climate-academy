@@ -213,7 +213,10 @@ function Fridge() {
  * wood/woodDark → фасад, metal → ручки, столешница рисуется своя (цвет из каталога).
  */
 const KIT_BASE = './models/kitchen/';
-const KIT_K = 0.6 / 0.43; // секция 60 см
+// Пропорции Kenney (0.43 × 0.45 × 0.48) ≠ реальным (0.6 × 0.86 × 0.58): масштабируем по осям отдельно —
+// ширина секции 60 см, высота нижнего шкафа 86 см (столешница на 90), глубина 58 см.
+const KIT_W = 0.43, KIT_H = 0.45, KIT_D = 0.48;
+const KIT_K: [number, number, number] = [0.6 / KIT_W, 0.86 / KIT_H, 0.58 / KIT_D];
 const KIT_MODULES = ['kitchenCabinet', 'kitchenCabinetDrawer', 'kitchenSink', 'kitchenStove', 'kitchenCabinetUpper', 'kitchenCabinetUpperDouble', 'hoodModern', 'kitchenFridge'] as const;
 type KitModule = (typeof KIT_MODULES)[number];
 
@@ -224,13 +227,18 @@ function useKitModule(name: KitModule, look: Look) {
     const facade = look.facade ? new THREE.Color(look.facade) : null;
     const dark = facade ? facade.clone().multiplyScalar(0.82) : null;
     const handle = look.handle ? new THREE.Color(look.handle) : null;
+    const topColor = look.top ? new THREE.Color(look.top) : new THREE.Color('#d9d5cd');
+    const lower = name === 'kitchenCabinet' || name === 'kitchenCabinetDrawer' || name === 'kitchenSink' || name === 'kitchenStove';
     const rough = look.style === 'panel' ? 0.65 : 0.4;
     o.traverse((c) => {
       const m = c as THREE.Mesh;
       if (!m.isMesh) return;
       m.castShadow = true;
       m.receiveShadow = true;
-      const src = m.material as THREE.MeshStandardMaterial;
+      const isDoor = /door/i.test(m.name) || /door/i.test(m.parent?.name ?? '');
+      const list = Array.isArray(m.material) ? m.material : [m.material];
+      const out = list.map((src0) => {
+      const src = src0 as THREE.MeshStandardMaterial;
       const mat = src.clone();
       const n = src.name;
       if (n === 'wood' && facade) mat.color.copy(facade), (mat.roughness = rough);
@@ -238,9 +246,20 @@ function useKitModule(name: KitModule, look: Look) {
         if (dark) mat.color.copy(dark);
         mat.roughness = rough;
       } else if (n === 'metal') {
-        if (handle) mat.color.copy(handle);
-        mat.metalness = 0.6;
-        mat.roughness = 0.35;
+        if (isDoor && name !== 'kitchenStove') {
+          // ручка на дверце (у плиты дверца духовки — стальная, не красим)
+          if (handle) mat.color.copy(handle);
+          mat.metalness = 0.6;
+          mat.roughness = 0.35;
+        } else if (lower) {
+          // верх корпуса нижнего шкафа — под цвет столешницы (сама столешница рисуется отдельно)
+          mat.color.copy(topColor);
+          mat.metalness = 0;
+          mat.roughness = 0.4;
+        } else {
+          mat.metalness = 0.5;
+          mat.roughness = 0.35;
+        }
       } else if (n === 'metalLight' || n === 'metalMedium' || n === 'metalDark') {
         mat.metalness = 0.5;
         mat.roughness = 0.3;
@@ -249,20 +268,26 @@ function useKitModule(name: KitModule, look: Look) {
         mat.opacity = 0.5;
         mat.roughness = 0.1;
       }
-      m.material = mat;
+      return mat;
+      });
+      m.material = Array.isArray(m.material) ? out : out[0];
     });
-    // в локальных координатах модуля: X от 0 до 0.43 (вправо), Z от -глубины до ~0 (перед — у Z≈0)
-    o.scale.setScalar(KIT_K);
+    // в локальных координатах модуля: X от 0 до 0.43 (вправо), Z от -0.48 до 0 (перед — у Z≈0), низ на Y=0
     return o;
-  }, [scene, look.facade, look.handle, look.style]);
+  }, [scene, name, look.facade, look.handle, look.style, look.top]);
 }
 
 /** Один модуль, поставленный левым краем в x, передом к +Z. */
-function KitPiece({ name, x, y = 0, look, mirror }: { name: KitModule; x: number; y?: number; look: Look; mirror?: boolean }) {
+function KitPiece({ name, x, y = 0, look, scaleY = 1 }: { name: KitModule; x: number; y?: number; look: Look; scaleY?: number }) {
   const obj = useKitModule(name, look);
   const inst = useMemo(() => obj.clone(true), [obj]);
-  // модуль нарисован передом к -Z... у Kenney фасад смотрит в +Z (bbox по Z: -0.48..0), поэтому разворот не нужен; сдвигаем так, чтобы задняя стенка была у Z = -0.3
-  return <primitive object={inst} position={[x + (mirror ? 0.6 : 0), y, 0.3]} rotation={[0, mirror ? Math.PI : 0, 0]} scale={mirror ? [-1, 1, 1] : [1, 1, 1]} />;
+  // фасад у Kenney смотрит в +Z (bbox по Z: -0.48..0). Задняя стенка ряда — у Z = -0.29 (глубина 0.58).
+  // Масштаб задаём на группе: primitive перезаписывает scale самого объекта
+  return (
+    <group position={[x, y, 0.29]} scale={[KIT_K[0], KIT_K[1] * scaleY, KIT_K[2]]}>
+      <primitive object={inst} />
+    </group>
+  );
 }
 
 function KitchenRunGlb({ length = 2.3, sink = 0.6, stove = -0.3, look = {} }: { length?: number; sink?: number; stove?: number; look?: Look }) {
@@ -287,14 +312,35 @@ function KitchenRunGlb({ length = 2.3, sink = 0.6, stove = -0.3, look = {} }: { 
         </group>
       ))}
       {/* столешница из каталога (цвет выбранного товара) */}
-      <B args={[length + 0.02, 0.04, 0.62]} position={[0, 0.9, 0.01]} material={top} />
+      {/* столешница — с вырезом под варочную панель плиты (она в модели плиты) */}
+      {(() => {
+        const x0 = -length / 2 - 0.01;
+        const sx0 = -length / 2 + stoveIdx * w;
+        const parts: [number, number][] = [
+          [x0, sx0],
+          [sx0 + w, length / 2 + 0.01],
+        ];
+        return parts
+          .filter(([a, b2]) => b2 - a > 0.01)
+          .map(([a, b2], k) => <B key={`top${k}`} args={[b2 - a, 0.05, 0.6]} position={[(a + b2) / 2, 0.855, 0]} material={top} />);
+      })()}
+      <B args={[w, 0.05, 0.6 - 0.56]} position={[-length / 2 + stoveIdx * w + w / 2, 0.855, 0.3 - 0.02]} material={top} />
       {/* фартук */}
       <B args={[length, 0.6, 0.02]} position={[0, 1.2, -0.3]} material={top} cast={false} />
-      {/* навесные шкафы: над плитой — вытяжка, остальные секции — шкафы */}
+      {/* навесные шкафы: низ на 1.5 м, высота 72 см (или 92 до потолка); над плитой — вытяжка */}
       {upper &&
         Array.from({ length: n }).map((_, i) => (
-          <group key={`u${i}`} position={[-length / 2 + i * w, tall ? 1.5 : 1.5, 0]} scale={[sx, tall ? 1.3 : 1, 1]}>
-            {i === stoveIdx ? <KitPiece name="hoodModern" x={0} y={0.1} look={look} /> : <KitPiece name="kitchenCabinetUpper" x={0} look={look} />}
+          <group key={`u${i}`} position={[-length / 2 + i * w, 1.5, 0]} scale={[sx, 1, 1]}>
+            {i === stoveIdx ? (
+              <group position={[0, 0.1, -0.12]}>
+                <KitPiece name="hoodModern" x={0} look={look} />
+              </group>
+            ) : (
+              // навесной у Kenney: 0.43 × 0.39 × 0.23 → после KIT_K высота 0.75, глубина 0.28; дотягиваем до 0.72 / 0.92
+              <group position={[0, 0, -0.29 + 0.28 - 0.35]}>
+                <KitPiece name="kitchenCabinetUpper" x={0} look={look} scaleY={(tall ? 0.92 : 0.72) / (0.39 * KIT_K[1])} />
+              </group>
+            )}
           </group>
         ))}
     </group>

@@ -1,6 +1,7 @@
 import { Component, StrictMode, type ErrorInfo, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './ui/App';
+import { KitchenPreview } from './dev/kitchen-preview';
 import './styles/app.css';
 
 // Если интерфейс или 3D-сцена падают, показываем текст ошибки вместо белого экрана.
@@ -33,7 +34,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      {new URLSearchParams(location.search).get('preview') === 'kitchen' ? <KitchenPreview /> : <App />}
     </ErrorBoundary>
   </StrictMode>,
 );
