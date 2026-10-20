@@ -8,6 +8,9 @@ const s = buildPlumbingScheme(layout);
 describe('схема сантехники', () => {
   it('стояк, узел ввода, коллектор и все приборы на месте', () => {
     expect(s.points.map((p) => p.kind)).toEqual(expect.arrayContaining(['riser', 'meter', 'manifold', 'fixture']));
+    expect(s.points.find((p) => p.id === 'entry')).toBeTruthy(); // ввод из подъезда
+    expect(s.lines.some((l) => l.id === 'riser-cold' || l.id === 'riser-hot')).toBe(false); // в квартире только канализационный стояк
+    for (const g of ['cold', 'hot']) expect(s.lines.find((l) => l.id === `in-${g}`)!.points.slice(1, -1).every((p) => p[1] < 0)).toBe(true);
     expect(s.points.filter((p) => p.kind === 'fixture').map((p) => p.short).sort()).toEqual(['Ванна', 'Кухонная мойка', 'Раковина', 'Стиральная машина', 'Унитаз']);
   });
 

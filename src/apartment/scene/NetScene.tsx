@@ -30,6 +30,8 @@ const POINT_COLOR: Record<string, string> = {
   switch: '#8e44ff',
   cornice: '#00897b',
   thermo: '#e53935',
+  collector: '#e53935',
+  entry: '#ff7043',
 };
 
 /** Число секций радиаторов — из расчёта (карточка радиатора), иначе по площади. */
@@ -122,7 +124,7 @@ function NetLineView({ l, faded, on, onHover }: { l: NetLine; faded: boolean; on
 function NetPointView({ p, faded, on, onHover }: { p: NetPoint; faded: boolean; on: boolean; onHover: (h: boolean) => void }) {
   const color = POINT_COLOR[p.kind] ?? '#555';
   const mat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: color, emissiveIntensity: 0.45, roughness: 0.4 }), [color]);
-  const size = p.kind === 'hub' ? 0.12 : p.kind === 'radiator' ? 0.04 : 0.055;
+  const size = p.kind === 'hub' ? 0.12 : p.kind === 'collector' ? 0.09 : p.kind === 'radiator' ? 0.04 : 0.055;
   return (
     <group position={p.position}>
       <mesh
@@ -140,7 +142,7 @@ function NetPointView({ p, faded, on, onHover }: { p: NetPoint; faded: boolean; 
       >
         {p.kind === 'hub' ? <boxGeometry args={[size, size, size * 0.4]} /> : <sphereGeometry args={[size, 14, 10]} />}
       </mesh>
-      {!faded && (p.kind === 'hub' || p.kind === 'radiator' || p.kind === 'cornice' || p.kind === 'valve' && p.short.includes('протеч') || p.kind === 'leak' || p.kind === 'motion') && (
+      {!faded && (p.kind === 'hub' || p.kind === 'collector' || p.kind === 'entry' || p.kind === 'radiator' || p.kind === 'cornice' || p.kind === 'valve' && p.short.includes('протеч') || p.kind === 'leak' || p.kind === 'motion') && (
         <Html position={[0, 0.13, 0]} center zIndexRange={[2, 1]}>
           <div className="net-label" style={{ borderColor: color, color }}>{p.short}</div>
         </Html>
@@ -161,10 +163,10 @@ function NetPointView({ p, faded, on, onHover }: { p: NetPoint; faded: boolean; 
 export const NET_STEPS: Record<'heating' | 'smart', { t: string; d: string }[]> = {
   heating: [
     { t: 'Вся схема', d: 'Нажмите «Объяснить по шагам», чтобы увидеть, как тепло приходит в радиаторы.' },
-    { t: '1. Стояки', d: 'У окон проходят общедомовые трубы отопления — стояки. По ним горячая вода из котельной идёт через все квартиры. Менять их самому нельзя, только с разрешения УК.' },
-    { t: '2. Радиатор: подача и обратка', d: 'От стояка в радиатор идут две трубы: сверху — горячая (подача, красная), снизу — остывшая обратно в стояк (обратка, синяя). Число секций — из вашего расчёта.' },
-    { t: '3. Краны и байпас', d: 'На подаче и обратке — краны: радиатор можно снять, не сливая весь стояк. Между ними перемычка — байпас: без неё соседи снизу остались бы без тепла. Кран Маевского сверху — стравить воздух.' },
-    { t: '4. Полотенцесушитель', d: 'В санузле полотенцесушитель подключён к стояку горячей воды, а не к отоплению — поэтому тёплый круглый год, и летом тоже.' },
+    { t: '1. Ввод и гидроузел', d: 'Стояки отопления — в подъезде, в поэтажном узле (там краны и счётчик тепла). В квартиру заходят две трубы в полу — подача (красная) и обратка (синяя) — и идут в гидроузел к коллектору (гребёнке) отопления. Рядом — счётчики и коллектор воды.' },
+    { t: '2. Трубы к радиаторам', d: 'От гребёнки к каждому радиатору своя пара труб в полу, в стяжке, под порогами дверей. Труба цельная, без соединений в полу — нечему течь. Отключить можно любой радиатор прямо на коллекторе.' },
+    { t: '3. Радиатор: нижнее подключение', d: 'Трубы выходят из пола и подключаются к радиатору снизу: подача с одного края, обратка с другого. Узел с кранами — радиатор снимается, не сливая систему. Кран Маевского сверху — стравить воздух. Число секций — из вашего расчёта.' },
+    { t: '4. Полотенцесушитель', d: 'В санузле полотенцесушитель подключён к коллектору горячей воды, а не к отоплению — поэтому тёплый круглый год, и летом тоже.' },
   ],
   smart: [
     { t: 'Вся схема', d: 'Нажмите «Объяснить по шагам», чтобы увидеть, что умеет квартира и как устройства связаны.' },

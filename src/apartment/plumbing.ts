@@ -80,7 +80,7 @@ function doorBetween(layout: Layout, a: Room, b: Room): { x: number; z: number; 
 }
 
 /** Путь по полу (в стяжке, под порогами) строго по осям: из комнаты в комнату через двери (при необходимости через прихожую). */
-function floorRoute(layout: Layout, from: Room, to: Room, a: Vec3, b: Vec3, y: number): Vec3[] {
+export function floorRoute(layout: Layout, from: Room, to: Room, a: Vec3, b: Vec3, y: number): Vec3[] {
   const hall = layout.rooms.find((r) => r.type === 'hall');
   const chain: Room[] = [from];
   if (from.id !== to.id) {
@@ -111,6 +111,31 @@ function floorRoute(layout: Layout, from: Room, to: Room, a: Vec3, b: Vec3, y: n
   return path.filter((p, i) => i === 0 || Math.hypot(p[0] - path[i - 1][0], p[1] - path[i - 1][1], p[2] - path[i - 1][2]) > 1e-6);
 }
 
+/** Входная дверь: точка снаружи (подъезд) и внутри (прихожая), у края проёма — трубы идут под порогом. t — направление вдоль стены. */
+export function entryPoint(layout: Layout): { out: Vec3; inn: Vec3; roomId: string; t: [number, number] } | null {
+  for (const w of layout.walls)
+    for (const o of w.openings) {
+      if (o.kind !== 'entrance') continue;
+      const p = openingPlace(layout, w, o);
+      const room = p.plus ?? p.minus;
+      if (!room) continue;
+      const side = room === p.plus ? 1 : -1; // внутрь квартиры
+      const n: [number, number] = p.horizontal ? [0, side] : [side, 0];
+      const shift = (o.to - o.from) / 2 - 0.12; // у края проёма, под порогом
+      const cx = p.horizontal ? p.cx - shift : p.cx;
+      const cz = p.horizontal ? p.cz : p.cz - shift;
+      const d = w.thickness / 2 + 0.3;
+      return { out: [cx - n[0] * d, 0, cz - n[1] * d], inn: [cx + n[0] * 0.2, 0, cz + n[1] * 0.2], roomId: room.id, t: p.horizontal ? [1, 0] : [0, 1] };
+    }
+  return null;
+}
+
+/** Гидроузел: в санузле у канализационного стояка, у стены (шкаф с дверцей). */
+export function hydroNode(_layout: Layout, room: Room, riser: Vec3): Vec3 {
+  const [x, z] = snapToWall(room, riser[0] + 0.3, riser[2]);
+  return [x, 0.9, z];
+}
+
 export function buildPlumbingScheme(layout: Layout): PlScheme {
   const points: PlPoint[] = [];
   const lines: PlLine[] = [];
@@ -121,25 +146,32 @@ export function buildPlumbingScheme(layout: Layout): PlScheme {
   const rRoom = layout.rooms.find((r) => r.id === riserEl.roomId)!;
   const R: Vec3 = [riserEl.position[0], 0, riserEl.position[2]];
 
-  // 1. Стояк: три трубы — ХВС, ГВС, канализация 110
-  const rc: Vec3 = [R[0] + 0.1, 0, R[2]];
-  const rh: Vec3 = [R[0] + 0.18, 0, R[2]];
+  // 1. В квартире — только канализационный стояк. Вода приходит из подъезда (поэтажный узел).
   const rs: Vec3 = [R[0], 0, R[2] + 0.05];
-  lines.push({ id: 'riser-cold', roomId: rRoom.id, group: 'cold', points: [[rc[0], 0, rc[2]], [rc[0], H, rc[2]]], label: 'Стояк холодной воды (общедомовой)', pipe: 'Стояк ХВС' });
-  lines.push({ id: 'riser-hot', roomId: rRoom.id, group: 'hot', points: [[rh[0], 0, rh[2]], [rh[0], H, rh[2]]], label: 'Стояк горячей воды (общедомовой)', pipe: 'Стояк ГВС' });
-  lines.push({ id: 'riser-sewer', roomId: rRoom.id, group: 'sewer', points: [[rs[0], 0, rs[2]], [rs[0], H, rs[2]]], label: 'Канализационный стояк (общедомовой)', pipe: 'ПВХ 110 мм' });
-  points.push({ id: 'riser', kind: 'riser', roomId: rRoom.id, position: [R[0] + 0.1, 1.9, R[2]], label: 'Стояк: общедомовые трубы холодной, горячей воды и канализации', short: 'Стояк' });
+  lines.push({ id: 'riser-sewer', roomId: rRoom.id, group: 'sewer', points: [[rs[0], 0, rs[2]], [rs[0], H, rs[2]]], label: 'Канализационный стояк (общедомовой) — проходит через квартиру', pipe: 'ПВХ 110 мм' });
+  points.push({ id: 'riser', kind: 'riser', roomId: rRoom.id, position: [R[0], 1.9, R[2] + 0.05], label: 'Канализационный стояк: сюда уходят стоки от всех приборов', short: 'Стояк канализации' });
 
-  // 2. Узел ввода: краны, фильтр, редуктор давления, счётчики — у стояка на высоте 90 см
-  const meter: Vec3 = [rc[0] + 0.15, 0.9, rc[2] + 0.05];
-  points.push({ id: 'meter', kind: 'meter', roomId: rRoom.id, position: meter, label: 'Узел ввода: шаровой кран → фильтр → редуктор давления → счётчик (отдельно на холодную и горячую)', short: 'Краны и счётчики' });
-  lines.push({ id: 'in-cold', roomId: rRoom.id, group: 'cold', points: [[rc[0], 0.9, rc[2]], [meter[0], 0.9, rc[2]]], label: 'Отвод от стояка ХВС к узлу ввода', pipe: 'ПП 20 мм' });
-  lines.push({ id: 'in-hot', roomId: rRoom.id, group: 'hot', points: [[rh[0], 0.85, rh[2]], [meter[0], 0.85, rh[2]]], label: 'Отвод от стояка ГВС к узлу ввода', pipe: 'ПП 20 мм (армир.)' });
+  // 2. Ввод из подъезда: поэтажный узел (стояки ХВС, ГВС, отопления, общие краны) → в полу в гидроузел
+  const entry = entryPoint(layout);
+  const G = hydroNode(layout, rRoom, R);
+  const meter: Vec3 = [G[0], 0.9, G[2]];
+  if (entry) {
+    points.push({ id: 'entry', kind: 'riser', roomId: entry.roomId, position: [entry.out[0], 1.4, entry.out[2]], label: 'Поэтажный узел в подъезде: стояки холодной и горячей воды и отопления, краны на квартиру. Отсюда трубы заходят в квартиру в полу', short: 'Подъезд: стояки' });
+    for (const [g, dz, pipe, name] of [['cold', 0, 'ПП 25 мм', 'холодной'], ['hot', 0.06, 'ПП 25 мм (армир.)', 'горячей']] as const) {
+      const y = FLOOR_H + (g === 'hot' ? HOT_DY : 0);
+      const start: Vec3 = [entry.out[0] + entry.t[0] * dz, 1.0, entry.out[2] + entry.t[1] * dz];
+      const inside: Vec3 = [entry.inn[0] + entry.t[0] * dz, y, entry.inn[2] + entry.t[1] * dz];
+      const hall = layout.rooms.find((r) => r.id === entry.roomId)!;
+      const path: Vec3[] = [start, [start[0], y, start[2]], inside, ...floorRoute(layout, hall, rRoom, inside, [meter[0] + dz, y, meter[2] + dz], y).slice(1), [meter[0] + dz, meter[1] - (g === 'hot' ? 0.05 : 0), meter[2] + dz]];
+      lines.push({ id: `in-${g}`, roomId: rRoom.id, group: g, points: path, label: `Ввод ${name} воды: из подъезда в полу под порогами — в гидроузел`, pipe });
+    }
+  }
 
-  // 3. Коллектор: распределяет воду по приборам, у каждого выхода свой кран — у стены рядом с узлом
+  // 3. Гидроузел: краны, фильтр, редуктор давления, счётчики и коллектор воды (рядом — коллектор отопления)
+  points.push({ id: 'meter', kind: 'meter', roomId: rRoom.id, position: meter, label: 'Гидроузел: шаровой кран → фильтр → редуктор давления → счётчики холодной и горячей воды. Здесь же коллекторы воды и отопления — всё в одном шкафу с дверцей', short: 'Гидроузел' });
   const [mx, mz] = snapToWall(rRoom, meter[0] + 0.45, meter[2]);
   const manifold: Vec3 = [mx, 0.5, mz];
-  points.push({ id: 'manifold', kind: 'manifold', roomId: rRoom.id, position: manifold, label: 'Коллектор: от него к каждому прибору идёт своя труба со своим краном — можно отключить один прибор, не перекрывая всю квартиру', short: 'Коллектор' });
+  points.push({ id: 'manifold', kind: 'manifold', roomId: rRoom.id, position: manifold, label: 'Коллектор воды: от него к каждому прибору идёт своя труба со своим краном — можно отключить один прибор, не перекрывая всю квартиру', short: 'Коллектор воды' });
   lines.push({ id: 'meter-manifold-cold', roomId: rRoom.id, group: 'cold', points: [meter, [meter[0], 0.5, meter[2]], [manifold[0], 0.5, meter[2]], manifold], label: 'От счётчика ХВС к коллектору', pipe: 'ПП 25 мм' });
   lines.push({ id: 'meter-manifold-hot', roomId: rRoom.id, group: 'hot', points: [[meter[0], 0.85, meter[2] + 0.06], [meter[0], 0.42, meter[2] + 0.06], [manifold[0], 0.42, meter[2] + 0.06], [manifold[0], 0.42, manifold[2] + 0.06]], label: 'От счётчика ГВС к коллектору', pipe: 'ПП 25 мм (армир.)' });
 

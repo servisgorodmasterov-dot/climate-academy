@@ -13,7 +13,7 @@ const WIDTH: Record<PlGroup, number> = { cold: 3.2, hot: 3.2, sewer: 6, riser: 6
 
 /** Шаги объяснения: что видно на каждом. */
 const STEP_LINES: Record<number, (l: PlLine) => boolean> = {
-  1: (l) => l.id.startsWith('riser'),
+  1: (l) => l.id.startsWith('riser') || l.id.startsWith('in-'),
   2: (l) => l.id.startsWith('riser') || l.id.startsWith('in-'),
   3: (l) => l.id.startsWith('riser') || l.id.startsWith('in-') || l.id.startsWith('meter-'),
   4: (l) => l.group === 'cold' || l.id.startsWith('riser') || l.id.startsWith('in-') || l.id.startsWith('meter-'),

@@ -3,8 +3,8 @@
 import type { Layout, LayoutElement, Room } from '../core/types';
 import { roomArea } from './layout';
 import { openingPlace } from '../objects/geometry';
-import { buildElectricScheme, defaultCounts, type Vec3 } from './electric';
-import { buildPlumbingScheme } from './plumbing';
+import { buildElectricScheme, defaultCounts, snapToWall, type Vec3 } from './electric';
+import { buildPlumbingScheme, entryPoint, floorRoute } from './plumbing';
 
 export interface NetLine {
   id: string;
@@ -47,11 +47,35 @@ export const defaultSections: SectionsOf = (_el, room) => Math.max(4, Math.ceil(
 // ---------------- Отопление ----------------
 
 export function buildHeatingScheme(layout: Layout, sectionsOf: SectionsOf = defaultSections): NetScheme {
-  const H = layout.ceilingHeight;
   const lines: NetLine[] = [];
   const points: NetPoint[] = [];
   let pipes = 0;
   let sectionsTotal = 0;
+  // Гидроузел: коллектор отопления рядом с коллектором воды (в санузле). Ввод — из поэтажного узла в подъезде, в полу.
+  const pl = buildPlumbingScheme(layout);
+  const wm = pl.points.find((p) => p.kind === 'manifold');
+  const bath = layout.rooms.find((r) => r.id === wm?.roomId) ?? layout.rooms.find((r) => r.type === 'bath');
+  const FY = -0.05; // трубы отопления в стяжке, чуть ниже водопровода
+  let coll: Vec3 | null = null;
+  if (wm && bath) {
+    const [x, z] = snapToWall(bath, wm.position[0] + 0.4, wm.position[2]);
+    coll = [x, 0.45, z];
+    points.push({ id: 'heat-coll', roomId: bath.id, kind: 'collector', position: coll, short: 'Коллектор отопления', label: 'Гребёнка отопления в гидроузле: от неё к каждому радиатору своя пара труб (подача и обратка). На каждой паре — кран и балансировочный вентиль', step: 1 });
+    const entry = entryPoint(layout);
+    if (entry) {
+      const hall = roomOf(layout, entry.roomId)!;
+      for (const [g, dz, title] of [['supply', 0, 'Ввод: подача'], ['return', 0.07, 'Ввод: обратка']] as const) {
+        const y = FY - (g === 'return' ? 0.02 : 0);
+        const k = 0.14 + dz;
+        const s0: Vec3 = [entry.out[0] + entry.t[0] * k, 1.0, entry.out[2] + entry.t[1] * k];
+        const inn: Vec3 = [entry.inn[0] + entry.t[0] * k, y, entry.inn[2] + entry.t[1] * k];
+        const path: Vec3[] = [s0, [s0[0], y, s0[2]], inn, ...floorRoute(layout, hall, bath, inn, [coll[0] + dz, y, coll[2]], y).slice(1), [coll[0] + dz, coll[1], coll[2]]];
+        lines.push({ id: `heat-in-${g}`, roomId: bath.id, group: g, points: path, title, label: g === 'supply' ? 'Горячая вода от стояка отопления в подъезде (там кран и счётчик тепла) — в полу в гидроузел' : 'Остывшая вода из коллектора обратно в стояк в подъезде', step: 1 });
+        pipes += len(path);
+      }
+      points.push({ id: 'heat-entry', roomId: entry.roomId, kind: 'entry', position: [entry.out[0] + entry.t[0] * 0.2, 1.15, entry.out[2] + entry.t[1] * 0.2], short: 'Подъезд: стояк отопления', label: 'Поэтажный узел в подъезде: стояки отопления, краны на квартиру и счётчик тепла. Общедомовое — трогать только через УК', step: 1 });
+    }
+  }
   for (const el of layout.elements.filter((e) => e.kind === 'radiator')) {
     const room = roomOf(layout, el.roomId);
     const r = el.rotationY ?? 0;
@@ -62,37 +86,37 @@ export function buildHeatingScheme(layout: Layout, sectionsOf: SectionsOf = defa
     const [cx, cy, cz] = el.position;
     const top = cy + 0.25;
     const bottom = cy - 0.25;
-    // стояк — сбоку от радиатора, у стены (в 25 см от края)
-    const rx = cx - along[0] * (half + 0.25);
-    const rz = cz - along[1] * (half + 0.25);
     const left: Vec3 = [cx - along[0] * half, 0, cz - along[1] * half];
     const right: Vec3 = [cx + along[0] * half, 0, cz + along[1] * half];
-    lines.push({ id: `riser-${el.id}`, roomId: el.roomId, group: 'riser', points: [[rx, 0, rz], [rx, H, rz]], title: 'Стояк отопления', label: 'Общедомовая труба: горячая вода из котельной идёт сверху вниз через все квартиры этого стояка', step: 1 });
-    lines.push({ id: `sup-${el.id}`, roomId: el.roomId, group: 'supply', points: [[rx, top, rz], [left[0], top, left[2]]], title: 'Подача', label: 'Горячая вода от стояка в радиатор — сверху. Здесь стоит кран и термоголовка', step: 2 });
-    lines.push({ id: `ret-${el.id}`, roomId: el.roomId, group: 'return', points: [[left[0], bottom, left[2]], [rx, bottom, rz]], title: 'Обратка', label: 'Остывшая вода из радиатора обратно в стояк — снизу. Тоже с краном', step: 2 });
-    lines.push({ id: `byp-${el.id}`, roomId: el.roomId, group: 'bypass', points: [[rx + along[0] * 0.08, top, rz + along[1] * 0.08], [rx + along[0] * 0.08, bottom, rz + along[1] * 0.08]], title: 'Байпас', label: 'Перемычка между подачей и обраткой: если закрыть краны радиатора, вода пойдёт мимо — соседи снизу не останутся без тепла', step: 3 });
-    // сам радиатор — контур
-    lines.push({ id: `rad-${el.id}`, roomId: el.roomId, group: 'radiator', points: [[left[0], top, left[2]], [right[0], top, right[2]], [right[0], bottom, right[2]], [left[0], bottom, left[2]], [left[0], top, left[2]]], title: `Радиатор, ${n} секций`, label: `${n} секций × ≈180 Вт = ${n * 180} Вт — по площади комнаты ${room ? roomArea(room) : '?'} м² (100 Вт на м²)`, step: 2 });
-    points.push({ id: `rad-${el.id}`, roomId: el.roomId, kind: 'radiator', position: [cx, top + 0.18, cz], short: `Радиатор · ${n} секц.`, label: `${n * 180} Вт тепла. Число секций — из расчёта в карточке радиатора`, step: 2 });
-    points.push({ id: `valve-${el.id}`, roomId: el.roomId, kind: 'valve', position: [(rx + left[0]) / 2, top, (rz + left[2]) / 2], short: 'Кран', label: 'Кран на подаче: можно снять радиатор, не сливая стояк. С термоголовкой — держит заданную температуру', step: 3 });
+    // нижнее подключение: подача — в левый край, обратка — из правого; обе трубы в полу до коллектора
+    if (coll && bath && room) {
+      for (const [g, end, dz] of [['supply', left, 0], ['return', right, 0.07]] as const) {
+        const y = FY - (g === 'return' ? 0.02 : 0);
+        const c0: Vec3 = [coll[0] + dz, coll[1], coll[2]];
+        const route = floorRoute(layout, bath, room, [c0[0], y, c0[2]], [end[0], y, end[2]], y);
+        const path: Vec3[] = [c0, ...route, [end[0], bottom, end[2]]];
+        lines.push({ id: `${g === 'supply' ? 'sup' : 'ret'}-${el.id}`, roomId: el.roomId, group: g, points: path, title: g === 'supply' ? 'Подача' : 'Обратка', label: g === 'supply' ? 'Горячая вода от коллектора в гидроузле — в полу, в радиатор снизу' : 'Остывшая вода из радиатора — в полу обратно в коллектор', step: 2 });
+        pipes += len(path);
+      }
+    }
+    lines.push({ id: `rad-${el.id}`, roomId: el.roomId, group: 'radiator', points: [[left[0], top, left[2]], [right[0], top, right[2]], [right[0], bottom, right[2]], [left[0], bottom, left[2]], [left[0], top, left[2]]], title: `Радиатор, ${n} секций`, label: `${n} секций × ≈180 Вт = ${n * 180} Вт — по площади комнаты ${room ? roomArea(room) : '?'} м² (100 Вт на м²)`, step: 3 });
+    points.push({ id: `rad-${el.id}`, roomId: el.roomId, kind: 'radiator', position: [cx, top + 0.18, cz], short: `Радиатор · ${n} секц.`, label: `${n * 180} Вт тепла. Число секций — из расчёта в карточке радиатора`, step: 3 });
+    points.push({ id: `valve-${el.id}`, roomId: el.roomId, kind: 'valve', position: [left[0], bottom + 0.06, left[2]], short: 'Кран', label: 'Узел нижнего подключения с кранами: радиатор можно снять, не сливая систему. Термоголовка держит заданную температуру', step: 3 });
     points.push({ id: `mayev-${el.id}`, roomId: el.roomId, kind: 'mayevsky', position: [right[0], top, right[2]], short: 'Маевского', label: 'Кран Маевского: стравить воздух, если радиатор холодный сверху', step: 3 });
-    pipes += H + 2 * Math.hypot(rx - left[0], rz - left[2]) + 0.5;
   }
-  // полотенцесушитель на стояке горячей воды в санузле
-  const pl = buildPlumbingScheme(layout);
-  const hot = pl.lines.find((l) => l.id === 'riser-hot');
-  const bath = layout.rooms.find((r) => r.type === 'bath');
-  if (hot && bath) {
-    const [hx, , hz] = hot.points[0];
+  // полотенцесушитель — от коллектора горячей воды
+  const hotM = pl.lines.find((l) => l.id === 'meter-manifold-hot');
+  if (wm && bath && hotM) {
+    const hp = hotM.points[hotM.points.length - 1];
     const wx = bath.rect[0] + 0.06;
-    const z0 = hz + 0.35;
+    const z0 = Math.min(bath.rect[3] - 0.7, Math.max(bath.rect[1] + 0.15, hp[2] + 0.35));
     const z1 = z0 + 0.5;
-    lines.push({ id: 'towel', roomId: bath.id, group: 'radiator', points: [[wx, 1.6, z0], [wx, 1.6, z1], [wx, 1.0, z1], [wx, 1.0, z0], [wx, 1.6, z0]], title: 'Полотенцесушитель', label: 'Греется от стояка горячей воды (а не от отопления) — тёплый круглый год', step: 4 });
-    lines.push({ id: 'towel-sup', roomId: bath.id, group: 'supply', points: [[hx, 1.5, hz], [hx, 1.5, z0], [wx, 1.5, z0]], title: 'Подача ГВС', label: 'От стояка горячей воды к полотенцесушителю', step: 4 });
-    lines.push({ id: 'towel-ret', roomId: bath.id, group: 'return', points: [[wx, 1.1, z0], [hx, 1.1, z0], [hx, 1.1, hz]], title: 'Обратно в стояк ГВС', label: 'Из полотенцесушителя обратно в стояк', step: 4 });
-    points.push({ id: 'towel', roomId: bath.id, kind: 'radiator', position: [wx, 1.75, (z0 + z1) / 2], short: 'Полотенцесушитель', label: 'Водяной, на стояке горячей воды', step: 4 });
+    lines.push({ id: 'towel', roomId: bath.id, group: 'radiator', points: [[wx, 1.6, z0], [wx, 1.6, z1], [wx, 1.0, z1], [wx, 1.0, z0], [wx, 1.6, z0]], title: 'Полотенцесушитель', label: 'Греется от горячей воды (а не от отопления) — тёплый круглый год', step: 4 });
+    lines.push({ id: 'towel-sup', roomId: bath.id, group: 'supply', points: [[hp[0], hp[1], hp[2]], [hp[0], 1.5, hp[2]], [hp[0], 1.5, z0], [wx, 1.5, z0]], title: 'Подача ГВС', label: 'От коллектора горячей воды в гидроузле к полотенцесушителю', step: 4 });
+    lines.push({ id: 'towel-ret', roomId: bath.id, group: 'return', points: [[wx, 1.1, z0], [hp[0] + 0.05, 1.1, z0], [hp[0] + 0.05, hp[1], hp[2]]], title: 'Обратно в ГВС', label: 'Из полотенцесушителя обратно в коллектор горячей воды', step: 4 });
+    points.push({ id: 'towel', roomId: bath.id, kind: 'radiator', position: [wx, 1.75, (z0 + z1) / 2], short: 'Полотенцесушитель', label: 'Водяной, на горячей воде', step: 4 });
   }
-  return { lines, points, stats: [`Радиаторов: ${layout.elements.filter((e) => e.kind === 'radiator').length}, секций всего: ${sectionsTotal} (≈${(sectionsTotal * 0.18).toFixed(1)} кВт)`, `Труб подключения ≈${Math.round(pipes)} м (полипропилен 25 мм армированный или сталь)`] };
+  return { lines, points, stats: [`Радиаторов: ${layout.elements.filter((e) => e.kind === 'radiator').length}, секций всего: ${sectionsTotal} (≈${(sectionsTotal * 0.18).toFixed(1)} кВт)`, `Труб в полу ≈${Math.round(pipes)} м (сшитый полиэтилен PE-Xa 16–20 мм в теплоизоляции)`] };
 }
 
 // ---------------- Умный дом ----------------
