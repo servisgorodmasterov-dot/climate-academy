@@ -9,19 +9,20 @@ import { buildElectricScheme, countsFromSections, type ElLine, type ElPoint } fr
 import { useApp } from '../../store';
 
 // цвета заметно разные: магистраль синяя, розетки оранжевые, свет жёлтый, силовые красные
-const COLORS: Record<ElLine['group'], string> = { trunk: '#1e6fff', sockets: '#ff6a00', light: '#ffc400', power: '#e0102a' };
-const WIDTH: Record<ElLine['group'], number> = { trunk: 5.5, sockets: 3, light: 2.4, power: 3.8 };
+const COLORS: Record<ElLine['group'], string> = { trunk: '#1e6fff', sockets: '#ff6a00', light: '#ffc400', power: '#e0102a', ac: '#00acc1' };
+const WIDTH: Record<ElLine['group'], number> = { trunk: 5.5, sockets: 3, light: 2.4, power: 3.8, ac: 3.6 };
 
 const socketMat = new THREE.MeshStandardMaterial({ color: '#fff7e0', roughness: 0.4, emissive: '#ff6a00', emissiveIntensity: 0.5 });
 const switchMat = new THREE.MeshStandardMaterial({ color: '#fffbe8', roughness: 0.4, emissive: '#ffc400', emissiveIntensity: 0.5 });
 const lightMat = new THREE.MeshBasicMaterial({ color: '#ffc400' });
 const powerMat = new THREE.MeshStandardMaterial({ color: '#ffe3e0', roughness: 0.4, emissive: '#e53935', emissiveIntensity: 0.4 });
+const acMat = new THREE.MeshStandardMaterial({ color: '#e0f7fa', roughness: 0.4, emissive: '#00acc1', emissiveIntensity: 0.5 });
 const panelMat = new THREE.MeshStandardMaterial({ color: '#1e6fff', roughness: 0.5, emissive: '#1e6fff', emissiveIntensity: 0.35 });
 const boxMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.4, emissive: '#1e6fff', emissiveIntensity: 0.15 });
 
 /** Что показывать на шаге пошагового объяснения (0 — всё сразу). */
-const STEP_GROUPS: Record<number, ElLine['group'][]> = { 1: [], 2: ['trunk'], 3: ['trunk', 'light'], 4: ['trunk', 'light'], 5: ['trunk', 'light', 'sockets'], 6: ['trunk', 'light', 'sockets', 'power'] };
-const STEP_POINTS: Record<number, ElPoint['kind'][]> = { 1: ['panel'], 2: ['panel', 'box'], 3: ['panel', 'box', 'switch'], 4: ['panel', 'box', 'switch', 'light'], 5: ['panel', 'box', 'switch', 'light', 'socket'], 6: ['panel', 'box', 'switch', 'light', 'socket', 'power'] };
+const STEP_GROUPS: Record<number, ElLine['group'][]> = { 1: [], 2: ['trunk'], 3: ['trunk', 'light'], 4: ['trunk', 'light'], 5: ['trunk', 'light', 'sockets'], 6: ['trunk', 'light', 'sockets', 'power', 'ac'] };
+const STEP_POINTS: Record<number, ElPoint['kind'][]> = { 1: ['panel'], 2: ['panel', 'box'], 3: ['panel', 'box', 'switch'], 4: ['panel', 'box', 'switch', 'light'], 5: ['panel', 'box', 'switch', 'light', 'socket'], 6: ['panel', 'box', 'switch', 'light', 'socket', 'power', 'ac'] };
 
 export function ElectricScene({ layout, focusRoom, onPickRoom }: { layout: Layout; focusRoom: string | null; onPickRoom: (roomId: string) => void }) {
   const step = useApp((s) => s.electricStep);
@@ -163,7 +164,7 @@ function ElPointMesh({ p, faded, hovered, onHover, onClick }: { p: ElPoint; fade
         {tip}
       </group>
     );
-  const mat = p.kind === 'switch' ? switchMat : p.kind === 'power' ? powerMat : socketMat;
+  const mat = p.kind === 'switch' ? switchMat : p.kind === 'power' ? powerMat : p.kind === 'ac' ? acMat : socketMat;
   const num = p.label.match(/^\D+(\d+)/)?.[1];
   return (
     <group position={p.position} rotation={[0, rot, 0]}>
@@ -172,7 +173,7 @@ function ElPointMesh({ p, faded, hovered, onHover, onClick }: { p: ElPoint; fade
       </mesh>
       {!faded && num && (
         <Html position={[0, 0, 0.03]} center zIndexRange={[2, 1]}>
-          <div className={`el-num ${p.kind}`}>{p.kind === 'switch' ? 'В' : p.kind === 'power' ? 'С' : ''}{num}</div>
+          <div className={`el-num ${p.kind}`}>{p.kind === 'switch' ? 'В' : p.kind === 'power' ? 'С' : p.kind === 'ac' ? '❄' : ''}{num}</div>
         </Html>
       )}
       {tip}

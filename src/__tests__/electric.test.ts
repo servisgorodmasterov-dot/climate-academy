@@ -51,4 +51,17 @@ describe('схема электрики', () => {
     for (const p of s.points) if (p.kind !== 'box' && p.kind !== 'panel') expect(inOpening(p.position[0], p.position[2], p.position[1]), `точка ${p.id} в проёме`).toBe(false);
     for (const l of s.lines) if (l.group === 'sockets') for (let i = 1; i < l.points.length; i++) { const a = l.points[i - 1], b = l.points[i]; for (let t = 0; t <= 1; t += 0.05) { const x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t, z = a[2] + (b[2] - a[2]) * t; expect(inOpening(x, z, y), `линия ${l.id} сегмент ${i} y=${y.toFixed(2)} в проёме`).toBe(false); } }
   });
+
+  it('каждый кондиционер — на отдельной линии от щита с автоматом 16 А', () => {
+    const s = buildElectricScheme(layout, (r) => ({ ...defaultCounts(r), power: 0 }));
+    const acs = layout.elements.filter((e) => e.kind === 'ac_indoor');
+    expect(acs.length).toBeGreaterThan(0);
+    for (const ac of acs) {
+      const l = s.lines.find((x) => x.id === `ac-${ac.id}`)!;
+      expect(l.group).toBe('ac');
+      expect(l.cable).toContain('3×2.5');
+      expect(l.label).toContain('16 А');
+      expect(Math.hypot(l.points[0][0] - s.panel[0], l.points[0][2] - s.panel[2])).toBeLessThan(0.3); // от щита, не от коробки
+    }
+  });
 });

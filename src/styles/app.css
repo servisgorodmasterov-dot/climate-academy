@@ -594,3 +594,4 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .net-switch button { display: inline-flex; align-items: center; gap: 5px; }
 .net-label { background: #fff; border: 1.5px solid; padding: 2px 7px; border-radius: 7px; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; }
 @media (max-width: 760px) { .net-switch { overflow-x: auto; max-width: 100%; } .net-switch button { padding: 6px 8px; font-size: 12px; } }
+.el-num.ac { background: #00acc1; }

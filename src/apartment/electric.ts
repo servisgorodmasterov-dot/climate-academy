@@ -6,7 +6,7 @@ import { doorWidthInRoom, roomArea } from './layout';
 import { openingPlace } from '../objects/geometry';
 
 export type Vec3 = [number, number, number];
-export type ElPointKind = 'socket' | 'switch' | 'light' | 'panel' | 'power' | 'box';
+export type ElPointKind = 'socket' | 'switch' | 'light' | 'panel' | 'power' | 'box' | 'ac';
 
 export interface ElPoint {
   id: string;
@@ -22,7 +22,7 @@ export interface ElPoint {
 export interface ElLine {
   id: string;
   roomId: string;
-  group: 'sockets' | 'light' | 'trunk' | 'power';
+  group: 'sockets' | 'light' | 'trunk' | 'power' | 'ac';
   points: Vec3[];
   label: string;
   /** марка и сечение: «ВВГнг(А)-LS 3×2.5» */
@@ -367,6 +367,23 @@ export function buildElectricScheme(layout: Layout, counts: (room: Room) => Room
     });
     cableByRoom[room.id] = Math.round(total * 10) / 10;
   }
+  // Кондиционеры: каждый на своей линии от щита — кабель 3×2.5 мм², автомат 16 А (до ~3.5 кВт).
+  // Отдельная трасса под потолком (на 30 см ниже магистралей), розетка/клеммы рядом с внутренним блоком.
+  layout.elements
+    .filter((x) => x.kind === 'ac_indoor')
+    .forEach((ac, i) => {
+      const r = ac.rotationY ?? 0;
+      const along: [number, number] = [Math.cos(r), -Math.sin(r)];
+      // точка подключения — сбоку от блока на 55 см, на высоте блока
+      const pos: Vec3 = [ac.position[0] + along[0] * 0.55, ac.position[1], ac.position[2] + along[1] * 0.55];
+      const AH = CABLE_H - 0.3 - i * 0.06;
+      const start: Vec3 = [panel[0], panel[1], panel[2] - 0.12 - i * 0.06];
+      const pp: Vec3[] = [start, [start[0], AH, start[2]], [pos[0], AH, start[2]], [pos[0], AH, pos[2]], pos];
+      const room = layout.rooms.find((x) => x.id === ac.roomId);
+      points.push({ id: `ac-${ac.id}`, kind: 'ac', roomId: ac.roomId, position: pos, label: `Кондиционер · ${room?.name ?? ''}: своя линия от щита, автомат 16 А`, cable: 'ВВГнг(А)-LS 3×2.5' });
+      lines.push({ id: `ac-${ac.id}`, roomId: ac.roomId, group: 'ac', points: pp, label: `Щит → кондиционер · ${room?.name ?? ''}: ВВГнг(А)-LS 3×2.5, отдельный автомат 16 А`, cable: 'ВВГнг(А)-LS 3×2.5' });
+      cableByRoom[ac.roomId] = Math.round(((cableByRoom[ac.roomId] ?? 0) + len(pp)) * 10) / 10;
+    });
   return { panel, points, lines, cableByRoom };
 }
 
