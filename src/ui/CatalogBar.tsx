@@ -11,7 +11,8 @@ export function CatalogBar() {
   const wide = () => typeof window !== 'undefined' && window.innerWidth >= 1100 && !useApp.getState().embed;
   const [open, setOpen] = useState(wide);
   const objects = useMemo(() => (layout ? selectableObjects(layout, catalog) : []), [layout, catalog]);
-  if (!layout || panel) return null;
+  const mode = useApp((s) => s.mode);
+  if (!layout || panel || mode === 'electric' || mode === 'xray') return null;
   const cats = categoriesOf(catalog);
   const pick = (id: string | 'all') => {
     app.set('categoryFilter', id);

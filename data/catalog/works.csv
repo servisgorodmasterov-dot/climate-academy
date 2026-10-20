@@ -60,3 +60,4 @@ W-PL-INSTALL,plumb.toilet,pl.install,Монтаж инсталляции с фа
 W-PL-SINK,plumb.vanity,pl.vanity,Установка раковины/тумбы с подключением,pcs,15000,2026-10-20,DEMO
 W-PL-WASHER,plumb.washer,pl.washer,"Подключение стиральной машины (вода, слив, проверка)",pcs,12000,2026-10-20,DEMO
 W-HT-INST,heat.radiator,heat.install,"Замена радиатора: демонтаж, кронштейны, краны, байпас, опрессовка",pcs,35000,2026-10-20,DEMO
+W-EL-POWER,electric.room,el.power,"Отдельная силовая линия от щита (штроба, кабель 3×4, автомат 25 А)",pcs,18000,2026-10-20,DEMO

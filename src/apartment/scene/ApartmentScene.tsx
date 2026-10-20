@@ -12,6 +12,7 @@ import { Structure, type ObjectLooks } from './Structure';
 import { Furniture } from './Furniture';
 import { Element } from './Elements';
 import { Utilities } from './Utilities';
+import { ElectricScene } from './ElectricScene';
 import { useApp, useAppState } from '../../store';
 import { lookOf } from '../../objects/logic';
 import { useGameControls } from './gameControls';
@@ -135,6 +136,7 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality 
   }, [layout, catalog, looks, selectedElement]);
   const [W, D] = layout.size;
   const xray = mode === 'xray';
+  const electric = mode === 'electric';
 
   return (
     <>
@@ -194,19 +196,29 @@ function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality 
           closedDoors={closedDoors}
           focusRoom={focusRoom}
           selectedElement={selectedElement}
-          xray={xray}
+          xray={xray || electric}
           onFloorClick={onFloor}
           onElement={onElement}
         />
-        {!xray && <Furniture items={layout.furniture} looks={furnLooks.looks} selectable={furnLooks.selectable} selected={furnLooks.selected} ids={furnLooks.ids} onPick={(i) => { const el = layout.elements.find((e) => e.furniture === i); if (el) onElement(el); }} />}
+        {!xray && !electric && <Furniture items={layout.furniture} looks={furnLooks.looks} selectable={furnLooks.selectable} selected={furnLooks.selected} ids={furnLooks.ids} onPick={(i) => { const el = layout.elements.find((e) => e.furniture === i); if (el) onElement(el); }} />}
         {layout.elements
-          .filter((e) => e.kind !== 'floor' && !GEOMETRY_KINDS.includes(e.kind))
+          .filter((e) => e.kind !== 'floor' && !GEOMETRY_KINDS.includes(e.kind) && (!electric || e.kind === 'electric_panel'))
           .map((e) => (
-            <Element key={e.id} el={e} selected={selectedElement === e.id} onSelect={onElement} xray={xray} />
+            <Element key={e.id} el={e} selected={selectedElement === e.id} onSelect={onElement} xray={xray || electric} />
           ))}
         {xray && <Utilities runs={layout.utilities} systems={xraySystems} />}
+        {electric && (
+          <ElectricScene
+            layout={layout}
+            focusRoom={focusRoom}
+            onPickRoom={(roomId) => {
+              const el = layout.elements.find((e) => e.kind === 'room_electric' && e.roomId === roomId);
+              if (el) onElement(el);
+            }}
+          />
+        )}
         {objects
-          .filter((o) => (focusRoom ? o.roomId === focusRoom : categoryFilter !== 'all') && (categoryFilter === 'all' || o.category === categoryFilter))
+          .filter((o) => (electric ? o.element.kind === 'room_electric' : (focusRoom ? o.roomId === focusRoom : categoryFilter !== 'all') && (categoryFilter === 'all' || o.category === categoryFilter)))
           .map((o) => (
             <Html key={o.id} position={o.anchor} center zIndexRange={[3, 2]}>
               <button

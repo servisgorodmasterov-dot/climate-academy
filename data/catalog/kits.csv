@@ -163,7 +163,7 @@ KIT-CE-P,ceiling.stretch,premium,ceil.spots,CEIL-RING,W-CEIL-RING
 KIT-EL-E,electric.room,econom,el.socket,EL-SOCKET-W,W-EL-POINT
 KIT-EL-E,electric.room,econom,el.switch,EL-SWITCH-1,W-EL-POINT
 KIT-EL-E,electric.room,econom,el.light,EL-LIGHT-OUT,W-EL-LIGHT
-KIT-EL-E,electric.room,econom,el.cable,EL-CABLE-25,W-EL-CABLE
+KIT-EL-E,electric.room,econom,el.cable,EL-CABLE-PVS,W-EL-CABLE
 KIT-EL-E,electric.room,econom,el.breaker,EL-BRK-16,W-EL-BRK
 KIT-EL-C,electric.room,comfort,el.socket,EL-SOCKET-D,W-EL-POINT
 KIT-EL-C,electric.room,comfort,el.switch,EL-SWITCH-2,W-EL-POINT
@@ -173,7 +173,7 @@ KIT-EL-C,electric.room,comfort,el.breaker,EL-RCBO-16,W-EL-BRK
 KIT-EL-P,electric.room,premium,el.socket,EL-SOCKET-BLK,W-EL-POINT
 KIT-EL-P,electric.room,premium,el.switch,EL-SWITCH-PASS,W-EL-POINT
 KIT-EL-P,electric.room,premium,el.light,EL-LIGHT-OUT,W-EL-LIGHT
-KIT-EL-P,electric.room,premium,el.cable,EL-CABLE-25,W-EL-CABLE
+KIT-EL-P,electric.room,premium,el.cable,EL-CABLE-NYM,W-EL-CABLE
 KIT-EL-P,electric.room,premium,el.breaker,EL-RCBO-16,W-EL-BRK
 KIT-LT-E,light.room,econom,light.main,LT-SPOT-7,W-LT-SPOT
 KIT-LT-C,light.room,comfort,light.main,LT-SPOT-10,W-LT-SPOT
@@ -223,3 +223,5 @@ KIT-HT-C,heat.radiator,comfort,heat.install,HT-KIT,W-HT-INST
 KIT-HT-P,heat.radiator,premium,heat.radiator,HT-BIMETAL,
 KIT-HT-P,heat.radiator,premium,heat.install,HT-KIT,W-HT-INST
 KIT-HT-P,heat.radiator,premium,heat.thermo,HT-THERMO,
+KIT-EL-C,electric.room,comfort,el.power,EL-CABLE-40,W-EL-POWER
+KIT-EL-P,electric.room,premium,el.power,EL-CABLE-40,W-EL-POWER

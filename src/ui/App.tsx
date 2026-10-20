@@ -17,6 +17,8 @@ import { ObjectsPanel } from './ObjectsPanel';
 import { CatalogBar } from './CatalogBar';
 import { categoriesOf, resolveSelectable, selectableObjects } from '../apartment/objects';
 import { money } from './format';
+import { buildElectricScheme, countsFromSections } from '../apartment/electric';
+import type { Layout } from '../core/types';
 
 // «На весь экран» из встроенного на сайт конструктора: открываем в той же вкладке (не в новой),
 // помечаем full=1 и запоминаем страницу сайта, чтобы кнопка «← На сайт» могла вернуть обратно.
@@ -64,6 +66,7 @@ function goBackToSite() {
 const MODES: { id: ViewMode; label: string; hint: string }[] = [
   { id: 'apartment', label: 'Моя квартира', hint: 'Выберите комнату, затем объект по метке. Список всех объектов — кнопка «Объекты»' },
   { id: 'xray', label: 'Рентген', hint: 'Условная схема инженерных систем — не исполнительная документация' },
+  { id: 'electric', label: 'Электрика', hint: 'Схема кабелей по вашему расчёту: наведите на линию — марка и сечение; нажмите точку — карточка комнаты' },
   { id: 'encyclopedia', label: 'Энциклопедия', hint: 'Выберите объект — главной станет кнопка «Как устроено»' },
 ];
 
@@ -329,6 +332,8 @@ export function App() {
           <b>Мышь:</b> левая — {s.dragMode === 'pan' ? 'тянуть квартиру' : 'вращать'} (кнопки ✋ ⟳ справа) · правая — {s.dragMode === 'pan' ? 'вращать вокруг точки' : 'тянуть'} · колесо — ближе к курсору · <b>Клавиши:</b> WASD — ехать · Q/E — поворот · R/F — наклон · Shift — быстрее · H — вся квартира
         </div>
 
+        {mode === 'electric' && <ElectricLegend layout={layout} />}
+
         {mode === 'xray' && (
           <div className="legend">
             <b>Инженерные системы</b>
@@ -448,6 +453,34 @@ function HoverTip() {
       <b>{el.label}</b>
       {sub && <span>{sub}</span>}
       {price && <em>{price}</em>}
+    </div>
+  );
+}
+
+/** Легенда режима «Электрика»: что каким цветом, длина кабеля по комнатам из текущего расчёта. */
+function ElectricLegend({ layout }: { layout: Layout }) {
+  const { sections, apartmentId, catalog } = useAppState();
+  const focusRoom = useApp((st) => st.focusRoom);
+  const scheme = useMemo(() => buildElectricScheme(layout, countsFromSections(layout, sections as any, apartmentId, catalog?.products)), [layout, sections, apartmentId, catalog]);
+  const total = Object.values(scheme.cableByRoom).reduce((a, b) => a + b, 0);
+  const n = (k: string) => scheme.points.filter((p) => p.kind === k && (!focusRoom || p.roomId === focusRoom)).length;
+  return (
+    <div className="legend el-legend">
+      <b>Схема электрики</b>
+      <div className="el-row"><i style={{ background: '#1e6fff' }} /> Магистраль от щита по потолку</div>
+      <div className="el-row"><i style={{ background: '#ff6a00' }} /> Розетки — 3×2.5 мм², автомат 16 А</div>
+      <div className="el-row"><i style={{ background: '#ffc400' }} /> Свет — 3×1.5 мм², автомат 10 А</div>
+      <div className="el-row"><i style={{ background: '#e0102a' }} /> Силовые линии (плита, бойлер) — 3×4 мм², автомат 25 А</div>
+      <div className="conf">
+        <div>Точек: розеток {n('socket')} · выключателей {n('switch')} · выводов света {n('light')} · силовых {n('power')}</div>
+        <div>
+          Кабель: {focusRoom ? `${scheme.cableByRoom[focusRoom] ?? 0} м в этой комнате` : `≈${Math.round(total)} м на квартиру`}
+          {!focusRoom && (
+            <span className="muted"> ({layout.rooms.map((r) => `${r.name.toLowerCase()} ${scheme.cableByRoom[r.id] ?? 0}`).join(', ')})</span>
+          )}
+        </div>
+      </div>
+      <p className="muted small">Наведите на линию — марка кабеля; нажмите на розетку или линию — откроется расчёт комнаты. Число точек меняется в карточке «Электрика».</p>
     </div>
   );
 }

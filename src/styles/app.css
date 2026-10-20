@@ -561,3 +561,16 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .picked-note { margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: #f2f7ff; font-size: 12.5px; line-height: 1.45; color: #2b3a50; }
 .picked-note p { margin: 4px 0 0; }
 .foot-pick { color: var(--ink); font-weight: 600; }
+
+/* ---- Режим «Электрика» ---- */
+.el-legend { width: 300px; }
+.el-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.el-row i { width: 18px; height: 4px; border-radius: 2px; flex: none; }
+.el-legend .conf { display: grid; gap: 4px; }
+.el-tip { background: #10294bee; color: #fff; padding: 6px 10px; border-radius: 9px; font-size: 12px; white-space: nowrap; display: grid; gap: 2px; border-left: 4px solid #1e6fff; box-shadow: var(--shadow); pointer-events: none; }
+.el-tip b { font-size: 13px; }
+.el-tip span { color: #d6e0ee; }
+.el-label { background: #e8f0ffee; border: 1px solid #1e6fff; color: #103f8f; padding: 2px 7px; border-radius: 7px; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; }
+.el-label.strong { background: #1e6fff; color: #fff; }
+.app.compact .el-legend { display: none; }
+.app.compact.tools-open .el-legend { display: flex; }
