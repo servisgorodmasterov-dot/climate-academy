@@ -47,10 +47,12 @@ const FIXTURES: Record<string, { name: string; water: number; hot: boolean; sewe
   sink: { name: 'Кухонная мойка', water: 0.5, hot: true, sewer: 0.45, dn: 50 },
 };
 
-const WALL_H = 0.3; // трубы воды в штробе на высоте 30 см
-const FLOOR_H = 0.03; // в стяжке пола (под порогами)
-const SEWER_START = 0.14; // канализация у прибора
-const SEWER_END = 0.06; // у стояка — ниже (уклон)
+// Все горизонтальные трубы — в полу (в стяжке, ниже чистового пола). Над полом только вертикальные выводы к приборам.
+const WALL_H = -0.04; // вода: холодная в стяжке на 4 см ниже пола
+const FLOOR_H = -0.04; // переходы между комнатами — там же, под порогами
+const HOT_DY = -0.02; // горячая — рядом, на 2 см ниже холодной
+const SEWER_START = -0.07; // канализация у прибора — глубже воды
+const SEWER_END = -0.12; // у стояка ещё ниже (уклон 2–3 %)
 
 const len = (pts: Vec3[]) => pts.reduce((s, p, i) => (i ? s + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1], p[2] - pts[i - 1][2]) : 0), 0);
 const roomAtPoint = (layout: Layout, x: number, z: number) => layout.rooms.find((r) => x >= r.rect[0] - 0.01 && x <= r.rect[2] + 0.01 && z >= r.rect[1] - 0.01 && z <= r.rect[3] + 0.01);
@@ -158,7 +160,7 @@ export function buildPlumbingScheme(layout: Layout): PlScheme {
       const b: Vec3 = [wx, y, wz + dz];
       if (room.id === rRoom.id) {
         // в той же комнате — вдоль стен на высоте штробы, под дверью — в стяжке пола
-        return [[manifold[0], manifold[1], manifold[2] + dz], a, ...wallRoute(layout, rRoom, a, b, y, FLOOR_H)];
+        return [[manifold[0], manifold[1], manifold[2] + dz], a, ...wallRoute(layout, rRoom, a, b, y, y)];
       }
       // в другую комнату — в стяжке пола под порогами
       return [[manifold[0], manifold[1], manifold[2] + dz], [manifold[0], FLOOR_H, manifold[2] + dz], ...floorRoute(layout, rRoom, room, [manifold[0], FLOOR_H, manifold[2] + dz], [wx, FLOOR_H, wz + dz], FLOOR_H).slice(1), [wx, y, wz + dz]];
@@ -167,7 +169,7 @@ export function buildPlumbingScheme(layout: Layout): PlScheme {
     lines.push({ id: `cold-${id}`, roomId: room.id, group: 'cold', points: cold, label: `Холодная вода → ${meta.name.toLowerCase()}`, pipe: 'ПП 20 мм', fixture: meta.name });
     length.cold += len(cold);
     if (meta.hot) {
-      const hot = [...route(WALL_H - 0.08, 0.06), [wx, meta.water, wz + 0.06] as Vec3];
+      const hot = [...route(WALL_H + HOT_DY, 0.06), [wx, meta.water, wz + 0.06] as Vec3];
       lines.push({ id: `hot-${id}`, roomId: room.id, group: 'hot', points: hot, label: `Горячая вода → ${meta.name.toLowerCase()}`, pipe: 'ПП 20 мм (армир.)', fixture: meta.name });
       length.hot += len(hot);
     }
@@ -175,7 +177,7 @@ export function buildPlumbingScheme(layout: Layout): PlScheme {
     // канализация: от прибора вниз, по полу вдоль стен к стояку; высота падает к стояку (уклон)
     const sIn: Vec3 = [wx, meta.sewer, wz - 0.06];
     let base: Vec3[];
-    if (room.id === rRoom.id) base = [sIn, [wx, SEWER_START, wz - 0.06], ...wallRoute(layout, rRoom, [wx, SEWER_START, wz - 0.06], [rs[0] + EDGE_INSET, SEWER_START, rs[2]], SEWER_START, FLOOR_H)];
+    if (room.id === rRoom.id) base = [sIn, [wx, SEWER_START, wz - 0.06], ...wallRoute(layout, rRoom, [wx, SEWER_START, wz - 0.06], [rs[0] + EDGE_INSET, SEWER_START, rs[2]], SEWER_START, SEWER_START)];
     else base = [sIn, [wx, SEWER_START, wz - 0.06], ...floorRoute(layout, room, rRoom, [wx, SEWER_START, wz - 0.06], [rs[0] + EDGE_INSET, SEWER_START, rs[2]], SEWER_START).slice(1)];
     base.push([rs[0], SEWER_START, rs[2]]);
     // уклон: линейно по длине от SEWER_START до SEWER_END (вертикальный спуск у прибора не трогаем)
@@ -184,7 +186,7 @@ export function buildPlumbingScheme(layout: Layout): PlScheme {
     const sewer = base.map((p, k) => {
       if (k <= 1) return p;
       acc += Math.hypot(p[0] - base[k - 1][0], p[2] - base[k - 1][2]);
-      const y = p[1] === FLOOR_H ? FLOOR_H : SEWER_START - ((SEWER_START - SEWER_END) * acc) / (total || 1);
+      const y = SEWER_START - ((SEWER_START - SEWER_END) * acc) / (total || 1);
       return [p[0], y, p[2]] as Vec3;
     });
     lines.push({ id: `sewer-${id}`, roomId: room.id, group: 'sewer', points: sewer, label: `Канализация от ${meta.name === 'Ванна' ? 'ванны' : meta.name === 'Унитаз' ? 'унитаза' : meta.name === 'Раковина' ? 'раковины' : meta.name === 'Стиральная машина' ? 'стиральной машины' : 'мойки'} к стояку, уклон 2–3 %`, pipe: `ПВХ ${meta.dn} мм`, fixture: meta.name });
