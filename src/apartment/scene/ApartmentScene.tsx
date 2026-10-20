@@ -302,7 +302,7 @@ function CameraRig({ layout }: { layout: Layout }) {
     if (!cc || !selected || walk) return;
     const el = layout.elements.find((e) => e.id === selected);
     if (!el || el.kind === 'floor') return;
-    if (el.kind === 'room_walls') return; // стены — остаёмся на виде комнаты
+    if (el.kind === 'room_walls' || el.kind === 'room_ceiling' || el.kind === 'room_electric' || el.kind === 'room_light') return; // объекты помещения — остаёмся на виде комнаты
     const room = rooms[el.roomId];
     const p = new THREE.Vector3(el.position[0] - W / 2, el.position[1], el.position[2] - D / 2);
     const rot = el.rotationY ?? 0;

@@ -165,7 +165,7 @@ LT-BULB-GU10-4K,light.lamp,light.room,material,"Лампа LED GU10 5 Вт, 4000
 PL-TUB-STEEL-170,pl.bathtub,plumb.bathtub,equipment,Ванна стальная 170×70,Недорого и прочно,pcs,1,Размер=170×70;Материал=сталь 3 мм,tier=econom,,0,—,SUP-MAT,DEMO-PL-TUB-STEEL-170,1
 PL-TUB-ACR-170,pl.bathtub,plumb.bathtub,equipment,Ванна акриловая 170×75 с каркасом,"Тёплая, лёгкая, держит тепло",pcs,1,Размер=170×75;Материал=акрил;Каркас=в комплекте,tier=comfort,,0,—,SUP-MAT,DEMO-PL-TUB-ACR-170,1
 PL-TUB-CAST-170,pl.bathtub,plumb.bathtub,equipment,Ванна чугунная 170×75,"Вечная, тихая",pcs,1,Размер=170×75;Материал=чугун;Вес=110 кг,tier=premium,,0,—,SUP-MAT,DEMO-PL-TUB-CAST-170,1
-PL-MIX-TUB,pl.mixer,plumb.bathtub,equipment,Смеситель для ванны с душевым набором,Однорычажный,pcs,1,,slots=pl.mixer;tier=econom,,0,—,SUP-MAT,DEMO-PL-MIX-TUB,1
+PL-MIX-TUB,pl.mixer,plumb.bathtub,equipment,Смеситель для ванны с душевым набором,Однорычажный,pcs,1,,tier=econom,,0,—,SUP-MAT,DEMO-PL-MIX-TUB,1
 PL-MIX-THERMO,pl.mixer,plumb.bathtub,equipment,Термостатический смеситель с душевой стойкой,"Держит температуру, безопасно детям",pcs,1,,tier=premium,,0,—,SUP-MAT,DEMO-PL-MIX-THERMO,1
 PL-SIPHON-TUB,pl.siphon,plumb.bathtub,material,Слив-перелив автомат,,pcs,1,,,,0,—,SUP-MAT,DEMO-PL-SIPHON-TUB,1
 PL-SCREEN,pl.screen,plumb.bathtub,material,Экран под ванну раздвижной,,pcs,1,,,,0,—,SUP-MAT,DEMO-PL-SCREEN,1
@@ -176,7 +176,7 @@ PL-INSTALL,pl.install,plumb.toilet,equipment,Инсталляция с кноп�
 PL-SINK-PED,pl.vanity,plumb.vanity,equipment,Раковина на пьедестале 55 см,Недорого,pcs,1,,tier=econom,,0,—,SUP-MAT,DEMO-PL-SINK-PED,1
 PL-SINK-TUMBA-60,pl.vanity,plumb.vanity,equipment,Тумба с раковиной 60 см,"Хранение, скрытые трубы",pcs,1,,tier=comfort,,0,—,SUP-MAT,DEMO-PL-SINK-TUMBA-60,1
 PL-SINK-TUMBA-80,pl.vanity,plumb.vanity,equipment,Тумба подвесная с раковиной 80 см,"Просторно, легко мыть пол",pcs,1,,tier=premium,,0,—,SUP-MAT,DEMO-PL-SINK-TUMBA-80,1
-PL-MIX-SINK,pl.mixer,plumb.vanity,equipment,Смеситель для раковины однорычажный,,pcs,1,,slots=pl.mixer;tier=comfort,,0,—,SUP-MAT,DEMO-PL-MIX-SINK,1
+PL-MIX-SINK,pl.mixer.sink,plumb.vanity,equipment,Смеситель для раковины однорычажный,,pcs,1,,tier=comfort,,0,—,SUP-MAT,DEMO-PL-MIX-SINK,1
 PL-SIPHON-SINK,pl.siphon,plumb.vanity,material,Сифон + гибкая подводка с кранами,,pcs,1,,,,0,—,SUP-MAT,DEMO-PL-SIPHON-SINK,1
 PL-WASHER-KIT,pl.washer,plumb.washer,material,"Комплект подключения: кран, сифон, шланги",,pcs,1,,,,0,—,SUP-MAT,DEMO-PL-WASHER-KIT,1
 HT-ALU,heat.radiator,heat.radiator,equipment,"Радиатор алюминиевый, секция 500 мм","Быстро греет, для автономного отопления",pcs,1,Отдача=190 Вт/секция;Давление=16 бар,tier=econom,,0,—,SUP-MAT,DEMO-HT-ALU,1

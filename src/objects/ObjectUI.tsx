@@ -255,7 +255,7 @@ export function ObjectCalculator({ ctx, selection, params, setParams }: Props) {
     <div className="calc">
       <div className="calc-size">
         {(Object.keys(BASES) as Basis[])
-          .filter((b) => used.has(b) && b !== 'pcs' && b !== 'opening_w' && b !== 'opening_h')
+          .filter((b) => used.has(b) && b !== 'pcs' && b !== 'qty' && b !== 'opening_w' && b !== 'opening_h')
           .map((b) => (
             <span key={b}>
               {BASES[b][0].toUpperCase() + BASES[b].slice(1)}: <b>{fq(m[b])}</b>
@@ -385,7 +385,7 @@ export function ObjectCalculator({ ctx, selection, params, setParams }: Props) {
                     </div>
                   )}
                   <div className="step-calc">
-                    {l.slot.per === 'qty' ? (
+                    {l.slot.per === 'qty' || l.slot.per === 'pcs' ? (
                       <div>
                         <span className="muted">Количество:</span> <b>{l.count} {unitLabel(l.product.unit)}</b>
                       </div>

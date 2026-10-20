@@ -201,14 +201,14 @@ KIT-PW-P,plumb.toilet,premium,pl.toilet,PL-WC-WALL,W-PL-WC
 KIT-PW-P,plumb.toilet,premium,pl.install,PL-INSTALL,W-PL-INSTALL
 KIT-PW-P,plumb.toilet,premium,pl.pipes,PL-PIPE-KIT,W-PL-PIPES
 KIT-PV-E,plumb.vanity,econom,pl.vanity,PL-SINK-PED,W-PL-SINK
-KIT-PV-E,plumb.vanity,econom,pl.mixer,PL-MIX-SINK,W-PL-MIX
+KIT-PV-E,plumb.vanity,econom,pl.mixer.sink,PL-MIX-SINK,W-PL-MIX
 KIT-PV-E,plumb.vanity,econom,pl.siphon,PL-SIPHON-SINK,
 KIT-PV-C,plumb.vanity,comfort,pl.vanity,PL-SINK-TUMBA-60,W-PL-SINK
-KIT-PV-C,plumb.vanity,comfort,pl.mixer,PL-MIX-SINK,W-PL-MIX
+KIT-PV-C,plumb.vanity,comfort,pl.mixer.sink,PL-MIX-SINK,W-PL-MIX
 KIT-PV-C,plumb.vanity,comfort,pl.siphon,PL-SIPHON-SINK,
 KIT-PV-C,plumb.vanity,comfort,pl.pipes,PL-PIPE-KIT,W-PL-PIPES
 KIT-PV-P,plumb.vanity,premium,pl.vanity,PL-SINK-TUMBA-80,W-PL-SINK
-KIT-PV-P,plumb.vanity,premium,pl.mixer,PL-MIX-SINK,W-PL-MIX
+KIT-PV-P,plumb.vanity,premium,pl.mixer.sink,PL-MIX-SINK,W-PL-MIX
 KIT-PV-P,plumb.vanity,premium,pl.siphon,PL-SIPHON-SINK,
 KIT-PV-P,plumb.vanity,premium,pl.pipes,PL-PIPE-KIT,W-PL-PIPES
 KIT-PM-E,plumb.washer,econom,pl.washer,PL-WASHER-KIT,W-PL-WASHER

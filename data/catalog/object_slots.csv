@@ -64,7 +64,7 @@ plumb.toilet,pl.toilet,Унитаз,1,pcs,0,0,PL-WC-COMPACT,W-PL-WC,pcs,1,,,,"К
 plumb.toilet,pl.install,Инсталляция (для подвесного),1,pcs,0,1,,W-PL-INSTALL,pcs,2,,,,Рама с бачком в стене + кнопка. Монтируется до плитки.,,,,,
 plumb.toilet,pl.pipes,Разводка труб к точке,1,pcs,0,1,PL-PIPE-KIT,W-PL-PIPES,pcs,3,,,,Если трубы уже подведены — выключите.,,,,,
 plumb.vanity,pl.vanity,Раковина,1,pcs,0,0,PL-SINK-TUMBA-60,W-PL-SINK,pcs,1,,,,С тумбой — хранение и скрытые трубы. На пьедестале — дешевле.,,,,,
-plumb.vanity,pl.mixer,Смеситель,1,pcs,0,0,PL-MIX-SINK,W-PL-MIX,pcs,2,,,,"Однорычажный, с аэратором — экономит воду.",,,,,
+plumb.vanity,pl.mixer.sink,Смеситель,1,pcs,0,0,PL-MIX-SINK,W-PL-MIX,pcs,2,,,,"Однорычажный, с аэратором — экономит воду.",,,,,
 plumb.vanity,pl.siphon,Сифон и подводка,1,pcs,0,0,PL-SIPHON-SINK,,pcs,3,,,,Входит в работу установки.,,,,,
 plumb.vanity,pl.pipes,Разводка труб к точке,1,pcs,0,1,PL-PIPE-KIT,W-PL-PIPES,pcs,4,,,,Если трубы уже подведены — выключите.,,,,,
 plumb.washer,pl.washer,Подключение,1,pcs,0,0,PL-WASHER-KIT,W-PL-WASHER,pcs,1,,,,"Кран, сифон для слива, розетка IP44 с УЗО. Сама машина — ваша.",,,,,
