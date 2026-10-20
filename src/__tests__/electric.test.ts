@@ -13,7 +13,13 @@ describe('схема электрики', () => {
       expect(s.points.filter((p) => p.kind === 'socket' && p.roomId === r.id).length).toBe(d.sockets);
       expect(s.points.filter((p) => p.kind === 'light' && p.roomId === r.id).length).toBe(d.lights);
       expect(s.points.filter((p) => p.kind === 'switch' && p.roomId === r.id).length).toBe(1);
-      expect(s.lines.find((l) => l.group === 'trunk' && l.roomId === r.id)!.points[0]).toEqual(s.panel);
+      const trunkLine = s.lines.find((l) => l.group === 'trunk' && l.roomId === r.id)!;
+      expect(trunkLine.points[0]).toEqual(s.panel);
+      const box = s.points.find((p) => p.kind === 'box' && p.roomId === r.id)!;
+      expect(trunkLine.points[trunkLine.points.length - 1]).toEqual(box.position); // магистраль заканчивается в коробке
+      for (const g of ['sockets', 'light']) for (const l of s.lines.filter((x) => x.group === g && x.roomId === r.id)) expect(l.points[0]).toEqual(box.position); // ветки начинаются в коробке
+      // все отрезки — по осям (прямые углы), без диагоналей
+      for (const l of s.lines.filter((x) => x.roomId === r.id)) for (let i = 1; i < l.points.length; i++) { const a = l.points[i - 1], b = l.points[i]; const axes = [a[0] !== b[0], a[1] !== b[1], a[2] !== b[2]].filter(Boolean).length; expect(axes).toBeLessThanOrEqual(1); }
       expect(s.cableByRoom[r.id]).toBeGreaterThan(5);
       // розетки внутри комнаты, на высоте 30 см
       for (const p of s.points.filter((p) => p.kind === 'socket' && p.roomId === r.id)) {

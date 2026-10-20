@@ -574,3 +574,16 @@ svg .radio { animation: dash 1.2s linear infinite; }
 .el-label.strong { background: #1e6fff; color: #fff; }
 .app.compact .el-legend { display: none; }
 .app.compact.tools-open .el-legend { display: flex; }
+.el-label.box { background: #fff; border-color: #1e6fff; color: #103f8f; font-size: 11.5px; }
+.el-num { width: 18px; height: 18px; border-radius: 50%; background: #ff6a00; color: #fff; font-size: 10px; font-weight: 800; display: grid; place-items: center; pointer-events: none; box-shadow: 0 1px 3px #0004; }
+.el-num.switch { background: #e0a800; }
+.el-num.power { background: #e0102a; }
+.el-steps { display: grid; gap: 6px; padding: 8px 10px; border-radius: 10px; background: #f2f7ff; }
+.el-steps .btn { padding: 7px 12px; min-height: 34px; font-size: 13px; flex: 1; }
+.el-step-text { display: grid; gap: 2px; font-size: 12.5px; line-height: 1.4; }
+.el-step-text b { color: var(--ink); }
+.el-branch { padding: 1px 6px; border-radius: 6px; font-size: 10.5px; font-weight: 700; color: #fff; white-space: nowrap; pointer-events: none; opacity: 0.92; }
+.el-branch.sockets { background: #ff6a00; }
+.el-branch.light { background: #c99400; }
+.el-branch.power { background: #e0102a; }
+.el-legend { width: 320px; max-height: calc(100% - 200px); overflow: auto; }

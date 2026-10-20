@@ -6,7 +6,7 @@ import { doorWidthInRoom, roomArea } from './layout';
 import { openingPlace } from '../objects/geometry';
 
 export type Vec3 = [number, number, number];
-export type ElPointKind = 'socket' | 'switch' | 'light' | 'panel' | 'power';
+export type ElPointKind = 'socket' | 'switch' | 'light' | 'panel' | 'power' | 'box';
 
 export interface ElPoint {
   id: string;
@@ -16,6 +16,7 @@ export interface ElPoint {
   /** куда «смотрит» точка (нормаль стены) — для розеток и выключателей */
   normal?: [number, number];
   label: string;
+  cable?: string;
 }
 
 export interface ElLine {
@@ -128,11 +129,6 @@ function ceilingSpots(room: Room, n: number, h: number): Vec3[] {
 
 const len = (pts: Vec3[]) => pts.reduce((s, p, i) => (i ? s + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1], p[2] - pts[i - 1][2]) : 0), 0);
 
-/** Трасса под потолком от щита до точки входа в комнату: вверх, по оси X, по оси Z, вниз не нужен. */
-function trunk(from: Vec3, to: Vec3): Vec3[] {
-  return [from, [from[0], CABLE_H, from[2]], [to[0], CABLE_H, from[2]], [to[0], CABLE_H, to[2]]];
-}
-
 export function buildElectricScheme(layout: Layout, counts: (room: Room) => RoomCounts): ElScheme {
   const panelEl = layout.elements.find((e) => e.kind === 'electric_panel');
   const panel: Vec3 = panelEl ? [panelEl.position[0], panelEl.position[1], panelEl.position[2]] : [layout.size[0] / 2, 1.6, layout.size[1] / 2];
@@ -144,43 +140,82 @@ export function buildElectricScheme(layout: Layout, counts: (room: Room) => Room
   for (const room of layout.rooms) {
     const c = counts(room);
     const door = roomDoor(layout, room);
-    // точка входа кабеля в комнату — над дверью (или центр ближней стены)
-    const entry: Vec3 = door ? [door.pos[0] + door.normal[0] * 0.3, CABLE_H, door.pos[2] + door.normal[1] * 0.3] : [(room.rect[0] + room.rect[2]) / 2, CABLE_H, (room.rect[1] + room.rect[3]) / 2];
-    const t = trunk(panel, entry);
+    const [x0, z0, x1, z1] = room.rect;
     const cab = c.cable ?? 'ВВГнг(А)-LS 3×2.5';
     const cabL = c.cableLight ?? 'ВВГнг(А)-LS 3×1.5';
     const cabP = c.cablePower ?? 'ВВГнг(А)-LS 3×4';
-    lines.push({ id: `trunk-${room.id}`, roomId: room.id, group: 'trunk', points: t, label: `Магистраль от щита в ${room.name.toLowerCase()}: ${cab} (розетки) + ${cabL} (свет)`, cable: `${cab} + ${cabL}` });
-    let total = len(t) * 2; // две линии (розетки и свет) идут параллельно
+    let total = 0;
 
-    // розетки по периметру, 30 см
+    // 1. Распредкоробка — над дверью внутри комнаты, под потолком
+    const box: Vec3 = door
+      ? [door.pos[0] + door.normal[0] * 0.25, CABLE_H, door.pos[2] + door.normal[1] * 0.25]
+      : [(x0 + x1) / 2, CABLE_H, (z0 + z1) / 2];
+    points.push({ id: `box-${room.id}`, kind: 'box', roomId: room.id, position: box, normal: door?.normal, label: `Распредкоробка · ${room.name}: сюда приходит кабель от щита, отсюда расходится на розетки и свет` });
+
+    // 2. Магистраль от щита до коробки — по потолку, прямыми углами (вверх от щита, по X, по Z)
+    const t: Vec3[] = [panel, [panel[0], CABLE_H, panel[2]], [box[0], CABLE_H, panel[2]], box];
+    lines.push({ id: `trunk-${room.id}`, roomId: room.id, group: 'trunk', points: t, label: `Щит → распредкоробка «${room.name}»: ${cab} (розетки) + ${cabL} (свет)`, cable: `${cab} + ${cabL}` });
+    total += len(t) * 2;
+
+    // 3. Розетки: от коробки вниз по стене до высоты 30 см, затем шлейф вдоль стен по периметру
     const sockets = perimeterSpots(layout, room, c.sockets, SOCKET_H);
-    sockets.forEach((s, i) => points.push({ id: `sock-${room.id}-${i}`, kind: 'socket', roomId: room.id, position: s.pos, normal: s.normal, label: `Розетка ${i + 1} · ${room.name}` }));
-    // шлейф розеток: от входа вниз по стене до первой, затем по периметру на высоте розеток
+    sockets.forEach((sp, i) => points.push({ id: `sock-${room.id}-${i}`, kind: 'socket', roomId: room.id, position: sp.pos, normal: sp.normal, label: `Розетка ${i + 1} · ${room.name}` }));
     if (sockets.length) {
-      const pts: Vec3[] = [entry, [entry[0], SOCKET_H, entry[2]]];
-      for (const s of sockets) pts.push(s.pos);
-      lines.push({ id: `sock-${room.id}`, roomId: room.id, group: 'sockets', points: pts, label: `Группа розеток · ${room.name}: ${cab}, автомат 16 А`, cable: cab });
+      // кабель идёт по стене: коробка → вниз у стены → вдоль стен (через углы) к каждой розетке
+      // путь вдоль стен строго по осям: одна точка на той же стене — прямая; на другой стене — через угол
+      const onX = (p: Vec3) => Math.abs(p[0] - x0) < 0.2 || Math.abs(p[0] - x1) < 0.2; // точка на левой/правой стене
+      const wallPath = (from: Vec3, to: Vec3): Vec3[] => {
+        if (Math.abs(from[0] - to[0]) < 1e-6 || Math.abs(from[2] - to[2]) < 1e-6) return [to];
+        // угол: X берём у того, кто на боковой стене, Z — у того, кто на передней/задней
+        const corner: Vec3 = onX(from) ? [from[0], from[1], to[2]] : [to[0], from[1], from[2]];
+        return [corner, to];
+      };
+      // от коробки к стене двери (в её плоскость), затем вниз до высоты розеток
+      const wall: Vec3 = door ? [door.pos[0] + door.normal[0] * 0.08, SOCKET_H, door.pos[2] + door.normal[1] * 0.08] : [box[0], SOCKET_H, box[2]];
+      const pts: Vec3[] = [box, [wall[0], CABLE_H, wall[2]], wall];
+      let cur = wall;
+      for (const sp of sockets) {
+        for (const q of wallPath(cur, sp.pos)) pts.push(q);
+        cur = sp.pos;
+      }
+      lines.push({ id: `sock-${room.id}`, roomId: room.id, group: 'sockets', points: pts, label: `Группа розеток · ${room.name}: ${cab}, автомат 16 А — шлейфом от коробки`, cable: cab });
       total += len(pts);
     }
-    // свет: выключатель у двери (сбоку от проёма), потолочные точки
+
+    // 4. Выключатель у двери: от коробки вниз по стене
     const sw: Vec3 = door
       ? [door.pos[0] + door.normal[0] * 0.08 + door.along[0] * ((doorWidthInRoom(layout, room) || 0.9) / 2 + 0.2), SWITCH_H, door.pos[2] + door.normal[1] * 0.08 + door.along[1] * ((doorWidthInRoom(layout, room) || 0.9) / 2 + 0.2)]
-      : [entry[0], SWITCH_H, entry[2]];
-    for (let i = 0; i < c.switches; i++) points.push({ id: `sw-${room.id}-${i}`, kind: 'switch', roomId: room.id, position: i === 0 ? sw : [sw[0], SWITCH_H, sw[2]], normal: door?.normal, label: `Выключатель ${i + 1} · ${room.name}` });
+      : [box[0], SWITCH_H, box[2]];
+    for (let i = 0; i < c.switches; i++) points.push({ id: `sw-${room.id}-${i}`, kind: 'switch', roomId: room.id, position: [sw[0] + i * 0.12 * (door?.along?.[0] ?? 0), SWITCH_H, sw[2] + i * 0.12 * (door?.along?.[1] ?? 0)], normal: door?.normal, label: `Выключатель ${i + 1} · ${room.name}` });
+    if (c.switches) {
+      const swl: Vec3[] = [box, [sw[0], CABLE_H, box[2]], [sw[0], CABLE_H, sw[2]], sw];
+      lines.push({ id: `sw-${room.id}`, roomId: room.id, group: 'light', points: swl, label: `Коробка → выключатель · ${room.name}: ${cabL}`, cable: cabL });
+      total += len(swl);
+    }
+
+    // 5. Свет: от коробки по потолку к светильникам, по прямым углам (сначала по X до ряда, потом по Z)
     const lights = ceilingSpots(room, c.lights, H - 0.02);
-    lights.forEach((p, i) => points.push({ id: `light-${room.id}-${i}`, kind: 'light', roomId: room.id, position: p, label: `Вывод света ${i + 1} · ${room.name}` }));
-    const lp: Vec3[] = [entry, [sw[0], CABLE_H, sw[2]], sw, [sw[0], CABLE_H, sw[2]]];
-    for (const p of lights) lp.push([p[0], CABLE_H, p[2]], p, [p[0], CABLE_H, p[2]]);
-    lines.push({ id: `light-${room.id}`, roomId: room.id, group: 'light', points: lp, label: `Группа света · ${room.name}: ${cabL}, автомат 10 А`, cable: cabL });
-    total += len(lp);
-    // силовые линии: отдельный кабель от щита к точке у стены (кухня — плита/духовка, санузел — бойлер/стиралка)
+    lights.forEach((pt, i) => points.push({ id: `light-${room.id}-${i}`, kind: 'light', roomId: room.id, position: pt, label: `Вывод света ${i + 1} · ${room.name}` }));
+    if (lights.length) {
+      const lp: Vec3[] = [box];
+      let cur: Vec3 = box;
+      for (const pt of lights) {
+        const mid: Vec3 = [pt[0], CABLE_H, cur[2]];
+        if (Math.abs(mid[0] - cur[0]) > 0.05) lp.push(mid);
+        lp.push([pt[0], CABLE_H, pt[2]], pt, [pt[0], CABLE_H, pt[2]]);
+        cur = [pt[0], CABLE_H, pt[2]];
+      }
+      lines.push({ id: `light-${room.id}`, roomId: room.id, group: 'light', points: lp, label: `Коробка → светильники · ${room.name}: ${cabL}, автомат 10 А`, cable: cabL });
+      total += len(lp);
+    }
+
+    // 6. Силовые линии — своим кабелем от щита, минуя коробку, по потолку прямыми углами, вниз у стены
     const powerSpots = perimeterSpots(layout, room, Math.max(1, c.power) + c.sockets, SOCKET_H).slice(c.sockets, c.sockets + c.power);
     powerSpots.forEach((sp, i) => {
       const pos: Vec3 = [sp.pos[0], SOCKET_H + 0.25, sp.pos[2]];
-      points.push({ id: `power-${room.id}-${i}`, kind: 'power', roomId: room.id, position: pos, normal: sp.normal, label: `Силовая розетка ${i + 1} · ${room.name} (плита, бойлер, кондиционер)` });
-      const pp: Vec3[] = [...trunk(panel, [pos[0], CABLE_H, pos[2]]), pos];
-      lines.push({ id: `power-${room.id}-${i}`, roomId: room.id, group: 'power', points: pp, label: `Силовая линия ${i + 1} · ${room.name}: ${cabP}, автомат 25 А`, cable: cabP });
+      points.push({ id: `power-${room.id}-${i}`, kind: 'power', roomId: room.id, position: pos, normal: sp.normal, label: `Силовая розетка ${i + 1} · ${room.name} (плита, бойлер, кондиционер) — своя линия от щита`, cable: cabP } as ElPoint);
+      const pp: Vec3[] = [panel, [panel[0], CABLE_H, panel[2]], [pos[0], CABLE_H, panel[2]], [pos[0], CABLE_H, pos[2]], pos];
+      lines.push({ id: `power-${room.id}-${i}`, roomId: room.id, group: 'power', points: pp, label: `Щит → силовая розетка ${i + 1} · ${room.name}: ${cabP}, автомат 25 А`, cable: cabP });
       total += len(pp);
     });
     cableByRoom[room.id] = Math.round(total * 10) / 10;

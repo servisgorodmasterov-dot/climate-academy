@@ -80,7 +80,7 @@ export function ApartmentScene(props: SceneProps) {
 function KeepAlive() {
   const { invalidate, gl } = useThree();
   const until = useRef(0);
-  const xray = useApp((s) => s.mode === 'xray');
+  const xray = useApp((s) => s.mode === 'xray' || s.mode === 'electric'); // в этих режимах есть анимация линий
   useEffect(() => {
     const bump = () => {
       until.current = performance.now() + 1500;

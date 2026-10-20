@@ -55,6 +55,8 @@ interface State {
   hover: string | null;
   /** Качество графики: auto — по устройству; low — быстро, mid — обычно, high — красиво (мягкие тени и эффекты) */
   graphics: 'auto' | 'low' | 'mid' | 'high';
+  /** Пошаговый показ схемы электрики: 0 — вся схема, 1…6 — шаги объяснения */
+  electricStep: number;
   /** Что делает левая кнопка мыши в обзоре: двигать квартиру или вращать камеру */
   dragMode: 'pan' | 'orbit';
   /** Встроено на сайт (?embed=1): компактная шапка, итог сметы отправляется родительской странице */
@@ -111,6 +113,7 @@ export const useApp = create<State>()(
       walk: false,
       hover: null,
       graphics: 'auto',
+      electricStep: 0,
       dragMode: 'pan',
       embed: false,
       sections: {},

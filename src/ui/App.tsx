@@ -196,7 +196,7 @@ export function App() {
         </div>
         <div className="seg modes" role="tablist" aria-label="Режим просмотра">
           {MODES.map((m) => (
-            <button key={m.id} className={mode === m.id ? 'on' : ''} onClick={() => (s.set('mode', m.id), say(m.hint))}>
+            <button key={m.id} className={mode === m.id ? 'on' : ''} onClick={() => (s.set('mode', m.id), s.set('electricStep', 0), say(m.hint))}>
               {m.label}
             </button>
           ))}
@@ -264,7 +264,7 @@ export function App() {
           {compact && (
             <div className="seg modes-inline" role="tablist" aria-label="Режим просмотра">
               {MODES.map((m) => (
-                <button key={m.id} className={mode === m.id ? 'on' : ''} onClick={() => (s.set('mode', m.id), say(m.hint))}>
+                <button key={m.id} className={mode === m.id ? 'on' : ''} onClick={() => (s.set('mode', m.id), s.set('electricStep', 0), say(m.hint))}>
                   {m.label}
                 </button>
               ))}
@@ -464,10 +464,37 @@ function ElectricLegend({ layout }: { layout: Layout }) {
   const scheme = useMemo(() => buildElectricScheme(layout, countsFromSections(layout, sections as any, apartmentId, catalog?.products)), [layout, sections, apartmentId, catalog]);
   const total = Object.values(scheme.cableByRoom).reduce((a, b) => a + b, 0);
   const n = (k: string) => scheme.points.filter((p) => p.kind === k && (!focusRoom || p.roomId === focusRoom)).length;
+  const step = useApp((st) => st.electricStep);
+  const STEPS = [
+    { t: 'Вся схема', d: 'Нажмите «Объяснить по шагам», чтобы увидеть, как ток идёт от щита к розеткам.' },
+    { t: '1. Щит', d: 'В прихожей стоит электрощит. В нём автоматы: по одному на каждую линию. Если где-то замыкание — отключится только эта линия, а не вся квартира.' },
+    { t: '2. Кабель в каждую комнату', d: 'От щита по потолку (в штробе) в каждую комнату идут два кабеля: потолще 3×2.5 мм² для розеток и потоньше 3×1.5 мм² для света. Они приходят в распредкоробку над дверью.' },
+    { t: '3. Выключатель', d: 'Из коробки кабель спускается по стене к выключателю у двери. Выключатель разрывает провод, который идёт к светильникам.' },
+    { t: '4. Светильники', d: 'От коробки по потолку кабель идёт к каждому светильнику. Сколько их — задаётся в карточке «Освещение» и «Электрика».' },
+    { t: '5. Розетки', d: 'Кабель для розеток спускается по стене до высоты 30 см и идёт шлейфом вдоль стен: от одной розетки к следующей. Поэтому розетки по периметру дешевле, чем разбросанные.' },
+    { t: '6. Мощная техника', d: 'Плита, духовка, бойлер, стиральная машина получают каждая свой кабель 3×4 мм² прямо от щита и свой автомат 25 А. Их нельзя сажать на общие розетки.' },
+  ];
   return (
     <div className="legend el-legend">
       <b>Схема электрики</b>
-      <div className="el-row"><i style={{ background: '#1e6fff' }} /> Магистраль от щита по потолку</div>
+      <div className="el-steps">
+        <div className="row-actions" style={{ margin: 0 }}>
+          {step === 0 ? (
+            <button className="btn" onClick={() => useApp.getState().set('electricStep', 1)}>▶ Объяснить по шагам</button>
+          ) : (
+            <>
+              <button className="btn ghost" disabled={step <= 1} onClick={() => useApp.getState().set('electricStep', step - 1)}>←</button>
+              <button className="btn" onClick={() => useApp.getState().set('electricStep', step >= 6 ? 0 : step + 1)}>{step >= 6 ? 'Показать всё' : 'Дальше →'}</button>
+            </>
+          )}
+        </div>
+        <div className="el-step-text">
+          <b>{STEPS[step].t}</b>
+          <span>{STEPS[step].d}</span>
+        </div>
+      </div>
+      <p className="muted small" style={{ margin: '2px 0 4px' }}>Щит → по потолку в каждую комнату → <b>распредкоробка над дверью</b> → от неё три ветки: к выключателю, к светильникам, к розеткам.</p>
+      <div className="el-row"><i style={{ background: '#1e6fff' }} /> Щит → распредкоробка комнаты (2 кабеля)</div>
       <div className="el-row"><i style={{ background: '#ff6a00' }} /> Розетки — 3×2.5 мм², автомат 16 А</div>
       <div className="el-row"><i style={{ background: '#ffc400' }} /> Свет — 3×1.5 мм², автомат 10 А</div>
       <div className="el-row"><i style={{ background: '#e0102a' }} /> Силовые линии (плита, бойлер) — 3×4 мм², автомат 25 А</div>

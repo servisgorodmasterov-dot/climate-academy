@@ -1,7 +1,8 @@
 // Режим «Электрика»: квартира прозрачная, видны щит, кабели и точки. Схема строится из планировки
 // и количества точек в карточке «Электрика» каждой комнаты. Наведение — подпись кабеля (марка, сечение, автомат).
 import { Html, Line } from '@react-three/drei';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Layout } from '../../core/types';
 import { buildElectricScheme, countsFromSections, type ElLine, type ElPoint } from '../electric';
@@ -16,8 +17,16 @@ const switchMat = new THREE.MeshStandardMaterial({ color: '#fffbe8', roughness: 
 const lightMat = new THREE.MeshBasicMaterial({ color: '#ffc400' });
 const powerMat = new THREE.MeshStandardMaterial({ color: '#ffe3e0', roughness: 0.4, emissive: '#e53935', emissiveIntensity: 0.4 });
 const panelMat = new THREE.MeshStandardMaterial({ color: '#1e6fff', roughness: 0.5, emissive: '#1e6fff', emissiveIntensity: 0.35 });
+const boxMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.4, emissive: '#1e6fff', emissiveIntensity: 0.15 });
+
+/** Что показывать на шаге пошагового объяснения (0 — всё сразу). */
+const STEP_GROUPS: Record<number, ElLine['group'][]> = { 1: [], 2: ['trunk'], 3: ['trunk', 'light'], 4: ['trunk', 'light'], 5: ['trunk', 'light', 'sockets'], 6: ['trunk', 'light', 'sockets', 'power'] };
+const STEP_POINTS: Record<number, ElPoint['kind'][]> = { 1: ['panel'], 2: ['panel', 'box'], 3: ['panel', 'box', 'switch'], 4: ['panel', 'box', 'switch', 'light'], 5: ['panel', 'box', 'switch', 'light', 'socket'], 6: ['panel', 'box', 'switch', 'light', 'socket', 'power'] };
 
 export function ElectricScene({ layout, focusRoom, onPickRoom }: { layout: Layout; focusRoom: string | null; onPickRoom: (roomId: string) => void }) {
+  const step = useApp((s) => s.electricStep);
+  const showLine = (l: ElLine) => step === 0 || (STEP_GROUPS[step] ?? []).includes(l.group) && !(step === 3 && l.group === 'light' && !l.id.startsWith('sw-'));
+  const showPoint = (p: ElPoint) => step === 0 || (STEP_POINTS[step] ?? []).includes(p.kind);
   const sections = useApp((s) => s.sections);
   const apartmentId = useApp((s) => s.apartmentId);
   const products = useApp((s) => s.catalog?.products);
@@ -28,12 +37,14 @@ export function ElectricScene({ layout, focusRoom, onPickRoom }: { layout: Layou
 
   return (
     <group>
-      {scheme.lines.map((l) => {
+      {scheme.lines.filter(showLine).map((l) => {
         const faded = dim(l.roomId);
         const on = hover === `el:${l.id}`;
         return (
           <group key={l.id}>
             <Line points={l.points} color={COLORS[l.group]} lineWidth={on ? WIDTH[l.group] + 2 : WIDTH[l.group]} transparent opacity={faded ? 0.12 : on ? 1 : 0.9} depthTest={false} renderOrder={5} />
+            {!faded && <Flow points={l.points} color={COLORS[l.group]} />}
+            {!faded && l.group !== 'trunk' && <BranchLabel line={l} />}
             {/* невидимая толстая линия для наведения */}
             <Line
               points={l.points}
@@ -67,17 +78,21 @@ export function ElectricScene({ layout, focusRoom, onPickRoom }: { layout: Layou
           </group>
         );
       })}
-      {scheme.points.map((p) => (
+      {scheme.points.filter(showPoint).map((p) => (
         <ElPointMesh key={p.id} p={p} faded={dim(p.roomId)} hovered={hover === `el:${p.id}`} onHover={(h) => setHover(h ? `el:${p.id}` : null)} onClick={() => p.roomId && onPickRoom(p.roomId)} />
       ))}
-      {/* подписи кабеля у магистралей комнат */}
+      {/* подпись марки кабеля — у середины магистрали каждой комнаты */}
       {scheme.lines
-        .filter((l) => l.group === 'trunk' && !dim(l.roomId))
-        .map((l) => (
-          <Html key={`lbl-${l.id}`} position={[l.points[3][0], l.points[3][1] + 0.12, l.points[3][2]]} center zIndexRange={[2, 1]}>
-            <div className="el-label">{l.cable}</div>
-          </Html>
-        ))}
+        .filter((l) => l.group === 'trunk' && !dim(l.roomId) && showLine(l))
+        .map((l) => {
+          const a = l.points[1];
+          const b = l.points[2];
+          return (
+            <Html key={`lbl-${l.id}`} position={[(a[0] + b[0]) / 2, a[1] + 0.1, (a[2] + b[2]) / 2]} center zIndexRange={[2, 1]}>
+              <div className="el-label">→ {l.roomId && l.label.split('«')[1]?.split('»')[0]}: {l.cable}</div>
+            </Html>
+          );
+        })}
     </group>
   );
 }
@@ -119,6 +134,22 @@ function ElPointMesh({ p, faded, hovered, onHover, onClick }: { p: ElPoint; fade
         {tip}
       </group>
     );
+  if (p.kind === 'box')
+    return (
+      <group position={p.position}>
+        <mesh material={boxMat} {...common} renderOrder={6}>
+          <cylinderGeometry args={[0.11, 0.11, 0.06, 24]} />
+        </mesh>
+        <mesh renderOrder={6}>
+          <torusGeometry args={[0.13, 0.015, 8, 32]} />
+          <meshBasicMaterial color="#1e6fff" depthTest={false} />
+        </mesh>
+        <Html position={[0, -0.22, 0]} center zIndexRange={[2, 1]}>
+          <div className="el-label box">⬚ Распредкоробка</div>
+        </Html>
+        {tip}
+      </group>
+    );
   if (p.kind === 'light')
     return (
       <group position={p.position}>
@@ -133,12 +164,62 @@ function ElPointMesh({ p, faded, hovered, onHover, onClick }: { p: ElPoint; fade
       </group>
     );
   const mat = p.kind === 'switch' ? switchMat : p.kind === 'power' ? powerMat : socketMat;
+  const num = p.label.match(/^\D+(\d+)/)?.[1];
   return (
     <group position={p.position} rotation={[0, rot, 0]}>
       <mesh material={mat} {...common} renderOrder={6}>
         <boxGeometry args={[p.kind === 'power' ? 0.12 : 0.09, p.kind === 'power' ? 0.12 : 0.09, 0.03]} />
       </mesh>
+      {!faded && num && (
+        <Html position={[0, 0, 0.03]} center zIndexRange={[2, 1]}>
+          <div className={`el-num ${p.kind}`}>{p.kind === 'switch' ? 'В' : p.kind === 'power' ? 'С' : ''}{num}</div>
+        </Html>
+      )}
       {tip}
     </group>
+  );
+}
+
+/** Бегущие точки вдоль кабеля — показывают, что ток идёт от щита к точкам. */
+function Flow({ points, color }: { points: [number, number, number][]; color: string }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const curve = useMemo(() => new THREE.CurvePath<THREE.Vector3>(), []);
+  const total = useMemo(() => {
+    curve.curves.length = 0;
+    for (let i = 1; i < points.length; i++) curve.add(new THREE.LineCurve3(new THREE.Vector3(...points[i - 1]), new THREE.Vector3(...points[i])));
+    return curve.getLength();
+  }, [points, curve]);
+  const n = Math.max(1, Math.min(24, Math.round(total / 0.7)));
+  const m = useMemo(() => new THREE.Matrix4(), []);
+  useFrame(({ clock }) => {
+    const mesh = ref.current;
+    if (!mesh || total === 0) return;
+    const t0 = (clock.getElapsedTime() * 0.35) % 1;
+    for (let i = 0; i < n; i++) {
+      const t = (t0 + i / n) % 1;
+      const p = curve.getPointAt(t);
+      m.makeTranslation(p.x, p.y, p.z);
+      mesh.setMatrixAt(i, m);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, n]} renderOrder={7}>
+      <sphereGeometry args={[0.028, 8, 6]} />
+      <meshBasicMaterial color={color} depthTest={false} transparent opacity={0.95} />
+    </instancedMesh>
+  );
+}
+
+/** Подпись ветки человеческим языком у её середины. */
+function BranchLabel({ line }: { line: ElLine }) {
+  const text = line.group === 'sockets' ? 'к розеткам' : line.group === 'power' ? 'к плите / бойлеру' : line.id.startsWith('sw-') ? 'к выключателю' : 'к светильникам';
+  const i = Math.floor(line.points.length / 2);
+  const a = line.points[Math.max(0, i - 1)];
+  const b = line.points[i];
+  return (
+    <Html position={[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 0.06, (a[2] + b[2]) / 2]} center zIndexRange={[2, 1]}>
+      <div className={`el-branch ${line.group}`}>{text}</div>
+    </Html>
   );
 }
