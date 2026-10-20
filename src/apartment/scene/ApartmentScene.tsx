@@ -1,4 +1,4 @@
-import { CameraControls, Environment, Html, Lightformer, PerformanceMonitor, SoftShadows } from '@react-three/drei';
+import { CameraControls, Environment, Html, Lightformer, SoftShadows } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -12,7 +12,7 @@ import { Structure, type ObjectLooks } from './Structure';
 import { Furniture } from './Furniture';
 import { Element } from './Elements';
 import { Utilities } from './Utilities';
-import { useApp } from '../../store';
+import { useApp, useAppState } from '../../store';
 import { lookOf } from '../../objects/logic';
 import { useGameControls } from './gameControls';
 
@@ -24,18 +24,20 @@ export interface SceneProps {
   onFloor: (room: Room) => void;
 }
 
-const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth < 760);
+export const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth < 760);
 
 /**
- * Качество графики подстраивается под компьютер:
- * low — без теней и эффектов (слабые ноутбуки, телефоны), mid — тени без эффектов (старт), high — мягкие тени и объёмное затенение.
- * Стартуем со «средним», чтобы сцена показалась быстро; PerformanceMonitor повышает или понижает по реальному FPS.
+ * Качество графики выбирает пользователь в меню «Вид» (Быстро / Обычно / Красиво), по умолчанию — по устройству:
+ * телефон — low (без теней), компьютер — mid (тени без эффектов). Автоматически качество не переключается:
+ * каждое переключение перестраивает все материалы и на слабых компьютерах подвешивало сцену на несколько секунд.
+ * Сцена рисуется только когда что-то меняется (frameloop="demand") — в покое видеокарта не нагружается.
  */
 export type Quality = 'low' | 'mid' | 'high';
 const forced = typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('quality') as Quality | null) : null;
 
 export function ApartmentScene(props: SceneProps) {
-  const [quality, setQuality] = useState<Quality>(forced ?? (isMobile ? 'low' : 'mid'));
+  const graphics = useApp((s) => s.graphics);
+  const quality: Quality = forced ?? (graphics === 'auto' ? (isMobile ? 'low' : 'mid') : graphics);
   const [ready, setReady] = useState(false);
   return (
     <>
@@ -46,10 +48,11 @@ export function ApartmentScene(props: SceneProps) {
       </div>
     )}
     <Canvas
+      frameloop="demand"
       shadows={quality !== 'low'}
-      dpr={quality === 'high' ? [1, 2] : quality === 'mid' ? [1, 1.5] : 1}
+      dpr={quality === 'high' ? [1, 2] : quality === 'mid' ? [1, 1.25] : 1}
       camera={{ position: [0, 12, 11], fov: 40, near: 0.05, far: 200 }}
-      gl={{ antialias: !isMobile, alpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' }}
+      gl={{ antialias: quality !== 'low', alpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.18;
@@ -58,14 +61,7 @@ export function ApartmentScene(props: SceneProps) {
     >
       <color attach="background" args={['#dfe6ee']} />
       <fog attach="fog" args={['#dfe6ee', 26, 60]} />
-      {!forced && (
-        <PerformanceMonitor
-          bounds={() => [32, 55]}
-          flipflops={3}
-          onIncline={() => setQuality((q) => (q === 'low' ? 'mid' : isMobile ? q : 'high'))}
-          onDecline={() => setQuality((q) => (q === 'high' ? 'mid' : 'low'))}
-        />
-      )}
+      <KeepAlive />
       <FirstFrame onReady={() => setReady(true)} />
       <Suspense fallback={null}>
         <SceneContent {...props} quality={quality} />
@@ -73,6 +69,43 @@ export function ApartmentScene(props: SceneProps) {
     </Canvas>
     </>
   );
+}
+
+/**
+ * Рисование по требованию: после любого действия (мышь, клавиши, выбор, смена цвета) сцена рисуется ещё 1.5 с —
+ * этого хватает плавным переходам камеры и открытию дверей. Потом видеокарта отдыхает.
+ * В «Рентгене» линии беспроводных систем бегут постоянно, поэтому там рисуем всегда.
+ */
+function KeepAlive() {
+  const { invalidate, gl } = useThree();
+  const until = useRef(0);
+  const xray = useApp((s) => s.mode === 'xray');
+  useEffect(() => {
+    const bump = () => {
+      until.current = performance.now() + 1500;
+      invalidate();
+    };
+    const el = gl.domElement.parentElement ?? gl.domElement;
+    const evs = ['pointermove', 'pointerdown', 'pointerup', 'wheel', 'touchstart', 'touchmove'] as const;
+    evs.forEach((e) => el.addEventListener(e, bump, { passive: true }));
+    window.addEventListener('keydown', bump);
+    window.addEventListener('keyup', bump);
+    window.addEventListener('resize', bump);
+    const unsub = useApp.subscribe(bump);
+    bump();
+    return () => {
+      evs.forEach((e) => el.removeEventListener(e, bump));
+      window.removeEventListener('keydown', bump);
+      window.removeEventListener('keyup', bump);
+      window.removeEventListener('resize', bump);
+      unsub();
+    };
+  }, [gl, invalidate]);
+  useFrame(() => {
+    (window as any).__frames = ((window as any).__frames ?? 0) + 1; // счётчик кадров для проверки скорости
+    if (xray || performance.now() < until.current) invalidate();
+  });
+  return null;
 }
 
 /** Убирает заставку после первого нарисованного кадра. */
@@ -87,7 +120,7 @@ function FirstFrame({ onReady }: { onReady: () => void }) {
 }
 
 function SceneContent({ layout, floorColors, looks, onElement, onFloor, quality }: SceneProps & { quality: Quality }) {
-  const { mode, focusRoom, ceilingHidden, wallsTransparent, xraySystems, selectedElement, categoryFilter, catalog, closedDoors } = useApp();
+  const { mode, focusRoom, ceilingHidden, wallsTransparent, xraySystems, selectedElement, categoryFilter, catalog, closedDoors } = useAppState();
   const objects = useMemo(() => selectableObjects(layout, catalog), [layout, catalog]);
   const furnLooks = useMemo(() => {
     const out = { looks: {} as Record<number, Record<string, string>>, selectable: {} as Record<number, boolean>, selected: null as number | null, ids: {} as Record<number, string> };

@@ -3,7 +3,7 @@ import { GROUP_LABELS, TIERS, type Estimate, type EstimateGroup } from '../core/
 import { academyById } from '../academies';
 import { useTotalEstimate } from '../estimate/useEstimate';
 import { demoGateway, freezeOrder } from '../integrations/gorodmasterov/orders';
-import { useApp } from '../store';
+import { useApp, useAppState } from '../store';
 import { EstimateTable } from './EstimateTable';
 import { CAN_DOWNLOAD, downloadText, money } from './format';
 import { printEstimate } from './printEstimate';
@@ -12,7 +12,7 @@ import { findApartment } from '../apartment/layout';
 export function EstimatePanel() {
   const [participants, setParticipants] = useState(1);
   const data = useTotalEstimate(participants);
-  const { catalog, layout, apartmentId, overrides } = useApp();
+  const { catalog, layout, apartmentId, overrides } = useAppState();
   const app = useApp.getState();
   const [ordering, setOrdering] = useState(false);
   const [name, setName] = useState('');

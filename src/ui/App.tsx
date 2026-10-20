@@ -4,10 +4,10 @@ import { sectionIdFor, type Selection } from '../core/academy';
 import { academyById } from '../academies';
 import { findPrice, findProduct } from '../catalog/sheetParser';
 import { primaryProduct } from '../objects/logic';
-import { ApartmentScene } from '../apartment/scene/ApartmentScene';
+import { ApartmentScene, isMobile } from '../apartment/scene/ApartmentScene';
 import { findApartment, listApartments, roomArea, totalArea } from '../apartment/layout';
 import { useTotalEstimate } from '../estimate/useEstimate';
-import { useApp, SYSTEM_META, type AcademyTab, type ViewMode } from '../store';
+import { useApp, useAppState, SYSTEM_META, type AcademyTab, type ViewMode } from '../store';
 import { AcademyPanel } from './AcademyPanel';
 import { EstimatePanel } from './EstimatePanel';
 import { OrdersPanel } from './OrdersPanel';
@@ -68,7 +68,7 @@ const MODES: { id: ViewMode; label: string; hint: string }[] = [
 ];
 
 export function App() {
-  const s = useApp();
+  const s = useAppState();
   const { layout, catalog, mode, focusRoom, panel, apartmentId, role, proMode, embed } = s;
   const [toast, setToast] = useState<string | null>(null);
   // Компактный экран: телефон или встраивание на сайт — меньше надписей, всё лишнее в меню «Вид»
@@ -260,6 +260,25 @@ export function App() {
               ))}
             </div>
           )}
+          <div className="graphics-pick">
+            <span>Графика</span>
+            <div className="seg small" role="radiogroup" aria-label="Качество графики">
+              {(
+                [
+                  ['low', 'Быстро', 'Без теней — для слабых компьютеров и телефонов'],
+                  ['mid', 'Обычно', 'Тени без эффектов'],
+                  ['high', 'Красиво', 'Мягкие тени и объёмное затенение — для мощных компьютеров'],
+                ] as const
+              ).map(([id, label, title]) => {
+                const cur = s.graphics === 'auto' ? (isMobile ? 'low' : 'mid') : s.graphics;
+                return (
+                  <button key={id} className={cur === id ? 'on' : ''} title={title} onClick={() => s.set('graphics', id)}>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <label className="toggle" title="Камера на уровне глаз: стрелки или W/A/S/D, на телефоне — кнопки">
             <input type="checkbox" checked={s.walk} onChange={(e) => (s.set('walk', e.target.checked), e.target.checked && s.set('ceilingHidden', false), say(e.target.checked ? 'Прогулка: W/S — вперёд-назад, A/D — поворот, мышь — осмотр' : 'Обзор квартиры'))} />
             <span>Прогулка</span>
@@ -394,7 +413,7 @@ export function App() {
 /** Подсказка при наведении: название объекта и цена выбранного главного товара. */
 function HoverTip() {
   const hover = useApp((st) => st.hover);
-  const { layout, catalog, sections, apartmentId } = useApp();
+  const { layout, catalog, sections, apartmentId } = useAppState();
   const [pos, setPos] = useState({ x: 0, y: 0 });
   useEffect(() => {
     if (!hover) return;

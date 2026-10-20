@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 import type { LayoutElement } from '../core/types';
 import { categoriesOf, selectableObjects } from '../apartment/objects';
-import { useApp } from '../store';
+import { useApp, useAppState } from '../store';
 
 /** Список всех объектов квартиры: фильтр по категориям, группировка по помещениям. Масштабируется на любое число объектов. */
 export function ObjectsPanel({ onPick }: { onPick: (el: LayoutElement) => void }) {
-  const { layout, catalog, categoryFilter, sections, apartmentId, selectedElement } = useApp();
+  const { layout, catalog, categoryFilter, sections, apartmentId, selectedElement } = useAppState();
   const app = useApp.getState();
   const objects = useMemo(() => (layout ? selectableObjects(layout, catalog) : []), [layout, catalog]);
   if (!layout) return null;

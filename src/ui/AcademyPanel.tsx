@@ -5,7 +5,7 @@ import { slotsOf, type Selection } from '../core/academy';
 import { findPrice, findProduct, findWork, productsForSlot } from '../catalog/sheetParser';
 import { computeEstimate } from '../estimate/engine';
 import { buildSection, contextFor, useTotalEstimate } from '../estimate/useEstimate';
-import { useApp } from '../store';
+import { useApp, useAppState } from '../store';
 import { money, qty as fq, unitLabel } from './format';
 import { PriceCompare } from './PriceCompare';
 import { EstimateTable } from './EstimateTable';
@@ -14,7 +14,7 @@ import { selectionFor } from '../objects/logic';
 type Tab = 'card' | 'lesson' | 'variants' | 'calc';
 
 export function AcademyPanel() {
-  const { catalog, layout, activeSection, sections, proMode, role, selectedElement, overrides } = useApp();
+  const { catalog, layout, activeSection, sections, proMode, role, selectedElement, overrides } = useAppState();
   const s = activeSection ? sections[activeSection] : null;
   const def = s ? academyById(s.academy) : undefined;
   const academyTab = useApp((st) => st.academyTab);
@@ -190,7 +190,7 @@ export function AcademyPanel() {
 
 /** Быстрая смена дизайна: цвета и модели той же позиции — одним нажатием, сразу видно в 3D. */
 function Swatches({ product, sectionId }: { product: Product; sectionId: string }) {
-  const { catalog } = useApp();
+  const { catalog } = useAppState();
   const swatch = (p: Product) => p.attrs.color ?? p.attrs.facade ?? p.attrs.fabric ?? p.attrs.top;
   const list = productsForSlot(catalog!, product.slot).filter((p) => swatch(p));
   if (list.length < 2) return null;
@@ -216,7 +216,7 @@ function Swatches({ product, sectionId }: { product: Product; sectionId: string 
 }
 
 function ProductCard({ product, sectionId, workId, need, onCompare, onVariants }: { product: Product; sectionId: string; workId: string | null; need: number; onCompare: () => void; onVariants: () => void }) {
-  const { catalog, role, proMode, sections, overrides } = useApp();
+  const { catalog, role, proMode, sections, overrides } = useAppState();
   const s = sections[sectionId];
   const price = findPrice(catalog!, product.id);
   const work = findWork(catalog!, workId);

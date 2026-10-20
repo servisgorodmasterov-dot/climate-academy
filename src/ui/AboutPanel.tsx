@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ACADEMIES } from '../academies';
 import { parseSheetRef, savedSheetId } from '../catalog/CatalogProvider';
-import { useApp } from '../store';
+import { useApp, useAppState } from '../store';
 import { date } from './format';
 import { FURNITURE_TYPES } from '../apartment/scene/Furniture';
 
@@ -52,7 +52,7 @@ function SheetConnect() {
 }
 
 export function AboutPanel() {
-  const { catalog, catalogError, layout, role } = useApp();
+  const { catalog, catalogError, layout, role } = useAppState();
   const app = useApp.getState();
   return (
     <aside className="panel">

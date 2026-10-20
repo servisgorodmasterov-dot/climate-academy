@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ROLE_LABELS } from '../core/types';
 import { compressImage, localPassport, PASSPORT_CATEGORIES, permissions, validateFile, type PassportCategory, type PassportEntry } from '../passport/passport';
-import { useApp } from '../store';
+import { useApp, useAppState } from '../store';
 import { CAN_DOWNLOAD, date, dateTime, downloadText } from './format';
 
 function Thumb({ fileId, mime, name }: { fileId: string; mime: string; name: string }) {
@@ -27,7 +27,7 @@ function Thumb({ fileId, mime, name }: { fileId: string; mime: string; name: str
 }
 
 export function PassportPanel() {
-  const { apartmentId, layout, role } = useApp();
+  const { apartmentId, layout, role } = useAppState();
   const app = useApp.getState();
   const [entries, setEntries] = useState<PassportEntry[]>([]);
   const [room, setRoom] = useState<string>('all');

@@ -3,7 +3,7 @@ import { ROLE_LABELS } from '../core/types';
 import { findProduct } from '../catalog/sheetParser';
 import { nextActions, ORDER_STATUS_LABEL, type Order } from '../integrations/gorodmasterov/orders';
 import { localPassport } from '../passport/passport';
-import { useApp } from '../store';
+import { useApp, useAppState } from '../store';
 import { EstimateTable } from './EstimateTable';
 import { dateTime, money } from './format';
 
@@ -33,7 +33,7 @@ async function writeToPassport(o: Order) {
 }
 
 export function OrdersPanel() {
-  const { orders, apartmentId, role } = useApp();
+  const { orders, apartmentId, role } = useAppState();
   const app = useApp.getState();
   const [open, setOpen] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);

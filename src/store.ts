@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 import type { Catalog, Layout, PriceOverride, Role, Tier, UtilitySystem } from './core/types';
 import type { ObjectCategory } from './apartment/objects';
 import type { Selection } from './core/academy';
@@ -52,6 +53,8 @@ interface State {
   walk: boolean;
   /** Объект под курсором (подсказка) */
   hover: string | null;
+  /** Качество графики: auto — по устройству; low — быстро, mid — обычно, high — красиво (мягкие тени и эффекты) */
+  graphics: 'auto' | 'low' | 'mid' | 'high';
   /** Что делает левая кнопка мыши в обзоре: двигать квартиру или вращать камеру */
   dragMode: 'pan' | 'orbit';
   /** Встроено на сайт (?embed=1): компактная шапка, итог сметы отправляется родительской странице */
@@ -107,6 +110,7 @@ export const useApp = create<State>()(
       closedDoors: {},
       walk: false,
       hover: null,
+      graphics: 'auto',
       dragMode: 'pan',
       embed: false,
       sections: {},
@@ -245,7 +249,7 @@ export const useApp = create<State>()(
     }),
     {
       name: 'home-academy-state-v1',
-      partialize: (s) => ({ dragMode: s.dragMode, closedDoors: s.closedDoors, role: s.role, proMode: s.proMode, sections: s.sections, overrides: s.overrides, orders: s.orders, apartmentId: s.apartmentId }),
+      partialize: (s) => ({ graphics: s.graphics, dragMode: s.dragMode, closedDoors: s.closedDoors, role: s.role, proMode: s.proMode, sections: s.sections, overrides: s.overrides, orders: s.orders, apartmentId: s.apartmentId }),
     },
   ),
 );
@@ -259,3 +263,9 @@ export const SYSTEM_META: Record<UtilitySystem, { label: string; color: string }
   ac: { label: 'Кондиционирование', color: '#00acc1' },
   smarthome: { label: 'Умный дом', color: '#8e44ff' },
 };
+
+/**
+ * Всё состояние, кроме подсветки под курсором (hover): компоненты с ним не перерисовываются
+ * при каждом движении мыши над 3D — на слабых компьютерах это давало подтормаживания.
+ */
+export const useAppState = () => useApp(useShallow(({ hover: _h, ...rest }: State) => rest));

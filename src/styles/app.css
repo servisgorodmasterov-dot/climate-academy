@@ -538,3 +538,6 @@ svg .radio { animation: dash 1.2s linear infinite; }
   .top-right select { max-width: 120px; }
   .modes button { padding: 8px 9px; }
 }
+.graphics-pick { display: grid; gap: 4px; }
+.graphics-pick > span { font-size: 12px; font-weight: 700; color: #3c5372; }
+.graphics-pick .seg button { padding: 5px 9px; font-size: 12px; }
