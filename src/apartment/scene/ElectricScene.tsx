@@ -189,12 +189,13 @@ function Flow({ points, color }: { points: [number, number, number][]; color: st
     for (let i = 1; i < points.length; i++) curve.add(new THREE.LineCurve3(new THREE.Vector3(...points[i - 1]), new THREE.Vector3(...points[i])));
     return curve.getLength();
   }, [points, curve]);
-  const n = Math.max(1, Math.min(24, Math.round(total / 0.7)));
+  const n = Math.max(1, Math.min(60, Math.round(total / 0.7))); // точки через ~70 см на любой линии
   const m = useMemo(() => new THREE.Matrix4(), []);
   useFrame(({ clock }) => {
     const mesh = ref.current;
     if (!mesh || total === 0) return;
-    const t0 = (clock.getElapsedTime() * 0.35) % 1;
+    // одинаковая скорость для всех линий, шаг между точками — по длине
+    const t0 = ((clock.getElapsedTime() * 0.3) / total) % 1; // 0.3 м/с — спокойно, одинаково на всех линиях
     for (let i = 0; i < n; i++) {
       const t = (t0 + i / n) % 1;
       const p = curve.getPointAt(t);

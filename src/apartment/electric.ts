@@ -357,7 +357,11 @@ export function buildElectricScheme(layout: Layout, counts: (room: Room) => Room
     powerSpots.forEach((sp, i) => {
       const pos: Vec3 = [sp.pos[0], SOCKET_H + 0.25, sp.pos[2]];
       points.push({ id: `power-${room.id}-${i}`, kind: 'power', roomId: room.id, position: pos, normal: sp.normal, label: `Силовая розетка ${i + 1} · ${room.name} (плита, бойлер, кондиционер) — своя линия от щита`, cable: cabP } as ElPoint);
-      const pp: Vec3[] = [panel, [panel[0], CABLE_H, panel[2]], [pos[0], CABLE_H, panel[2]], [pos[0], CABLE_H, pos[2]], pos];
+      // своя трасса: ниже магистрали на 15 см и со сдвигом от щита, чтобы не сливалась с синей
+      const PH = CABLE_H - 0.15 - i * 0.06;
+      const off = 0.12 + i * 0.06;
+      const start: Vec3 = [panel[0], panel[1], panel[2] + off];
+      const pp: Vec3[] = [start, [start[0], PH, start[2]], [pos[0], PH, start[2]], [pos[0], PH, pos[2]], pos];
       lines.push({ id: `power-${room.id}-${i}`, roomId: room.id, group: 'power', points: pp, label: `Щит → силовая розетка ${i + 1} · ${room.name}: ${cabP}, автомат 25 А`, cable: cabP });
       total += len(pp);
     });
