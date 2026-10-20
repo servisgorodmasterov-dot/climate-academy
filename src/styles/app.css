@@ -526,3 +526,15 @@ svg .radio { animation: dash 1.2s linear infinite; }
   .app:not(.compact).tools-open .view-tools { display: flex; left: 12px; bottom: 128px; z-index: 14; }
 }
 .chip.filter-chip { background: #fff4e0; border-color: #f4c77a; color: #8a5a12; }
+
+/* ---- Узкий компьютерный экран: верхняя строка не раздвигает страницу ---- */
+.app { grid-template-columns: minmax(0, 1fr); }
+.topbar { min-width: 0; }
+@media (max-width: 1180px) and (min-width: 761px) {
+  .topbar { gap: 10px; padding: 0 12px; }
+  .apt-select { max-width: 200px; }
+  .top-right { gap: 6px; }
+  .top-right .toggle span { display: none; }
+  .top-right select { max-width: 120px; }
+  .modes button { padding: 8px 9px; }
+}
