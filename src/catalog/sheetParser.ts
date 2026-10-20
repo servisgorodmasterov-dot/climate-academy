@@ -330,6 +330,7 @@ export function buildCatalog(values: SheetValues, opts: { status: DataStatus; so
         description: r.get('description'),
         lessonSteps: list(r.get('lesson_steps')),
         mistakes: list(r.get('mistakes')),
+        roomTypes: list(r.get('room_types')),
       });
     }
   const typeIds = new Set(objectTypes.map((t) => t.id));
@@ -357,7 +358,7 @@ export function buildCatalog(values: SheetValues, opts: { status: DataStatus; so
       if (def && !ids.has(def)) issues.push({ sheet: S.objectSlots, row: r.row, message: `${typeId}/${slot}: товар по умолчанию ${def} не найден` });
       const workId = r.get('work_id') || null;
       if (workId && !workIds.has(workId)) issues.push({ sheet: S.objectSlots, row: r.row, message: `${typeId}/${slot}: работа ${workId} не найдена` });
-      if (!products.some((p) => p.slot === slot)) issues.push({ sheet: S.objectSlots, row: r.row, message: `${typeId}/${slot}: на листе «${S.products}» нет товаров с этим slot` });
+      if (!products.some((p) => fitsSlot(p, slot))) issues.push({ sheet: S.objectSlots, row: r.row, message: `${typeId}/${slot}: на листе «${S.products}» нет товаров с этим slot` });
       objectSlots.push({
         typeId,
         slot,
@@ -426,7 +427,9 @@ export const findProduct = (c: Catalog, id: string) => c.products.find((p) => p.
 export const findPrice = (c: Catalog, id: string) => c.prices.find((p) => p.productId === id);
 export const findWork = (c: Catalog, id: string | null) => (id ? c.works.find((w) => w.id === id) : undefined);
 export const findSupplier = (c: Catalog, id: string) => c.suppliers.find((s) => s.id === id);
-export const productsForSlot = (c: Catalog, slot: string) => c.products.filter((p) => p.slot === slot);
+/** Товар подходит позиции: свой slot или дополнительные в attrs «slots=floor.grout|wall.grout» (клей, затирка — и для стен, и для пола). */
+export const fitsSlot = (p: Product, slot: string) => p.slot === slot || (p.attrs.slots ?? '').split('|').some((x) => x.trim() === slot);
+export const productsForSlot = (c: Catalog, slot: string) => c.products.filter((p) => fitsSlot(p, slot));
 export const objectType = (c: Catalog, id: string | undefined) => (id ? c.objectTypes.find((t) => t.id === id) : undefined);
 export const slotsOfType = (c: Catalog, typeId: string) => c.objectSlots.filter((s) => s.typeId === typeId);
 export const kitFor = (c: Catalog, academy: string, tier: Tier) => c.kits.filter((k) => k.academy === academy && k.tier === tier);

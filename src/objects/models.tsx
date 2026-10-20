@@ -172,6 +172,7 @@ const finishCache = new Map<string, THREE.CanvasTexture>();
 /** Процедурная фактура отделки: краска, обои, штукатурка, реечные панели. */
 export function finishTexture(finish: string, color: string): THREE.Texture | null {
   if (finish === 'plaster') return plasterTexture();
+  if (finish === 'tile') return wallTileTexture();
   if (finish !== 'wallpaper' && finish !== 'panel') return null;
   const key = `${finish}:${color}`;
   const hit = finishCache.get(key);
@@ -207,11 +208,40 @@ export function finishTexture(finish: string, color: string): THREE.Texture | nu
   return t;
 }
 
+/** Настенная плитка 60×30 см с разбежкой: белая основа (цвет даёт материал) и светлые швы. */
+function wallTileTexture(): THREE.CanvasTexture {
+  const hit = finishCache.get('tile');
+  if (hit) return hit;
+  const S = 256;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  const g = cv.getContext('2d')!;
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, S, S);
+  // лёгкий блик и неоднородность глазури
+  for (let n = 0; n < 400; n++) {
+    g.fillStyle = `rgba(0,0,0,${Math.random() * 0.025})`;
+    g.fillRect(Math.random() * S, Math.random() * S, 3, 3);
+  }
+  g.fillStyle = 'rgba(120,115,105,0.55)';
+  const half = S / 2;
+  g.fillRect(0, 0, S, 3); // горизонтальные швы: два ряда по 30 см
+  g.fillRect(0, half - 1, S, 3);
+  g.fillRect(0, 0, 3, half); // вертикальные швы со сдвигом на полплитки
+  g.fillRect(half - 1, half, 3, half);
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.userData.size = [0.6, 0.6];
+  finishCache.set('tile', t);
+  return t;
+}
+
 export function finishMaterial(finish: string, color: string, w: number, h: number) {
   const tex = finishTexture(finish, color);
   return new THREE.MeshStandardMaterial({
     color,
     map: tex ? sized(tex, w, h) : null,
-    roughness: finish === 'paint' ? 0.9 : finish === 'panel' ? 0.6 : 0.85,
+    roughness: finish === 'paint' ? 0.9 : finish === 'panel' ? 0.6 : finish === 'tile' ? 0.28 : 0.85,
   });
 }

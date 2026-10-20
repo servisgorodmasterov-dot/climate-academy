@@ -378,9 +378,9 @@ function FloorMesh({ room, w, d, color, dim, highlight, onClick }: { room: Room;
   const mat = useMemo(() => {
     const base =
       room.floorFinish === 'tile'
-        ? sized(tileTexture('#e9e6e1'), w, d)
+        ? sized(tileTexture(color ?? '#e9e6e1'), w, d)
         : room.floorFinish === 'porcelain'
-          ? sized(tileTexture('#cfc8bd'), w, d)
+          ? sized(tileTexture(color ?? '#cfc8bd'), w, d)
           : sized(laminateTexture(color ?? '#b08a5e'), w, d);
     const lam = room.floorFinish !== 'tile' && room.floorFinish !== 'porcelain';
     return new THREE.MeshPhysicalMaterial({

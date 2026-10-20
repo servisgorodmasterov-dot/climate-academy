@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCatalog, parseCsv, parseNumber, type SheetValues } from '../catalog/sheetParser';
+import { buildCatalog, parseCsv, parseNumber, type SheetValues, fitsSlot } from '../catalog/sheetParser';
 import { DemoCatalogProvider, GoogleSheetsCatalogProvider, type CacheStore } from '../catalog/CatalogProvider';
 
 const minimal = (): SheetValues => ({
@@ -58,7 +58,7 @@ describe('Каталог из листов', () => {
     expect(c.status).toBe('demo');
     expect(c.issues).toEqual([]);
     expect(c.products.length).toBeGreaterThan(30);
-    for (const k of c.kits) expect(c.products.find((p) => p.id === k.productId)?.slot).toBe(k.slot);
+    for (const k of c.kits) expect(fitsSlot(c.products.find((p) => p.id === k.productId)!, k.slot)).toBe(true);
     for (const p of c.products) expect(c.prices.find((x) => x.productId === p.id)?.source).toBe('DEMO');
   });
 });

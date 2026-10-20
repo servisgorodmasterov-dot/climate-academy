@@ -32,14 +32,23 @@ export function withGeneratedObjects(layout: Layout): Layout {
   return { ...layout, elements: [...layout.elements, ...generateObjectElements(layout)] };
 }
 
+/** Тип из таблицы для места в планировке: тип для этого вида комнаты (санузел) важнее общего. */
+export function pickType(catalog: Catalog, placement: string, roomType: string | undefined) {
+  const all = catalog.objectTypes.filter((x) => x.placement === placement);
+  return (roomType ? all.find((x) => x.roomTypes.includes(roomType)) : undefined) ?? all.find((x) => !x.roomTypes.length);
+}
+
 /** Назначает объектам тип и академию по каталогу. Тип убрали из таблицы — объект перестаёт быть выбираемым. */
 export function bindObjectTypes(layout: Layout, catalog: Catalog | null): Layout {
-  const generated = new Set(['door', 'entrance', 'window', 'room_walls', 'furniture']);
+  const generated = new Set(['door', 'entrance', 'window', 'room_walls', 'furniture', 'floor']);
   return {
     ...layout,
     elements: layout.elements.map((e) => {
       if (!generated.has(e.kind)) return e;
-      const t = catalog ? catalog.objectTypes.find((x) => x.placement === placementOf(e, layout)) : undefined;
+      const roomType = layout.rooms.find((r) => r.id === e.roomId)?.type;
+      const t = catalog ? pickType(catalog, placementOf(e, layout), roomType) : undefined;
+      // пол: если в таблице нет типа для этой комнаты — остаётся своя «академия» пола (ламинат)
+      if (e.kind === 'floor' && !t) return e;
       if (!t) return { ...e, typeId: undefined, academy: undefined };
       return { ...e, typeId: t.id, academy: academyIdForType(t.id), label: e.label.replace(/^[^:]+:/, `${t.name}:`) };
     }),
@@ -116,7 +125,8 @@ export function objectLines(catalog: Catalog, layout: Layout, el: LayoutElement,
   const base = { ...m, m2: m.wall_m2 || m.opening_m2 || m.floor_m2, m: m.opening_perimeter_m || m.perimeter_m };
   return slotsOfType(catalog, t.id).map((slot) => {
     const layer = layerOf(slot, layers);
-    const basis = { ...base, mm: layer ?? 0 };
+    // m2 для расходников шага — площадь, на которую считается сам шаг (пол — площадь пола, стены — стен)
+    const basis = { ...base, m2: slot.per.endsWith('_m2') ? m[slot.per] : base.m2, mm: layer ?? 0 };
     const choice = selection[slot.slot];
     const pid = choice === undefined ? slot.defaultProductId : choice.productId;
     const product = pid ? findProduct(catalog, pid) : undefined;

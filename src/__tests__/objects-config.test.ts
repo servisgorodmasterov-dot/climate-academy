@@ -13,7 +13,7 @@ const layout = bindObjectTypes(withGeneratedObjects(base), catalog);
 describe('конфигуратор объектов', () => {
   it('демо-каталог читает листы «Категории», «Объекты» и «Позиции объектов» без замечаний', () => {
     expect(catalog.categories.length).toBeGreaterThanOrEqual(12);
-    expect(catalog.objectTypes.map((t) => t.id)).toEqual(['door.interior', 'door.entrance', 'window', 'wall.finish', 'furniture.kitchen', 'furniture.bed', 'furniture.wardrobe', 'furniture.sofa']);
+    expect(catalog.objectTypes.map((t) => t.id)).toEqual(['door.interior', 'door.entrance', 'window', 'wall.finish', 'furniture.kitchen', 'furniture.bed', 'furniture.wardrobe', 'furniture.sofa', 'wall.wet', 'floor.wet']);
     expect(catalog.issues.filter((i) => ['Объекты', 'Позиции объектов', 'Категории'].includes(i.sheet))).toEqual([]);
     expect(catalog.issues.filter((i) => /Нет цены/.test(i.message))).toEqual([]);
   });
@@ -95,6 +95,23 @@ describe('конфигуратор объектов', () => {
     expect(est.lines.find((l) => l.refId === 'WL-BEACON-6')!.qty).toBe(Math.ceil(0.4 * m.wall_m2 - 1e-9));
     expect(est.lines.find((l) => l.refId === 'WL-PLAST-GYPS')!.qty % 30).toBe(0);
     expect(est.lines.find((l) => l.refId === 'WL-PRIMER')!.needQty).toBeCloseTo(m.wall_m2 * (0.15 + 0.15 + 0.1), 1);
+  });
+
+  it('санузел получает свои типы: стены под плитку и пол с гидроизоляцией; остальные комнаты — общие', () => {
+    const walls = (room: string) => layout.elements.find((e) => e.kind === 'room_walls' && e.roomId === room)!;
+    const floor = (room: string) => layout.elements.find((e) => e.kind === 'floor' && e.roomId === room)!;
+    expect(walls('bath').typeId).toBe('wall.wet');
+    expect(walls('living').typeId).toBe('wall.finish');
+    expect(floor('bath').typeId).toBe('floor.wet');
+    expect(floor('living').academy).toBe('flooring'); // ламинат — прежний модуль пола
+    const f = floor('bath');
+    const m = measure(layout, f);
+    const lines = objectLines(catalog, layout, f, objectSelection(catalog, 'floor.wet', 'comfort'));
+    expect(lines.map((l) => l.product?.id)).toEqual(['SCR-CPS', 'WP-MASTIC', 'GLUE-PRO', 'PG-60-GREY', 'GROUT-CEM']);
+    expect(lines[0].need).toBeCloseTo(2.0 * m.floor_m2 * 40 * 1.05, 1); // пескобетон: 2 кг/м² на мм × 40 мм
+    const est = computeEstimate(catalog, [buildObjectSection(catalog, layout, f, 'comfort', objectSelection(catalog, 'floor.wet', 'comfort'), 's')]);
+    expect(est.lines.find((l) => l.refId === 'WL-PRIMER')!.needQty).toBeCloseTo(0.15 * m.floor_m2, 2); // грунт — по площади пола, не стен
+    expect(est.lines.find((l) => l.refId === 'WP-TAPE')!.needQty).toBeCloseTo(m.perimeter_m, 1);
   });
 
   it('две двери с одинаковой комплектацией складываются в смете без дублей и округляются по упаковке', () => {

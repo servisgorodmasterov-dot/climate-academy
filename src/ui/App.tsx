@@ -108,6 +108,13 @@ export function App() {
       const c = pid ? findProduct(catalog, pid)?.attrs.color : undefined;
       if (c) out[r.id] = c;
     }
+    // пол, заданный типом из таблицы (плитка в санузле): цвет главного товара
+    for (const e of layout.elements) {
+      if (e.kind !== 'floor' || !e.typeId) continue;
+      const sec = Object.values(s.sections).find((x) => x.apartmentId === apartmentId && x.params?.elementId === e.id);
+      const c = primaryProduct(catalog, e, sec?.selection)?.attrs.color;
+      if (c) out[e.roomId] = c;
+    }
     return out;
   }, [catalog, layout, s.sections, apartmentId]);
 

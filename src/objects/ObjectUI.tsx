@@ -24,7 +24,7 @@ const DOOR_PARTS = [
   { id: 'handle', name: 'Ручка и защёлка', text: 'Ручка поворачивает язычок защёлки, ответная планка в коробке фиксирует дверь.' },
 ];
 
-export function ObjectLesson({ ctx, selection }: Props) {
+export function ObjectLesson({ ctx, selection, params }: Props) {
   const el = ctx.element;
   const type = el ? typeForElement(ctx.catalog, el) : undefined;
   const [step, setStep] = useState(0);
@@ -36,7 +36,7 @@ export function ObjectLesson({ ctx, selection }: Props) {
     <div className="lesson">
       <p>{type.description}</p>
       {isDoor && <DoorLesson look={look} entrance={type.renderer === 'entrance'} step={step} steps={steps.length} />}
-      {type.renderer === 'wall' && <WallLayers color={look.color ?? '#f3f1ec'} finish={look.finish ?? 'paint'} step={steps.length ? step : -1} />}
+      {!isDoor && slotsOfType(ctx.catalog, type.id).length >= 3 && <LayerStack ctx={ctx} selection={selection} layers={params.layers} el={el} color={look.color ?? '#f3f1ec'} />}
       {steps.length > 0 && (
         <section className="steps">
           <h4>
@@ -152,25 +152,27 @@ function SwingingLeaf({ open, explode, children }: { open: boolean; explode: num
   );
 }
 
-/** Слои отделки стены — простая наглядная схема. */
-function WallLayers({ color, finish, step }: { color: string; finish: string; step: number }) {
-  const fin = finish === 'wallpaper' ? 'Обои' : finish === 'plaster' ? 'Декоративная штукатурка' : finish === 'panel' ? 'Реечные панели' : 'Краска, 2 слоя';
-  // слои совпадают с шагами урока: основание → штукатурка → старт → стеклохолст → финиш-шпаклёвка → грунт и финиш
-  const layers = [
-    { name: 'Основание (бетон, кирпич, газоблок) + грунт', color: '#a7a39c' },
-    { name: 'Штукатурка по маякам, 5–40 мм', color: '#d8d2c6' },
-    { name: 'Стартовая шпаклёвка, 1–3 мм', color: '#e6e1d7' },
-    { name: 'Стеклохолст (армирование)', color: '#eeeae2' },
-    { name: 'Финишная шпаклёвка + шлифовка', color: '#f4f2ed' },
-    { name: `Грунт и финиш: ${fin.toLowerCase()}`, color },
-  ];
+/** Слои отделки снизу вверх — из шагов расчёта: что выбрано, то и показано (с толщиной слоя). */
+function LayerStack({ ctx, el, selection, layers, color }: { ctx: Props['ctx']; el: NonNullable<Props['ctx']['element']>; selection: Props['selection']; layers?: Record<string, number>; color: string }) {
+  const lines = objectLines(ctx.catalog, ctx.layout, el, selection, layers);
+  const greys = ['#d8d2c6', '#e2ddd3', '#cfe0ea', '#ece8e0', '#f2efe9', '#e9e4da'];
   return (
-    <div className="wall-layers" aria-label="Слои отделки стены">
-      {layers.map((l, i) => (
-        <div key={i} className={step < 0 || i <= step ? 'wl on' : 'wl'} style={{ background: l.color }}>
-          <span>{l.name}</span>
-        </div>
-      ))}
+    <div className="wall-layers" aria-label="Слои отделки">
+      <div className="wl on" style={{ background: '#a7a39c' }}>
+        <span>Основание (бетон, кирпич, плита)</span>
+      </div>
+      {lines.map((l, i) => {
+        const last = l.slot.slot === typeForElement(ctx.catalog, el)?.primarySlot;
+        return (
+          <div key={l.slot.slot} className={l.product ? 'wl on' : 'wl'} style={{ background: last && l.product ? color : greys[i % greys.length] }}>
+            <span>
+              {l.slot.label}
+              {l.product ? ` — ${l.product.name.split(',')[0]}` : ' — не нужно'}
+              {l.product && l.layer != null ? `, ${fq(l.layer)} мм` : ''}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

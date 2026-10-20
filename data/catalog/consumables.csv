@@ -9,3 +9,10 @@ WL-BEACON-6,wall.plaster,0.4,m2,,Маяки через 1.2–1.5 м: ≈0.4 шт
 WL-PRIMER,wall.plaster,0.15,m2,,Грунт перед штукатуркой
 WL-PRIMER,wall.putty.start,0.1,m2,,Грунт между слоями штукатурки и шпаклёвки
 WL-GLASS-GLUE,wall.mesh,0.25,m2,,Клей для стеклохолста ≈0.25 кг/м²
+WP-TAPE,wall.waterproof,0.8,m,,Лента в углы стен и на примыкание к ванне
+WP-TAPE,floor.waterproof,1,m,,Лента по периметру пола
+WL-PRIMER,wall.waterproof,0.15,m2,,Грунт под гидроизоляцию
+WL-PRIMER,floor.waterproof,0.15,m2,,Грунт под гидроизоляцию
+WL-PRIMER,wall.tile.glue,0.15,m2,,Грунт под плиточный клей
+TILE-CROSS,wall.tile,8,m2,,Крестики/СВП ≈8 шт на м²
+TILE-CROSS,floor.tile,6,m2,,Крестики/СВП ≈6 шт на м²

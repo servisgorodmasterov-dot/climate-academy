@@ -136,6 +136,8 @@ export interface ObjectType {
   description: string;
   lessonSteps: string[];
   mistakes: string[];
+  /** Для каких типов комнат (bath, kitchen…). Пусто — для любых; тип с совпадением важнее общего. */
+  roomTypes: string[];
 }
 
 /** Позиция внутри объекта: полотно, коробка, наличник, ручка… или краска, грунт. */
