@@ -130,3 +130,57 @@ PG-60-WOOD,floor.tile,floor.wet,material,Керамогранит 20×120 «по
 SCR-CPS-150,floor.screed.base,floor.dry,material,"Смесь ЦПС М150 для стяжки, мешок 40 кг",Недорогая стяжка в жилых комнатах,kg,40,Расход (кг/м² на 1 мм)=1.9;Слой=30–100 мм;Марка=М150,rate=1.9;tier=econom,Цементно-песчаная смесь; прочности М150 достаточно под ламинат в квартире,0,—,SUP-MAT,DEMO-SCR-CPS-150,1
 SELF-FIN,floor.self,floor.dry,material,"Наливной пол финишный 1–10 мм, мешок 20 кг",Идеально ровное основание под ламинат,kg,20,Расход (кг/м² на 1 мм)=1.5;Слой=1–10 мм;Хождение=через 4 ч,rate=1.5;tier=comfort,Жидкая смесь сама растекается и выравнивается в горизонталь,0,—,SUP-MAT,DEMO-SELF-FIN,1
 DAMPER-TAPE,floor.consumable,floor.dry,consumable,"Демпферная лента, рулон 25 м",Компенсационный шов стяжки у стен,m,25,Ширина=100 мм;Толщина=8 мм,,Отделяет стяжку от стен: стяжка не трескается при усадке и расширении,0,—,SUP-MAT,DEMO-DAMPER-TAPE,1
+CEIL-PVC-MAT,ceil.canvas,ceiling.stretch,material,"Натяжной потолок ПВХ матовый, белый","Ровный потолок за день, скрывает плиту и провода",m2,1,Полотно=ПВХ 0.18 мм;Поверхность=матовая;Ширина=до 5 м без шва,finish=stretch;color=#f7f7f5;tier=econom,"Полотно разогревают до 60 °C, натягивают в багет; остывая, становится ровным",0,—,SUP-MAT,DEMO-CEIL-PVC-MAT,1
+CEIL-PVC-SATIN,ceil.canvas,ceiling.stretch,material,"Натяжной потолок ПВХ сатин, белый","Лёгкий перламутровый отлив, мягко отражает свет",m2,1,Полотно=ПВХ;Поверхность=сатин,finish=stretch;color=#f9f9f8;tier=comfort,"Полотно разогревают до 60 °C, натягивают в багет",0,—,SUP-MAT,DEMO-CEIL-PVC-SATIN,1
+CEIL-PVC-GLOSS,ceil.canvas,ceiling.stretch,material,Натяжной потолок ПВХ глянец,"Зеркальный, зрительно поднимает потолок",m2,1,Полотно=ПВХ;Поверхность=глянец,finish=stretch;color=#f4f6f8;tier=comfort,"Полотно разогревают до 60 °C, натягивают в багет",0,—,SUP-MAT,DEMO-CEIL-PVC-GLOSS,1
+CEIL-FABRIC,ceil.canvas,ceiling.stretch,material,Натяжной потолок тканевый,"Без нагрева, дышит, вид покрашенного потолка",m2,1,Полотно=полиэстер с пропиткой;Ширина=до 5.1 м,finish=stretch;color=#f6f5f2;work=W-CEIL-FABRIC;tier=premium,Полотно заправляют в клипсовый багет без нагрева,0,—,SUP-MAT,DEMO-CEIL-FABRIC,1
+CEIL-PAINT,ceil.canvas,ceiling.stretch,material,"Краска для потолка глубокоматовая, белая",Классический окрашенный потолок,l,9,"Расход (л/м², 2 слоя)=0.22;Блеск=глубокоматовая",finish=paint;color=#fafaf8;rate=0.22;work=W-CEIL-PAINT;tier=econom,Матовая краска скрывает мелкие неровности плиты,0,—,SUP-MAT,DEMO-CEIL-PAINT,1
+CEIL-PROFILE,ceil.profile,ceiling.stretch,material,"Багет ПВХ гарпунный, 2.5 м",Профиль по периметру под полотно,m,2.5,Тип=гарпунный;Крепление=саморез через 15 см,,,0,—,SUP-MAT,DEMO-CEIL-PROFILE,1
+CEIL-PROFILE-SHADOW,ceil.profile,ceiling.stretch,material,"Теневой профиль алюминиевый, 2 м",Без вставки: тень вместо шва у стены,m,2,Тип=теневой;Зазор=10 мм,tier=premium,,0,—,SUP-MAT,DEMO-CEIL-PROFILE-SHADOW,1
+CEIL-INSERT,ceil.insert,ceiling.stretch,material,Вставка декоративная белая,Закрывает щель у стены,m,1,,,,0,—,SUP-MAT,DEMO-CEIL-INSERT,1
+CEIL-RING,ceil.spots,ceiling.stretch,consumable,Закладная + термокольцо под светильник,Крепление спота или люстры к плите,pcs,1,,,,0,—,SUP-MAT,DEMO-CEIL-RING,1
+CEIL-PUTTY,ceil.prep,ceiling.stretch,material,"Шпаклёвка потолочная финишная, 20 кг",Подготовка плиты под покраску,kg,20,Расход (кг/м² на 1 мм)=1.1,rate=1.1,,0,—,SUP-MAT,DEMO-CEIL-PUTTY,1
+EL-SOCKET-W,el.socket,electric.room,material,"Розетка с заземлением, белая (серия базовая)",Стандартная розетка 16 А,pcs,1,Ток=16 А;Заземление=да;IP=20,color=#f5f5f3;tier=econom,,0,—,SUP-MAT,DEMO-EL-SOCKET-W,1
+EL-SOCKET-D,el.socket,electric.room,material,"Розетка с заземлением (серия дизайнерская), белая","Тонкая рамка, мягкий ход",pcs,1,Ток=16 А;Заземление=да;IP=20,color=#fafaf8;tier=comfort,,0,—,SUP-MAT,DEMO-EL-SOCKET-D,1
+EL-SOCKET-BLK,el.socket,electric.room,material,"Розетка с заземлением, чёрная матовая",Для тёмных стен и лофта,pcs,1,Ток=16 А;Заземление=да,color=#2a2a2a;tier=premium,,0,—,SUP-MAT,DEMO-EL-SOCKET-BLK,1
+EL-SOCKET-IP44,el.socket,electric.room,material,Розетка влагозащищённая IP44 с крышкой,"Санузел, кухня у мойки",pcs,1,IP=44;Крышка=да,color=#f5f5f3,,0,—,SUP-MAT,DEMO-EL-SOCKET-IP44,1
+EL-SWITCH-1,el.switch,electric.room,material,"Выключатель одноклавишный, белый",Один светильник,pcs,1,,color=#f5f5f3;tier=econom,,0,—,SUP-MAT,DEMO-EL-SWITCH-1,1
+EL-SWITCH-2,el.switch,electric.room,material,"Выключатель двухклавишный, белый",Две группы света,pcs,1,,color=#f5f5f3;tier=comfort,,0,—,SUP-MAT,DEMO-EL-SWITCH-2,1
+EL-SWITCH-PASS,el.switch,electric.room,material,Проходной выключатель (пара),"Включать у входа, выключать у кровати",pcs,1,,color=#f5f5f3;tier=premium,,0,—,SUP-MAT,DEMO-EL-SWITCH-PASS,1
+EL-LIGHT-OUT,el.light,electric.room,material,"Вывод под светильник (клеммник, коробка)",Точка на потолке или стене,pcs,1,,,,0,—,SUP-MAT,DEMO-EL-LIGHT-OUT,1
+EL-CABLE-25,el.cable,electric.room,material,"Кабель ВВГнг-LS 3×2.5 + гофра, на одну точку (≈6 м)",Линия розеток от щита,pcs,1,Сечение=3×2.5 мм²;Длина=≈6 м на точку,rate=1,"Медный кабель в негорючей изоляции, в гофре — можно заменить без вскрытия стены",0,—,SUP-MAT,DEMO-EL-CABLE-25,1
+EL-BRK-16,el.breaker,electric.room,material,Автомат 16 А (линия),Защита одной линии,pcs,1,Ток=16 А;Кривая=C,tier=econom,,0,—,SUP-MAT,DEMO-EL-BRK-16,1
+EL-RCBO-16,el.breaker,electric.room,material,Дифавтомат 16 А 30 мА (линия с УЗО),"Санузел, кухня, стиральная машина",pcs,1,Ток=16 А;Утечка=30 мА,tier=comfort,Отключает линию при утечке тока на корпус — защита от удара током,0,—,SUP-MAT,DEMO-EL-RCBO-16,1
+EL-BOX,el.consumable,electric.room,consumable,Подрозетник + гипс,Под каждую точку,pcs,1,,,,0,—,SUP-MAT,DEMO-EL-BOX,1
+LT-SPOT-7,light.main,light.room,equipment,"Спот встраиваемый LED 7 Вт, 3000 K",Ровный свет по всей комнате,pcs,1,Поток=600 лм;Температура=3000 K;Диммер=нет,lumen=600;tier=econom,"Встроенный светодиод, не нужна лампа; ставятся через 1 м",0,—,SUP-MAT,DEMO-LT-SPOT-7,1
+LT-SPOT-10,light.main,light.room,equipment,"Спот встраиваемый LED 10 Вт, 4000 K, поворотный","Кухня, рабочие зоны",pcs,1,Поток=900 лм;Температура=4000 K;Поворот=да,lumen=900;tier=comfort,,0,—,SUP-MAT,DEMO-LT-SPOT-10,1
+LT-CHAND,light.main,light.room,equipment,"Люстра 5 рожков, под GU10",Один центральный светильник,pcs,1,Ламп=5×GU10;Поток=до 2500 лм,lumen=2500;qty=1;tier=comfort,Нужны 5 ламп — добавляются в шаге «Лампы»,0,—,SUP-MAT,DEMO-LT-CHAND,1
+LT-TRACK,light.main,light.room,equipment,Трековая система 2 м + 4 прожектора,"Направленный свет, можно двигать",pcs,1,Поток=4×800 лм;Температура=3000 K,lumen=3200;tier=premium,"Шинопровод под потолком, прожекторы переставляются без электрика",0,—,SUP-MAT,DEMO-LT-TRACK,1
+LT-BRA,light.accent,light.room,equipment,Бра настенное LED,"У кровати, у зеркала",pcs,1,Поток=400 лм,tier=comfort,,0,—,SUP-MAT,DEMO-LT-BRA,1
+LT-PENDANT,light.accent,light.room,equipment,Подвес над столом,"Обеденная зона, барная стойка",pcs,1,Поток=800 лм,tier=premium,,0,—,SUP-MAT,DEMO-LT-PENDANT,1
+LT-STRIP,light.strip,light.room,material,LED-лента 12 В 9.6 Вт/м в профиле,"Ниша потолка, под шкафами",m,5,Мощность=9.6 Вт/м;Поток=800 лм/м,,Блок питания добавляется по длине (≈1 на 5 м),0,—,SUP-MAT,DEMO-LT-STRIP,1
+LT-PSU,light.consumable,light.room,consumable,Блок питания 60 Вт для LED-ленты,На 5 м ленты,pcs,1,,,,0,—,SUP-MAT,DEMO-LT-PSU,1
+LT-BULB-GU10,light.lamp,light.room,material,"Лампа LED GU10 5 Вт, 3000 K",Для люстр и спотов под лампу,pcs,1,Поток=450 лм,tier=econom,,0,—,SUP-MAT,DEMO-LT-BULB-GU10,1
+LT-BULB-GU10-4K,light.lamp,light.room,material,"Лампа LED GU10 5 Вт, 4000 K",Нейтральный свет для кухни,pcs,1,Поток=450 лм,tier=comfort,,0,—,SUP-MAT,DEMO-LT-BULB-GU10-4K,1
+PL-TUB-STEEL-170,pl.bathtub,plumb.bathtub,equipment,Ванна стальная 170×70,Недорого и прочно,pcs,1,Размер=170×70;Материал=сталь 3 мм,tier=econom,,0,—,SUP-MAT,DEMO-PL-TUB-STEEL-170,1
+PL-TUB-ACR-170,pl.bathtub,plumb.bathtub,equipment,Ванна акриловая 170×75 с каркасом,"Тёплая, лёгкая, держит тепло",pcs,1,Размер=170×75;Материал=акрил;Каркас=в комплекте,tier=comfort,,0,—,SUP-MAT,DEMO-PL-TUB-ACR-170,1
+PL-TUB-CAST-170,pl.bathtub,plumb.bathtub,equipment,Ванна чугунная 170×75,"Вечная, тихая",pcs,1,Размер=170×75;Материал=чугун;Вес=110 кг,tier=premium,,0,—,SUP-MAT,DEMO-PL-TUB-CAST-170,1
+PL-MIX-TUB,pl.mixer,plumb.bathtub,equipment,Смеситель для ванны с душевым набором,Однорычажный,pcs,1,,slots=pl.mixer;tier=econom,,0,—,SUP-MAT,DEMO-PL-MIX-TUB,1
+PL-MIX-THERMO,pl.mixer,plumb.bathtub,equipment,Термостатический смеситель с душевой стойкой,"Держит температуру, безопасно детям",pcs,1,,tier=premium,,0,—,SUP-MAT,DEMO-PL-MIX-THERMO,1
+PL-SIPHON-TUB,pl.siphon,plumb.bathtub,material,Слив-перелив автомат,,pcs,1,,,,0,—,SUP-MAT,DEMO-PL-SIPHON-TUB,1
+PL-SCREEN,pl.screen,plumb.bathtub,material,Экран под ванну раздвижной,,pcs,1,,,,0,—,SUP-MAT,DEMO-PL-SCREEN,1
+PL-PIPE-KIT,pl.pipes,plumb.bathtub,material,"Трубы и фитинги на одну точку (ПП 20 мм + канализация 50 мм, до 4 м)",От стояка до прибора,pcs,1,,slots=pl.pipes,,0,—,SUP-MAT,DEMO-PL-PIPE-KIT,1
+PL-WC-COMPACT,pl.toilet,plumb.toilet,equipment,Унитаз-компакт с сиденьем микролифт,"Напольный, ставится за час",pcs,1,Выпуск=горизонтальный;Смыв=двойной,tier=econom,,0,—,SUP-MAT,DEMO-PL-WC-COMPACT,1
+PL-WC-WALL,pl.toilet,plumb.toilet,equipment,Унитаз подвесной безободковый,"Легко мыть, бачок в стене",pcs,1,Тип=подвесной;Ободок=нет,tier=comfort,Нужна инсталляция — включите шаг 2,0,—,SUP-MAT,DEMO-PL-WC-WALL,1
+PL-INSTALL,pl.install,plumb.toilet,equipment,Инсталляция с кнопкой смыва,Рама и бачок в стене,pcs,1,,,,0,—,SUP-MAT,DEMO-PL-INSTALL,1
+PL-SINK-PED,pl.vanity,plumb.vanity,equipment,Раковина на пьедестале 55 см,Недорого,pcs,1,,tier=econom,,0,—,SUP-MAT,DEMO-PL-SINK-PED,1
+PL-SINK-TUMBA-60,pl.vanity,plumb.vanity,equipment,Тумба с раковиной 60 см,"Хранение, скрытые трубы",pcs,1,,tier=comfort,,0,—,SUP-MAT,DEMO-PL-SINK-TUMBA-60,1
+PL-SINK-TUMBA-80,pl.vanity,plumb.vanity,equipment,Тумба подвесная с раковиной 80 см,"Просторно, легко мыть пол",pcs,1,,tier=premium,,0,—,SUP-MAT,DEMO-PL-SINK-TUMBA-80,1
+PL-MIX-SINK,pl.mixer,plumb.vanity,equipment,Смеситель для раковины однорычажный,,pcs,1,,slots=pl.mixer;tier=comfort,,0,—,SUP-MAT,DEMO-PL-MIX-SINK,1
+PL-SIPHON-SINK,pl.siphon,plumb.vanity,material,Сифон + гибкая подводка с кранами,,pcs,1,,,,0,—,SUP-MAT,DEMO-PL-SIPHON-SINK,1
+PL-WASHER-KIT,pl.washer,plumb.washer,material,"Комплект подключения: кран, сифон, шланги",,pcs,1,,,,0,—,SUP-MAT,DEMO-PL-WASHER-KIT,1
+HT-ALU,heat.radiator,heat.radiator,equipment,"Радиатор алюминиевый, секция 500 мм","Быстро греет, для автономного отопления",pcs,1,Отдача=190 Вт/секция;Давление=16 бар,tier=econom,,0,—,SUP-MAT,DEMO-HT-ALU,1
+HT-BIMETAL,heat.radiator,heat.radiator,equipment,"Радиатор биметаллический, секция 500 мм",Для центрального отопления — держит давление,pcs,1,Отдача=180 Вт/секция;Давление=30 бар,tier=comfort,Стальной сердечник внутри алюминия: прочность стали и теплоотдача алюминия,0,—,SUP-MAT,DEMO-HT-BIMETAL,1
+HT-STEEL-PANEL,heat.radiator,heat.radiator,equipment,Радиатор стальной панельный (за 1 «секцию» = 100 мм ширины),"Ровная панель, ширина под окно",pcs,1,Отдача=≈180 Вт на 10 см,tier=premium,,0,—,SUP-MAT,DEMO-HT-STEEL-PANEL,1
+HT-KIT,heat.install,heat.radiator,material,"Комплект монтажа: кронштейны, краны, кран Маевского, байпас",,pcs,1,,,,0,—,SUP-MAT,DEMO-HT-KIT,1
+HT-THERMO,heat.thermo,heat.radiator,equipment,Термостатический клапан с головкой,Держит температуру в комнате,pcs,1,,,,0,—,SUP-MAT,DEMO-HT-THERMO,1

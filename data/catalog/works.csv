@@ -40,3 +40,23 @@ W-TILE-FLOOR,floor.wet,floor.tile,Укладка плитки на пол (с з
 W-SCREED-WET,floor.wet,floor.wet.screed,Стяжка пола по маякам с уклоном (слой до 50 мм),m2,2800,2026-10-20,DEMO
 W-SCREED-SELF,floor.wet,floor.wet.screed,Наливной пол (самонивелир),m2,1500,2026-10-20,DEMO
 W-SCREED-DRY,floor.dry,floor.screed.base,Стяжка пола по маякам (слой до 50 мм),m2,2500,2026-10-20,DEMO
+W-CEIL-STRETCH,ceiling.stretch,ceil.canvas,"Монтаж натяжного потолка ПВХ (багет, полотно, вставка)",m2,3500,2026-10-20,DEMO
+W-CEIL-FABRIC,ceiling.stretch,ceil.canvas,Монтаж тканевого натяжного потолка,m2,4500,2026-10-20,DEMO
+W-CEIL-PAINT,ceiling.stretch,ceil.canvas,Окраска потолка в 2 слоя с грунтом,m2,1500,2026-10-20,DEMO
+W-CEIL-PUTTY,ceiling.stretch,ceil.prep,Шпаклёвка потолка под покраску со шлифовкой,m2,2200,2026-10-20,DEMO
+W-CEIL-RING,ceiling.stretch,ceil.spots,Закладная и вырез под светильник,pcs,2500,2026-10-20,DEMO
+W-EL-POINT,electric.room,el.socket,"Электроточка под ключ: штроба, подрозетник, подключение механизма",pcs,6500,2026-10-20,DEMO
+W-EL-LIGHT,electric.room,el.light,"Вывод под светильник (штроба, коробка, клеммы)",pcs,4500,2026-10-20,DEMO
+W-EL-CABLE,electric.room,el.cable,Прокладка кабеля в гофре к точке (≈6 м),pcs,3600,2026-10-20,DEMO
+W-EL-BRK,electric.room,el.breaker,Установка автомата/УЗО в щит с подключением,pcs,3500,2026-10-20,DEMO
+W-LT-SPOT,light.room,light.main,Установка и подключение светильника,pcs,2500,2026-10-20,DEMO
+W-LT-STRIP,light.room,light.strip,Монтаж LED-ленты в профиль с блоком питания,m,2000,2026-10-20,DEMO
+W-PL-TUB,plumb.bathtub,pl.bathtub,Установка ванны с обвязкой и герметизацией,pcs,35000,2026-10-20,DEMO
+W-PL-MIX,plumb.bathtub,pl.mixer,Установка смесителя,pcs,8000,2026-10-20,DEMO
+W-PL-SCREEN,plumb.bathtub,pl.screen,Установка экрана,pcs,6000,2026-10-20,DEMO
+W-PL-PIPES,plumb.bathtub,pl.pipes,"Разводка воды и канализации к точке (до 4 м, со штробой)",pcs,25000,2026-10-20,DEMO
+W-PL-WC,plumb.toilet,pl.toilet,Установка унитаза с подключением,pcs,15000,2026-10-20,DEMO
+W-PL-INSTALL,plumb.toilet,pl.install,Монтаж инсталляции с фальшстеной из ГКЛ,pcs,45000,2026-10-20,DEMO
+W-PL-SINK,plumb.vanity,pl.vanity,Установка раковины/тумбы с подключением,pcs,15000,2026-10-20,DEMO
+W-PL-WASHER,plumb.washer,pl.washer,"Подключение стиральной машины (вода, слив, проверка)",pcs,12000,2026-10-20,DEMO
+W-HT-INST,heat.radiator,heat.install,"Замена радиатора: демонтаж, кронштейны, краны, байпас, опрессовка",pcs,35000,2026-10-20,DEMO

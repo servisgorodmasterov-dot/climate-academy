@@ -1,43 +1,74 @@
-type_id,slot,label,qty,per,waste,optional,default_product_id,work_id,work_per,order,layer_mm,layer_options,work_layer_mm,hint
-door.interior,door.leaf,Полотно,1,pcs,0,0,DR-NEO-WHITE,W-DR-INST,pcs,1
-door.interior,door.frame,Коробка,1,pcs,0,0,DR-FRAME-STD,,,2
-door.interior,door.casing,Наличник (с двух сторон),2,opening_perimeter_m,0.05,0,DR-CAS-70,,,3
-door.interior,door.hinges,Петли,2,pcs,0,0,DR-HNG-BUTT,,,4
-door.interior,door.handle,Ручка,1,pcs,0,0,DR-HDL-CHROME,,,5
-door.interior,door.latch,Защёлка / фиксатор,1,pcs,0,1,DR-LCH-MAG,,,6
-door.entrance,entr.door,Дверной блок,1,pcs,0,0,ENT-STEEL-GREY,W-ENT-INST,pcs,1
-door.entrance,entr.lock,Дополнительный замок,1,pcs,0,1,,W-ENT-LOCK,pcs,2
-door.entrance,entr.reveal,Откосы,1,opening_perimeter_m,0.1,1,ENT-REV-MDF,W-ENT-REVEAL,opening_perimeter_m,3
-window,win.unit,Окно (профиль + стеклопакет),1,opening_m2,0,0,WIN-PVC-WHITE,W-WIN-INST,opening_m2,1
-window,win.sill,Подоконник,1,opening_w,0.15,1,WIN-SILL-PVC,W-WIN-SILL,opening_w,2
-window,win.reveal,Откосы,1,opening_perimeter_m,0.1,1,WIN-REV-PVC,W-WIN-REV,opening_perimeter_m,3
-furniture.kitchen,kit.set,Корпус и фасады (погонный метр),1,length_m,0,0,KIT-MODERN-WHITE,W-KIT-INST,length_m,1
-furniture.kitchen,kit.top,Столешница,1,length_m,0.1,0,KIT-TOP-STONE,,,2
-furniture.kitchen,kit.upper,Верхние шкафы,1,length_m,0,1,KIT-UPPER-STD,,,3
-furniture.kitchen,kit.handle,Ручки,2,length_m,0,1,KIT-HDL-BLACK,,,4
-furniture.bed,bed.frame,Кровать с изголовьем,1,pcs,0,0,BED-SOFT-GREY,W-BED-ASM,pcs,1
-furniture.bed,bed.mattress,Матрас,1,pcs,0,1,MAT-ORTHO-M,,,2
-furniture.wardrobe,wrd.body,Корпус и фасады (погонный метр),1,length_m,0,0,WRD-SWING-WHITE,W-WRD-ASM,length_m,1
-furniture.sofa,sofa.unit,Диван,1,pcs,0,0,SOFA-GREY,W-SOFA-ASM,pcs,1
-wall.finish,wall.plaster,Штукатурка — выравнивание по маякам,0.9,wall_m2,0.05,1,WL-PLAST-GYPS,W-WL-PLAST,wall_m2,1,15,5|10|15|20|25|30|40,20,"Делает стены ровными и вертикальными. Нужна, если стена «гуляет» больше 3–5 мм под 2-метровым правилом. Средний слой ≈ половина самого большого отклонения + 5 мм на маяк."
-wall.finish,wall.putty.start,Стартовая шпаклёвка,1.0,wall_m2,0.05,1,WL-PUTTY-START,W-WL-PUTTY-S,wall_m2,2,2,1|2|3|5,3,"Закрывает поры и раковины после штукатурки, выравнивает мелкие неровности. Можно пропустить, если штукатурка машинная и затёрта гладко."
-wall.finish,wall.mesh,Стеклохолст (армирование),1.1,wall_m2,0,1,WL-GLASS-50,W-WL-GLASS,wall_m2,3,,,,Защищает покраску от мелких трещин. Рекомендуется в новостройках (дом даёт усадку). Под обои не нужен.
-wall.finish,wall.putty.finish,Финишная шпаклёвка,1.1,wall_m2,0.05,1,WL-PUTTY-FIN,W-WL-PUTTY-F,wall_m2,4,1,0.5|1|1.5|2,,"Гладкая поверхность под покраску: 2 тонких слоя и шлифовка. Под обои хватит одного слоя, под панели не нужна."
-wall.finish,wall.primer,Грунт перед финишем,0.15,wall_m2,0,1,WL-PRIMER,W-WL-PRIME,wall_m2,5,,,,"Выравнивает впитываемость: краска ляжет без пятен, обои не отклеятся. Пропускать нельзя."
-wall.finish,wall.finish,Финишная отделка,1,wall_m2,0.1,0,WL-PNT-WHITE,W-WL-PAINT,wall_m2,6,,,,"То, что видно: краска, обои, декоративная штукатурка или панели."
-wall.wet,wall.plaster,Штукатурка цементная по маякам,1.7,wall_m2,0.05,1,WL-PLAST-CEM,W-WL-PLAST,wall_m2,1,15,5|10|15|20|25|30|40,20,"Под плитку стены выравнивают цементной штукатуркой: она не боится влаги и держит вес плитки. Если стены ровные (до 5 мм на 2 м) — шаг можно выключить, неровность заберёт клей."
-wall.wet,wall.waterproof,Гидроизоляция мокрой зоны,1.0,wall_m2,0.05,1,WP-MASTIC,W-WP-WALL,wall_m2,2,,,,"Зона у ванны и душа на высоту 1.8–2 м (≈40 % стен), 2 слоя по ~1.2 кг/м², в углах — лента. Норма считается на всю площадь стен, чтобы не мерить зону отдельно."
-wall.wet,wall.tile.glue,Плиточный клей,1.4,wall_m2,0.05,0,GLUE-STD,,wall_m2,3,5,3|5|7|10,,"Слой зависит от формата: 30×60 — 4–5 мм, 60×120 — 7–10 мм. Работа входит в облицовку."
-wall.wet,wall.tile,Плитка,1,wall_m2,0.1,0,TILE-W-WHITE,W-TILE-WALL,wall_m2,4,,,,Запас 10 % на подрезку; для крупного формата 60×120 — 12 %. Крестики или СВП добавляются сами.
-wall.wet,wall.grout,Затирка швов,0.3,wall_m2,0,0,GROUT-CEM,,wall_m2,5,,,,≈0.3 кг/м² при шве 2 мм. Эпоксидная не темнеет и не впитывает воду. Работа входит в облицовку.
-floor.wet,floor.wet.screed,Стяжка с уклоном к трапу,2.0,floor_m2,0.05,1,SCR-CPS,W-SCREED-WET,floor_m2,1,40,20|30|40|50|70,50,Выравнивает пол и задаёт уклон к трапу. Пескобетон — ≈2 кг/м² на 1 мм. Если перепад пола до 3 мм — шаг можно выключить.
-floor.wet,floor.waterproof,Гидроизоляция с заходом на стены,3.0,floor_m2,0.05,0,WP-MASTIC,W-WP-FLOOR,floor_m2,2,,,,"В санузле обязательна: 2 слоя по полу и 20 см на стены, лента по периметру и вокруг труб. При протечке вода не уйдёт к соседям."
-floor.wet,floor.tile.glue,Плиточный клей,1.5,floor_m2,0.05,0,GLUE-PRO,,floor_m2,3,6,4|6|8|10,,"Под керамогранит — клей С1/С2, слой 5–8 мм, обмазка тыльной стороны плитки. Работа входит в укладку."
-floor.wet,floor.tile,Плитка / керамогранит,1,floor_m2,0.1,0,PG-60-GREY,W-TILE-FLOOR,floor_m2,4,,,,Для пола — матовая противоскользящая (R10 и выше). Запас 10 % на подрезку.
-floor.wet,floor.grout,Затирка швов,0.4,floor_m2,0,0,GROUT-CEM,,floor_m2,5,,,,На полу шов шире — ≈0.4 кг/м². Эпоксидная затирка не впитывает грязь и воду.
-floor.dry,floor.screed.base,Стяжка — черновое выравнивание,2.0,floor_m2,0.05,1,SCR-CPS,W-SCREED-DRY,floor_m2,1,50,30|40|50|60|80|100,50,"Нужна, если перепад пола больше 10 мм или в полу трубы. Слой не тоньше 30 мм; средний слой ≈ перепад пола + 30 мм. Пескобетон ≈2 кг/м² на 1 мм. Сохнет около недели на каждый 1 см."
-floor.dry,floor.self,Наливной пол — финишное выравнивание,1.5,floor_m2,0.05,1,SELF-FIN,W-FL-SCR,floor_m2,2,5,3|5|7|10|15,,"Делает пол идеально ровным под ламинат (перепад ≤2 мм на 2 м). Нужен, если перепад 2–10 мм или поверх новой стяжки. Ходить — через 4–6 часов, ламинат — через 3–7 дней."
-floor.dry,floor.vapor,Пароизоляционная плёнка,1.15,floor_m2,0,1,FL-FILM-200,,floor_m2,3,,,,Защищает ламинат от влаги бетона. Нахлёст 20 см и завод на стены — поэтому +15 % к площади. Работа входит в укладку подложки.
-floor.dry,floor.underlay,Подложка,1,floor_m2,0.05,0,FL-UND-XPS-3,W-FL-UND,floor_m2,4,,,,"Гасит шаги и мелкие неровности. Укладывается встык, без нахлёста."
-floor.dry,floor.laminate,Ламинат,1,floor_m2,0.07,0,FL-LAM-32-8,W-FL-LAM,floor_m2,5,,,,Запас 7 % на подрезку при прямой укладке (по диагонали — 12 %). У стен зазор 8–10 мм.
-floor.dry,floor.skirting,Плинтус,1,perimeter_m,0.05,1,FL-SKR-PVC-CC,W-FL-SKR,perimeter_m,6,,,,Длина — периметр комнаты (проёмы дверей входят в запас). Крепёж добавляется сам.
+type_id,slot,label,qty,per,waste,optional,default_product_id,work_id,work_per,order,layer_mm,layer_options,work_layer_mm,hint,qty_default,qty_per_m2,qty_min,qty_options,qty_sum_of
+door.interior,door.leaf,Полотно,1,pcs,0,0,DR-NEO-WHITE,W-DR-INST,pcs,1,,,,,,,,,
+door.interior,door.frame,Коробка,1,pcs,0,0,DR-FRAME-STD,,,2,,,,,,,,,
+door.interior,door.casing,Наличник (с двух сторон),2,opening_perimeter_m,0.05,0,DR-CAS-70,,,3,,,,,,,,,
+door.interior,door.hinges,Петли,2,pcs,0,0,DR-HNG-BUTT,,,4,,,,,,,,,
+door.interior,door.handle,Ручка,1,pcs,0,0,DR-HDL-CHROME,,,5,,,,,,,,,
+door.interior,door.latch,Защёлка / фиксатор,1,pcs,0,1,DR-LCH-MAG,,,6,,,,,,,,,
+door.entrance,entr.door,Дверной блок,1,pcs,0,0,ENT-STEEL-GREY,W-ENT-INST,pcs,1,,,,,,,,,
+door.entrance,entr.lock,Дополнительный замок,1,pcs,0,1,,W-ENT-LOCK,pcs,2,,,,,,,,,
+door.entrance,entr.reveal,Откосы,1,opening_perimeter_m,0.1,1,ENT-REV-MDF,W-ENT-REVEAL,opening_perimeter_m,3,,,,,,,,,
+window,win.unit,Окно (профиль + стеклопакет),1,opening_m2,0,0,WIN-PVC-WHITE,W-WIN-INST,opening_m2,1,,,,,,,,,
+window,win.sill,Подоконник,1,opening_w,0.15,1,WIN-SILL-PVC,W-WIN-SILL,opening_w,2,,,,,,,,,
+window,win.reveal,Откосы,1,opening_perimeter_m,0.1,1,WIN-REV-PVC,W-WIN-REV,opening_perimeter_m,3,,,,,,,,,
+furniture.kitchen,kit.set,Корпус и фасады (погонный метр),1,length_m,0,0,KIT-MODERN-WHITE,W-KIT-INST,length_m,1,,,,,,,,,
+furniture.kitchen,kit.top,Столешница,1,length_m,0.1,0,KIT-TOP-STONE,,,2,,,,,,,,,
+furniture.kitchen,kit.upper,Верхние шкафы,1,length_m,0,1,KIT-UPPER-STD,,,3,,,,,,,,,
+furniture.kitchen,kit.handle,Ручки,2,length_m,0,1,KIT-HDL-BLACK,,,4,,,,,,,,,
+furniture.bed,bed.frame,Кровать с изголовьем,1,pcs,0,0,BED-SOFT-GREY,W-BED-ASM,pcs,1,,,,,,,,,
+furniture.bed,bed.mattress,Матрас,1,pcs,0,1,MAT-ORTHO-M,,,2,,,,,,,,,
+furniture.wardrobe,wrd.body,Корпус и фасады (погонный метр),1,length_m,0,0,WRD-SWING-WHITE,W-WRD-ASM,length_m,1,,,,,,,,,
+furniture.sofa,sofa.unit,Диван,1,pcs,0,0,SOFA-GREY,W-SOFA-ASM,pcs,1,,,,,,,,,
+wall.finish,wall.plaster,Штукатурка — выравнивание по маякам,0.9,wall_m2,0.05,1,WL-PLAST-GYPS,W-WL-PLAST,wall_m2,1,15,5|10|15|20|25|30|40,20,"Делает стены ровными и вертикальными. Нужна, если стена «гуляет» больше 3–5 мм под 2-метровым правилом. Средний слой ≈ половина самого большого отклонения + 5 мм на маяк.",,,,,
+wall.finish,wall.putty.start,Стартовая шпаклёвка,1.0,wall_m2,0.05,1,WL-PUTTY-START,W-WL-PUTTY-S,wall_m2,2,2,1|2|3|5,3,"Закрывает поры и раковины после штукатурки, выравнивает мелкие неровности. Можно пропустить, если штукатурка машинная и затёрта гладко.",,,,,
+wall.finish,wall.mesh,Стеклохолст (армирование),1.1,wall_m2,0,1,WL-GLASS-50,W-WL-GLASS,wall_m2,3,,,,Защищает покраску от мелких трещин. Рекомендуется в новостройках (дом даёт усадку). Под обои не нужен.,,,,,
+wall.finish,wall.putty.finish,Финишная шпаклёвка,1.1,wall_m2,0.05,1,WL-PUTTY-FIN,W-WL-PUTTY-F,wall_m2,4,1,0.5|1|1.5|2,,"Гладкая поверхность под покраску: 2 тонких слоя и шлифовка. Под обои хватит одного слоя, под панели не нужна.",,,,,
+wall.finish,wall.primer,Грунт перед финишем,0.15,wall_m2,0,1,WL-PRIMER,W-WL-PRIME,wall_m2,5,,,,"Выравнивает впитываемость: краска ляжет без пятен, обои не отклеятся. Пропускать нельзя.",,,,,
+wall.finish,wall.finish,Финишная отделка,1,wall_m2,0.1,0,WL-PNT-WHITE,W-WL-PAINT,wall_m2,6,,,,"То, что видно: краска, обои, декоративная штукатурка или панели.",,,,,
+wall.wet,wall.plaster,Штукатурка цементная по маякам,1.7,wall_m2,0.05,1,WL-PLAST-CEM,W-WL-PLAST,wall_m2,1,15,5|10|15|20|25|30|40,20,"Под плитку стены выравнивают цементной штукатуркой: она не боится влаги и держит вес плитки. Если стены ровные (до 5 мм на 2 м) — шаг можно выключить, неровность заберёт клей.",,,,,
+wall.wet,wall.waterproof,Гидроизоляция мокрой зоны,1.0,wall_m2,0.05,1,WP-MASTIC,W-WP-WALL,wall_m2,2,,,,"Зона у ванны и душа на высоту 1.8–2 м (≈40 % стен), 2 слоя по ~1.2 кг/м², в углах — лента. Норма считается на всю площадь стен, чтобы не мерить зону отдельно.",,,,,
+wall.wet,wall.tile.glue,Плиточный клей,1.4,wall_m2,0.05,0,GLUE-STD,,wall_m2,3,5,3|5|7|10,,"Слой зависит от формата: 30×60 — 4–5 мм, 60×120 — 7–10 мм. Работа входит в облицовку.",,,,,
+wall.wet,wall.tile,Плитка,1,wall_m2,0.1,0,TILE-W-WHITE,W-TILE-WALL,wall_m2,4,,,,Запас 10 % на подрезку; для крупного формата 60×120 — 12 %. Крестики или СВП добавляются сами.,,,,,
+wall.wet,wall.grout,Затирка швов,0.3,wall_m2,0,0,GROUT-CEM,,wall_m2,5,,,,≈0.3 кг/м² при шве 2 мм. Эпоксидная не темнеет и не впитывает воду. Работа входит в облицовку.,,,,,
+floor.wet,floor.wet.screed,Стяжка с уклоном к трапу,2.0,floor_m2,0.05,1,SCR-CPS,W-SCREED-WET,floor_m2,1,40,20|30|40|50|70,50,Выравнивает пол и задаёт уклон к трапу. Пескобетон — ≈2 кг/м² на 1 мм. Если перепад пола до 3 мм — шаг можно выключить.,,,,,
+floor.wet,floor.waterproof,Гидроизоляция с заходом на стены,3.0,floor_m2,0.05,0,WP-MASTIC,W-WP-FLOOR,floor_m2,2,,,,"В санузле обязательна: 2 слоя по полу и 20 см на стены, лента по периметру и вокруг труб. При протечке вода не уйдёт к соседям.",,,,,
+floor.wet,floor.tile.glue,Плиточный клей,1.5,floor_m2,0.05,0,GLUE-PRO,,floor_m2,3,6,4|6|8|10,,"Под керамогранит — клей С1/С2, слой 5–8 мм, обмазка тыльной стороны плитки. Работа входит в укладку.",,,,,
+floor.wet,floor.tile,Плитка / керамогранит,1,floor_m2,0.1,0,PG-60-GREY,W-TILE-FLOOR,floor_m2,4,,,,Для пола — матовая противоскользящая (R10 и выше). Запас 10 % на подрезку.,,,,,
+floor.wet,floor.grout,Затирка швов,0.4,floor_m2,0,0,GROUT-CEM,,floor_m2,5,,,,На полу шов шире — ≈0.4 кг/м². Эпоксидная затирка не впитывает грязь и воду.,,,,,
+floor.dry,floor.screed.base,Стяжка — черновое выравнивание,2.0,floor_m2,0.05,1,SCR-CPS,W-SCREED-DRY,floor_m2,1,50,30|40|50|60|80|100,50,"Нужна, если перепад пола больше 10 мм или в полу трубы. Слой не тоньше 30 мм; средний слой ≈ перепад пола + 30 мм. Пескобетон ≈2 кг/м² на 1 мм. Сохнет около недели на каждый 1 см.",,,,,
+floor.dry,floor.self,Наливной пол — финишное выравнивание,1.5,floor_m2,0.05,1,SELF-FIN,W-FL-SCR,floor_m2,2,5,3|5|7|10|15,,"Делает пол идеально ровным под ламинат (перепад ≤2 мм на 2 м). Нужен, если перепад 2–10 мм или поверх новой стяжки. Ходить — через 4–6 часов, ламинат — через 3–7 дней.",,,,,
+floor.dry,floor.vapor,Пароизоляционная плёнка,1.15,floor_m2,0,1,FL-FILM-200,,floor_m2,3,,,,Защищает ламинат от влаги бетона. Нахлёст 20 см и завод на стены — поэтому +15 % к площади. Работа входит в укладку подложки.,,,,,
+floor.dry,floor.underlay,Подложка,1,floor_m2,0.05,0,FL-UND-XPS-3,W-FL-UND,floor_m2,4,,,,"Гасит шаги и мелкие неровности. Укладывается встык, без нахлёста.",,,,,
+floor.dry,floor.laminate,Ламинат,1,floor_m2,0.07,0,FL-LAM-32-8,W-FL-LAM,floor_m2,5,,,,Запас 7 % на подрезку при прямой укладке (по диагонали — 12 %). У стен зазор 8–10 мм.,,,,,
+floor.dry,floor.skirting,Плинтус,1,perimeter_m,0.05,1,FL-SKR-PVC-CC,W-FL-SKR,perimeter_m,6,,,,Длина — периметр комнаты (проёмы дверей входят в запас). Крепёж добавляется сам.,,,,,
+ceiling.stretch,ceil.prep,Подготовка плиты (под покраску),1.0,ceiling_m2,0.05,1,,W-CEIL-PUTTY,ceiling_m2,1,2,1|2|3|5,,Только для покраски: штукатурка/шпаклёвка плиты и шлифовка. Для натяжного потолка — выключите.,,,,,
+ceiling.stretch,ceil.canvas,Потолок,1,ceiling_m2,0.05,0,CEIL-PVC-MAT,W-CEIL-STRETCH,ceiling_m2,2,,,,"Натяжное полотно — с запасом 5 % на заправку в багет. Краска — в литрах на площадь, 2 слоя.",,,,,
+ceiling.stretch,ceil.profile,Багет по периметру,1,perimeter_m,0.05,1,CEIL-PROFILE,,perimeter_m,3,,,,"Профиль, в который заправляется полотно. Для покраски — не нужен.",,,,,
+ceiling.stretch,ceil.insert,Декоративная вставка,1,perimeter_m,0.05,1,CEIL-INSERT,,perimeter_m,4,,,,"Закрывает щель между полотном и стеной. Вместо неё — теневой профиль (дороже, современнее).",,,,,
+ceiling.stretch,ceil.spots,Закладные под светильники,1,qty,0,1,CEIL-RING,W-CEIL-RING,qty,5,,,,Кольцо и платформа под каждый спот или люстру. Число — по освещению: ≈1 спот на 2 м².,,0.5,1,1|2|4|6|8|10|12,
+electric.room,el.socket,Розетки,1,qty,0,0,EL-SOCKET-W,W-EL-POINT,qty,1,,,,"Сколько розеток в комнате. Ориентир: спальня 6, гостиная 8–10, кухня 10–12 (техника!), санузел 2 с крышкой, прихожая 2. В работу входит подрозетник, штроба и подключение.",,0.5,2,2|4|6|8|10|12|16,
+electric.room,el.switch,Выключатели,1,qty,0,0,EL-SWITCH-1,W-EL-POINT,qty,2,,,,Один на вход; проходные у кровати и в длинном коридоре — два.,1,,,1|2|3|4,
+electric.room,el.light,Выводы под светильники,1,qty,0,0,EL-LIGHT-OUT,W-EL-LIGHT,qty,3,,,,"Точка на потолке/стене для люстры, спота или бра. Число — как в освещении.",,0.5,1,1|2|4|6|8|10|12,
+electric.room,el.cable,Кабель и гофра,1,qty,0.1,0,EL-CABLE-25,W-EL-CABLE,qty,4,,,,"≈6 м кабеля на каждую точку (до щита с запасом). Розетки — 3×2.5 мм², свет — 3×1.5. Количество считается от суммы точек выше.",,,,,el.socket|el.switch|el.light
+electric.room,el.breaker,Автоматы и УЗО в щите,1,qty,0,1,EL-BRK-16,W-EL-BRK,qty,5,,,,Отдельная линия на розетки и на свет — два автомата. Кухня и санузел — плюс УЗО (дифавтомат).,2,,,1|2|3|4,
+light.room,light.main,Основной свет,1,qty,0,0,LT-SPOT-7,W-LT-SPOT,qty,1,,,,"Сколько светильников нужно: норма 200 лк × площадь ÷ световой поток лампы. Люстра — 1, споты — через 1 м (≈1 на 2 м²).",,0.5,1,1|2|4|6|8|10|12|16,
+light.room,light.accent,Дополнительный свет,1,qty,0,1,,W-LT-SPOT,qty,2,,,,"Бра у кровати, подсветка над столом, торшер. Создаёт вечерний свет без «операционной».",2,,,1|2|3|4,
+light.room,light.strip,"LED-лента (ниша, подсветка)",1,perimeter_m,0.1,1,,W-LT-STRIP,perimeter_m,3,,,,По периметру потолка в нише или под кухонными шкафами. Длина — периметр комнаты; блок питания добавится сам.,,,,,
+light.room,light.lamp,Лампы,1,qty,0,1,LT-BULB-GU10,,qty,4,,,,"Если светильники без встроенных ламп. Тёплые 3000 K — спальня и гостиная, 4000 K — кухня и санузел.",,0.5,1,1|2|4|6|8|10|12|16,light.main
+plumb.bathtub,pl.bathtub,Ванна,1,pcs,0,0,PL-TUB-ACR-170,W-PL-TUB,pcs,1,,,,"Акрил — тёплая и лёгкая, нужен каркас. Сталь — дешевле, гулкая. Чугун — вечная, тяжёлая.",,,,,
+plumb.bathtub,pl.mixer,Смеситель с душем,1,pcs,0,0,PL-MIX-TUB,W-PL-MIX,pcs,2,,,,Однорычажный с душевой лейкой. Термостат — удобнее для детей.,,,,,
+plumb.bathtub,pl.siphon,Слив-перелив,1,pcs,0,0,PL-SIPHON-TUB,,pcs,3,,,,Входит в работу установки ванны.,,,,,
+plumb.bathtub,pl.screen,Экран под ванну,1,pcs,0,1,PL-SCREEN,W-PL-SCREEN,pcs,4,,,,Закрывает ноги ванны. Вместо него можно выложить плиткой с люком.,,,,,
+plumb.bathtub,pl.pipes,Разводка труб к точке,1,pcs,0,1,PL-PIPE-KIT,W-PL-PIPES,pcs,5,,,,Вода (полипропилен 20 мм) и канализация (50 мм) от стояка до прибора. Если трубы уже подведены — выключите.,,,,,
+plumb.toilet,pl.toilet,Унитаз,1,pcs,0,0,PL-WC-COMPACT,W-PL-WC,pcs,1,,,,"Компакт — ставится на пол за час. Подвесной — красиво и легко мыть пол, но нужна инсталляция и фальшстена.",,,,,
+plumb.toilet,pl.install,Инсталляция (для подвесного),1,pcs,0,1,,W-PL-INSTALL,pcs,2,,,,Рама с бачком в стене + кнопка. Монтируется до плитки.,,,,,
+plumb.toilet,pl.pipes,Разводка труб к точке,1,pcs,0,1,PL-PIPE-KIT,W-PL-PIPES,pcs,3,,,,Если трубы уже подведены — выключите.,,,,,
+plumb.vanity,pl.vanity,Раковина,1,pcs,0,0,PL-SINK-TUMBA-60,W-PL-SINK,pcs,1,,,,С тумбой — хранение и скрытые трубы. На пьедестале — дешевле.,,,,,
+plumb.vanity,pl.mixer,Смеситель,1,pcs,0,0,PL-MIX-SINK,W-PL-MIX,pcs,2,,,,"Однорычажный, с аэратором — экономит воду.",,,,,
+plumb.vanity,pl.siphon,Сифон и подводка,1,pcs,0,0,PL-SIPHON-SINK,,pcs,3,,,,Входит в работу установки.,,,,,
+plumb.vanity,pl.pipes,Разводка труб к точке,1,pcs,0,1,PL-PIPE-KIT,W-PL-PIPES,pcs,4,,,,Если трубы уже подведены — выключите.,,,,,
+plumb.washer,pl.washer,Подключение,1,pcs,0,0,PL-WASHER-KIT,W-PL-WASHER,pcs,1,,,,"Кран, сифон для слива, розетка IP44 с УЗО. Сама машина — ваша.",,,,,
+plumb.washer,pl.pipes,Разводка труб к точке,1,pcs,0,1,PL-PIPE-KIT,W-PL-PIPES,pcs,2,,,,Если трубы уже подведены — выключите.,,,,,
+heat.radiator,heat.radiator,Радиатор (секции),1,qty,0,0,HT-BIMETAL,,qty,1,,,,Секций = площадь × 100 Вт ÷ 180 Вт на секцию (≈0.56 секции на 1 м²). Угловая комната или большие окна — на 20 % больше.,,0.56,4,4|6|8|10|12|14,
+heat.radiator,heat.install,Монтаж и подключение,1,pcs,0,0,HT-KIT,W-HT-INST,pcs,2,,,,"Кронштейны, краны на подаче и обратке, байпас, опрессовка. Стояк отключает УК — закладывайте день.",,,,,
+heat.radiator,heat.thermo,Терморегулятор,1,pcs,0,1,HT-THERMO,,pcs,3,,,,Головка держит заданную температуру. Экономит до 20 % тепла при счётчике.,,,,,

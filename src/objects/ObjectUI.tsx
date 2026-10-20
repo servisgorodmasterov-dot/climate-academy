@@ -366,13 +366,37 @@ export function ObjectCalculator({ ctx, selection, params, setParams }: Props) {
                       </div>
                     </div>
                   )}
+                  {l.slot.per === 'qty' && (
+                    <div className="layer-row">
+                      <span>Сколько</span>
+                      <div className="chips-row">
+                        {(l.slot.qtyOptions.length ? l.slot.qtyOptions : [1, 2, 3, 4, 6, 8]).map((q) => (
+                          <button key={q} className={l.count === q ? 'mini on' : 'mini'} onClick={() => setLayer(l.slot.slot, q)}>
+                            {q}
+                          </button>
+                        ))}
+                        <label className="mini qty-input">
+                          <input type="number" min={0} max={99} value={l.count} onChange={(e) => setLayer(l.slot.slot, Math.max(0, Math.min(99, Number(e.target.value) || 0)))} aria-label="Своё количество" />
+                        </label>
+                      </div>
+                      {l.slot.qtyPerM2 != null && layers[l.slot.slot] == null && (
+                        <span className="muted small">Подобрано по площади {fq(m.floor_m2)} м² — можно изменить</span>
+                      )}
+                    </div>
+                  )}
                   <div className="step-calc">
+                    {l.slot.per === 'qty' ? (
+                      <div>
+                        <span className="muted">Количество:</span> <b>{l.count} {unitLabel(l.product.unit)}</b>
+                      </div>
+                    ) : (
                     <div>
                       <span className="muted">Расход:</span> {fq(l.rate)} {unitLabel(l.product.unit)}/{perUnit(l.per)}
                       {l.layer != null ? ' на 1 мм' : ''} × {fq(m[l.per])}
                       {l.layer != null ? ` × ${fq(l.layer)} мм` : ''}
                       {ruleFor(l.slot, l.product).waste ? ` + запас ${Math.round(ruleFor(l.slot, l.product).waste * 100)} %` : ''} = <b>{fq(l.need)} {unitLabel(l.product.unit)}</b>
                     </div>
+                    )}
                     <div>
                       <span className="muted">Купить:</span> <b>{packText(l.product, c.packs)}</b> — {money(c.material)}
                     </div>
@@ -383,7 +407,7 @@ export function ObjectCalculator({ ctx, selection, params, setParams }: Props) {
                     ))}
                     {work && (
                       <div>
-                        <span className="muted">Работа:</span> {work.name.toLowerCase()} — {money(work.price)}/{unitLabel(work.unit)} × {fq(m[l.slot.workPer])}
+                        <span className="muted">Работа:</span> {work.name.toLowerCase()} — {money(work.price)}/{unitLabel(work.unit)} × {fq(l.slot.workPer === 'qty' ? l.count : m[l.slot.workPer])}
                         {workK > 1 ? ` × ${fq(Math.round(workK * 100) / 100)} (слой ${fq(l.layer!)} мм толще ${fq(l.slot.workLayerMm!)} мм)` : ''} = <b>{money(c.work)}</b>
                       </div>
                     )}

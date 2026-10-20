@@ -143,6 +143,17 @@ export function AcademyPanel() {
                       </button>
                     )}
                   </div>
+                  {(() => {
+                    const p = cur ? findProduct(catalog, cur) : undefined;
+                    if (!p || !(p.purpose || p.principle)) return null;
+                    return (
+                      <div className="picked-note">
+                        <b>{p.name}</b>
+                        {p.purpose && <span> — {p.purpose.toLowerCase()}</span>}
+                        {p.principle && <p className="muted small">{p.principle}</p>}
+                      </div>
+                    );
+                  })()}
                 </section>
               );
             })}

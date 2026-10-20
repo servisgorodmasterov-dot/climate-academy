@@ -378,6 +378,17 @@ export function buildCatalog(values: SheetValues, opts: { status: DataStatus; so
           .filter((x): x is number => x != null && x > 0),
         workLayerMm: parseNumber(r.get('work_layer_mm')),
         hint: r.get('hint') || '',
+        qtyDefault: parseNumber(r.get('qty_default')),
+        qtyPerM2: parseNumber(r.get('qty_per_m2')),
+        qtyMin: parseNumber(r.get('qty_min')),
+        qtyOptions: (r.get('qty_options') || '')
+          .split(/[|;]/)
+          .map((x) => parseNumber(x.trim()))
+          .filter((x): x is number => x != null && x >= 0),
+        qtySumOf: (r.get('qty_sum_of') || '')
+          .split(/[|;]/)
+          .map((x) => x.trim())
+          .filter(Boolean),
       });
     }
   objectSlots.sort((a, b) => a.order - b.order);

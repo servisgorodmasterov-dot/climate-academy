@@ -116,6 +116,7 @@ export const BASES = {
   perimeter_m: 'периметр помещения, м',
   ceiling_m2: 'площадь потолка, м²',
   length_m: 'длина предмета, м',
+  qty: 'количество, шт',
 } as const;
 export type Basis = keyof typeof BASES;
 
@@ -161,6 +162,14 @@ export interface ObjectSlotDef {
   workLayerMm: number | null;
   /** Зачем нужен шаг и когда его можно пропустить — подсказка для клиента. */
   hint: string;
+  /** Для позиций по штукам (per = qty): сколько по умолчанию, или сколько на 1 м² пола (с минимумом). */
+  qtyDefault: number | null;
+  qtyPerM2: number | null;
+  qtyMin: number | null;
+  /** Варианты количества на кнопках: «4|6|8|10» */
+  qtyOptions: number[];
+  /** Количество = сумма количеств этих позиций (кабель = розетки + выключатели + выводы) */
+  qtySumOf: string[];
 }
 
 /** Лист «Опт»: условия коллективной закупки. Свои пороги у каждого товара, работы и поставщика — без единого процента. */
@@ -330,10 +339,13 @@ export type ElementKind =
   | 'entrance'
   | 'window'
   | 'room_walls'
+  | 'room_ceiling'
+  | 'room_electric'
+  | 'room_light'
   | 'furniture';
 
 /** Объекты, которые рисует каркас квартиры (стены, проёмы, мебель), а не отдельная 3D-модель. */
-export const GEOMETRY_KINDS: ElementKind[] = ['door', 'entrance', 'window', 'room_walls', 'furniture'];
+export const GEOMETRY_KINDS: ElementKind[] = ['door', 'entrance', 'window', 'room_walls', 'room_ceiling', 'room_electric', 'room_light', 'furniture'];
 
 export interface LayoutElement {
   id: string;

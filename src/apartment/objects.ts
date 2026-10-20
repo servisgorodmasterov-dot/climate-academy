@@ -64,6 +64,8 @@ export function selectableObjects(layout: Layout, catalog: Catalog | null = null
         ? [e.position[0], 0.05, e.position[2]]
         : e.kind === 'room_walls'
           ? [e.position[0], 2.0, e.position[2]]
+          : e.kind === 'room_ceiling' || e.kind === 'room_light' || e.kind === 'room_electric'
+            ? e.position
           : e.kind === 'furniture'
             ? [e.position[0], 1.0, e.position[2]]
           : [e.position[0], e.position[1] + (e.kind === 'leak_sensor' ? 0.12 : e.kind === 'door' || e.kind === 'entrance' ? 0.75 : 0.22), e.position[2]];

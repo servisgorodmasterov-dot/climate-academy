@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DemoCatalogProvider, parseSheetRef } from '../catalog/CatalogProvider';
-import { getLayout } from '../apartment/layout';
+import { getLayout, roomArea, roomPerimeter } from '../apartment/layout';
 import { generateObjectElements, measure, roomWallRects } from '../objects/geometry';
 import { bindObjectTypes, objectLines, objectSelection, withGeneratedObjects } from '../objects/logic';
 import { computeEstimate } from '../estimate/engine';
@@ -13,7 +13,7 @@ const layout = bindObjectTypes(withGeneratedObjects(base), catalog);
 describe('конфигуратор объектов', () => {
   it('демо-каталог читает листы «Категории», «Объекты» и «Позиции объектов» без замечаний', () => {
     expect(catalog.categories.length).toBeGreaterThanOrEqual(12);
-    expect(catalog.objectTypes.map((t) => t.id)).toEqual(['door.interior', 'door.entrance', 'window', 'wall.finish', 'furniture.kitchen', 'furniture.bed', 'furniture.wardrobe', 'furniture.sofa', 'wall.wet', 'floor.wet', 'floor.dry']);
+    expect(catalog.objectTypes.map((t) => t.id)).toEqual(['door.interior', 'door.entrance', 'window', 'wall.finish', 'furniture.kitchen', 'furniture.bed', 'furniture.wardrobe', 'furniture.sofa', 'wall.wet', 'floor.wet', 'floor.dry', 'ceiling.stretch', 'electric.room', 'light.room', 'plumb.bathtub', 'plumb.toilet', 'plumb.vanity', 'plumb.washer', 'heat.radiator']);
     expect(catalog.issues.filter((i) => ['Объекты', 'Позиции объектов', 'Категории'].includes(i.sheet))).toEqual([]);
     expect(catalog.issues.filter((i) => /Нет цены/.test(i.message))).toEqual([]);
   });
@@ -128,6 +128,40 @@ describe('конфигуратор объектов', () => {
     expect(est.lines.find((l) => l.refId === 'DAMPER-TAPE')!.needQty).toBeCloseTo(m.perimeter_m, 1);
     expect(est.lines.find((l) => l.refId === 'WL-PRIMER')!.needQty).toBeCloseTo(m.floor_m2 * (0.15 + 0.2), 1);
     expect(est.lines.find((l) => l.refId === 'FL-FILM-200')!.needQty).toBeCloseTo(m.floor_m2 * 1.15, 1); // плёнка один раз, без старого правила
+  });
+
+  it('потолок, электрика, свет — в каждой комнате; радиатор и сантехника — по месту; количество точек по площади', () => {
+    const living = layout.rooms.find((r) => r.id === 'living')!;
+    const area = roomArea(living);
+    const el = (kind: string, room: string) => layout.elements.find((e) => e.kind === kind && e.roomId === room)!;
+    expect(el('room_ceiling', 'living').typeId).toBe('ceiling.stretch');
+    expect(el('room_electric', 'living').typeId).toBe('electric.room');
+    expect(el('room_light', 'bath').typeId).toBe('light.room');
+    expect(el('radiator', 'living').typeId).toBe('heat.radiator');
+    expect(layout.elements.find((e) => e.kind === 'furniture' && e.label.startsWith('Ванна'))!.typeId).toBe('plumb.bathtub');
+    expect(layout.elements.find((e) => e.kind === 'furniture' && e.label.startsWith('Унитаз'))!.typeId).toBe('plumb.toilet');
+    // электрика: розетки 0.5 на м² (гостиная 20 м² → 10), кабель — по сумме точек
+    const e = el('room_electric', 'living');
+    const lines = objectLines(catalog, layout, e, objectSelection(catalog, 'electric.room', 'comfort'));
+    const sock = lines.find((l) => l.slot.slot === 'el.socket')!;
+    expect(sock.count).toBe(Math.ceil(area * 0.5));
+    expect(sock.need).toBe(sock.count);
+    expect(sock.workQty).toBe(sock.count);
+    const user = objectLines(catalog, layout, e, objectSelection(catalog, 'electric.room', 'comfort'), { 'el.socket': 14 }).find((l) => l.slot.slot === 'el.socket')!;
+    expect(user.count).toBe(14);
+    // кабель — по сумме точек: розетки + выключатели + выводы света
+    const cable = objectLines(catalog, layout, e, objectSelection(catalog, 'electric.room', 'comfort')).find((l) => l.slot.slot === 'el.cable')!;
+    const sw = lines.find((l) => l.slot.slot === 'el.switch')!;
+    const lt = lines.find((l) => l.slot.slot === 'el.light')!;
+    expect(cable.count).toBe(sock.count + sw.count + lt.count);
+    // радиатор: секций = 0.56 × площадь, минимум 4
+    const rad = objectLines(catalog, layout, el('radiator', 'living'), objectSelection(catalog, 'heat.radiator', 'comfort')).find((l) => l.slot.slot === 'heat.radiator')!;
+    expect(rad.count).toBe(Math.max(4, Math.ceil(area * 0.56)));
+    expect(rad.product?.id).toBe('HT-BIMETAL');
+    // потолок: полотно по площади, багет по периметру
+    const ceil = objectLines(catalog, layout, el('room_ceiling', 'living'), objectSelection(catalog, 'ceiling.stretch', 'comfort'));
+    expect(ceil.find((l) => l.slot.slot === 'ceil.canvas')!.need).toBeCloseTo(area * 1.05, 1);
+    expect(ceil.find((l) => l.slot.slot === 'ceil.profile')!.need).toBeCloseTo(roomPerimeter(living) * 1.05, 1);
   });
 
   it('две двери с одинаковой комплектацией складываются в смете без дублей и округляются по упаковке', () => {

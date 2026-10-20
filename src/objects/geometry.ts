@@ -27,11 +27,11 @@ export function openingPlace(layout: Layout, w: Wall, o: Opening) {
 }
 
 const KIND_OF: Record<Opening['kind'], ElementKind> = { door: 'door', entrance: 'entrance', window: 'window' };
-const NAMES: Record<string, string> = { door: 'Дверь', entrance: 'Входная дверь', window: 'Окно', room_walls: 'Стены', furniture: 'Мебель' };
+const NAMES: Record<string, string> = { door: 'Дверь', entrance: 'Входная дверь', window: 'Окно', room_walls: 'Стены', room_ceiling: 'Потолок', room_electric: 'Электрика', room_light: 'Свет', furniture: 'Мебель' };
 
 /** Типы мебели, которые можно выбирать и менять; длина по умолчанию (м) для расчёта. */
-export const FURNITURE_DEFAULT_LENGTH: Record<string, number> = { kitchen_run: 2.3, bed: 1.7, wardrobe: 2.0, hall_wardrobe: 1.6, sofa: 2.2, dining_table: 1.2 };
-export const FURNITURE_NAMES: Record<string, string> = { kitchen_run: 'Кухня', bed: 'Кровать', wardrobe: 'Шкаф', hall_wardrobe: 'Шкаф в прихожей', sofa: 'Диван', dining_table: 'Стол' };
+export const FURNITURE_DEFAULT_LENGTH: Record<string, number> = { kitchen_run: 2.3, bed: 1.7, wardrobe: 2.0, hall_wardrobe: 1.6, sofa: 2.2, dining_table: 1.2, bathtub: 1.7, toilet: 0.4, vanity: 0.6, washer: 0.6 };
+export const FURNITURE_NAMES: Record<string, string> = { kitchen_run: 'Кухня', bed: 'Кровать', wardrobe: 'Шкаф', hall_wardrobe: 'Шкаф в прихожей', sofa: 'Диван', dining_table: 'Стол', bathtub: 'Ванна', toilet: 'Унитаз', vanity: 'Раковина', washer: 'Стиральная машина' };
 
 /** Все объекты конфигуратора квартиры (без привязки к каталогу — тип назначается позже по листу «Объекты»). */
 export function generateObjectElements(layout: Layout): LayoutElement[] {
@@ -61,14 +61,15 @@ export function generateObjectElements(layout: Layout): LayoutElement[] {
     });
   }
   for (const r of layout.rooms) {
-    out.push({
-      id: `walls-${r.id}`,
-      kind: 'room_walls',
-      roomId: r.id,
-      rooms: [r.id],
-      position: [(r.rect[0] + r.rect[2]) / 2, 1.5, (r.rect[1] + r.rect[3]) / 2],
-      label: `${NAMES.room_walls}: ${r.name}`,
-    });
+    const cx = (r.rect[0] + r.rect[2]) / 2;
+    const cz = (r.rect[1] + r.rect[3]) / 2;
+    const w = r.rect[2] - r.rect[0];
+    const d = r.rect[3] - r.rect[1];
+    out.push({ id: `walls-${r.id}`, kind: 'room_walls', roomId: r.id, rooms: [r.id], position: [cx, 1.5, cz], label: `${NAMES.room_walls}: ${r.name}` });
+    // объекты помещения: потолок, электрика и свет — метки разнесены по углам, чтобы не слипались
+    out.push({ id: `ceiling-${r.id}`, kind: 'room_ceiling', roomId: r.id, rooms: [r.id], position: [cx - w * 0.25, layout.ceilingHeight, cz - d * 0.25], label: `${NAMES.room_ceiling}: ${r.name}` });
+    out.push({ id: `light-${r.id}`, kind: 'room_light', roomId: r.id, rooms: [r.id], position: [cx + w * 0.25, layout.ceilingHeight - 0.3, cz + d * 0.25], label: `${NAMES.room_light}: ${r.name}` });
+    out.push({ id: `electric-${r.id}`, kind: 'room_electric', roomId: r.id, rooms: [r.id], position: [cx + w * 0.3, 0.3, cz - d * 0.3], label: `${NAMES.room_electric}: ${r.name}` });
   }
   layout.furniture.forEach((f, i) => {
     if (!(f.type in FURNITURE_DEFAULT_LENGTH)) return;
@@ -204,5 +205,6 @@ export function measure(layout: Layout, el: LayoutElement): Record<Basis, number
     floor_m2: room ? roomArea(room) : 0,
     perimeter_m: room ? roomPerimeter(room) : 0,
     ceiling_m2: room ? roomArea(room) : 0,
+    qty: 1,
   };
 }

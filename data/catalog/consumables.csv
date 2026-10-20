@@ -22,3 +22,7 @@ WL-PRIMER,floor.screed.base,0.15,m2,,Грунт перед стяжкой
 WL-PRIMER,floor.self,0.2,m2,,Грунт перед наливным полом (обязательно — иначе пузыри)
 WL-PRIMER,floor.wet.screed,0.15,m2,,Грунт перед стяжкой
 WL-BEACON-6,floor.wet.screed,0.3,m2,,Маяки для стяжки
+EL-BOX,el.socket,1,qty,,Подрозетник на каждую розетку
+EL-BOX,el.switch,1,qty,,Подрозетник на каждый выключатель
+LT-PSU,light.strip,0.2,m,,Блок питания на каждые 5 м ленты
+WP-TAPE,pl.bathtub,0.6,pcs,,Лента гидроизоляции по борту ванны

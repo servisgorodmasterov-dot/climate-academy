@@ -40,13 +40,14 @@ export function pickType(catalog: Catalog, placement: string, roomType: string |
 
 /** Назначает объектам тип и академию по каталогу. Тип убрали из таблицы — объект перестаёт быть выбираемым. */
 export function bindObjectTypes(layout: Layout, catalog: Catalog | null): Layout {
-  const generated = new Set(['door', 'entrance', 'window', 'room_walls', 'furniture', 'floor']);
+  const generated = new Set(['door', 'entrance', 'window', 'room_walls', 'room_ceiling', 'room_electric', 'room_light', 'furniture', 'floor']);
   return {
     ...layout,
     elements: layout.elements.map((e) => {
-      if (!generated.has(e.kind)) return e;
       const roomType = layout.rooms.find((r) => r.id === e.roomId)?.type;
       const t = catalog ? pickType(catalog, placementOf(e, layout), roomType) : undefined;
+      // встроенные объекты (радиатор, щит…): тип из таблицы подключает их к конфигуратору, без типа — как были
+      if (!generated.has(e.kind)) return t ? { ...e, typeId: t.id, academy: academyIdForType(t.id) } : e;
       // пол: если в таблице нет типа для этой комнаты — остаётся своя «академия» пола (ламинат)
       if (e.kind === 'floor' && !t) return e;
       if (!t) return { ...e, typeId: undefined, academy: undefined };
@@ -109,13 +110,27 @@ export interface ObjectLine {
   per: Basis;
   /** Значения баз для расходников: m2, m, pcs и mm — толщина слоя */
   basis: Record<string, number>;
+  /** Количество для позиций по штукам (розетки, светильники) */
+  count: number;
 }
 
-/** Толщины слоёв, выбранные пользователем: { 'wall.plaster': 15 } */
+/** Толщины слоёв или количества, выбранные пользователем: { 'wall.plaster': 15, 'el.socket': 8 } */
 export type Layers = Record<string, number>;
 
 /** Толщина слоя позиции: выбор пользователя или значение из таблицы. */
 export const layerOf = (slot: ObjectSlotDef, layers?: Layers) => (slot.layerMm == null ? null : layers?.[slot.slot] ?? slot.layerMm);
+
+/**
+ * Количество для позиций «по штукам» (per = qty): из выбора пользователя, иначе — из таблицы
+ * (qty_default или qty_per_m2 × площадь пола, округлённые вверх).
+ */
+export const qtyOf = (slot: ObjectSlotDef, m: Record<Basis, number>, layers?: Layers) => {
+  if (slot.per !== 'qty') return 1;
+  const user = layers?.[slot.slot];
+  if (user != null) return user;
+  if (slot.qtyPerM2 != null) return Math.max(slot.qtyMin ?? 0, Math.ceil(slot.qtyPerM2 * m.floor_m2 - 1e-9));
+  return slot.qtyDefault ?? 1;
+};
 
 /** Расчёт позиций одного объекта. */
 export function objectLines(catalog: Catalog, layout: Layout, el: LayoutElement, selection: Selection, layers?: Layers): ObjectLine[] {
@@ -123,24 +138,31 @@ export function objectLines(catalog: Catalog, layout: Layout, el: LayoutElement,
   if (!t) return [];
   const m = measure(layout, el);
   const base = { ...m, m2: m.wall_m2 || m.opening_m2 || m.floor_m2, m: m.opening_perimeter_m || m.perimeter_m };
-  return slotsOfType(catalog, t.id).map((slot) => {
+  const slots = slotsOfType(catalog, t.id);
+  const counts: Record<string, number> = {};
+  for (const slot of slots) counts[slot.slot] = qtyOf(slot, m, layers);
+  for (const slot of slots) if (slot.qtySumOf.length && layers?.[slot.slot] == null) counts[slot.slot] = slot.qtySumOf.reduce((a, k) => a + (selection[k]?.productId === null ? 0 : counts[k] ?? 0), 0);
+  return slots.map((slot) => {
     const layer = layerOf(slot, layers);
-    // m2 для расходников шага — площадь, на которую считается сам шаг (пол — площадь пола, стены — стен)
-    const basis = { ...base, m2: slot.per.endsWith('_m2') ? m[slot.per] : base.m2, mm: layer ?? 0 };
+    const count = counts[slot.slot];
+    const mq = { ...m, qty: count };
+    // m2 для расходников шага — площадь, на которую считается сам шаг (пол — площадь пола, стены — стен); qty — штуки
+    const basis = { ...base, m2: slot.per.endsWith('_m2') ? m[slot.per] : base.m2, mm: layer ?? 0, qty: count };
     const choice = selection[slot.slot];
     const pid = choice === undefined ? slot.defaultProductId : choice.productId;
     const product = pid ? findProduct(catalog, pid) : undefined;
-    if (!product) return { slot, product: undefined, need: 0, workId: null, workQty: 0, layer, rate: slot.qty, per: slot.per, basis };
+    if (!product) return { slot, product: undefined, need: 0, workId: null, workQty: 0, layer, rate: slot.qty, per: slot.per, basis, count };
     const r = ruleFor(slot, product);
     // работа при слое толще нормы дорожает пропорционально толщине
     const workK = layer != null && slot.workLayerMm && layer > slot.workLayerMm ? layer / slot.workLayerMm : 1;
     return {
       slot,
       product,
-      need: round2(r.rate * m[r.per] * (layer ?? 1) * (1 + r.waste)),
+      need: round2(r.rate * mq[r.per] * (layer ?? 1) * (1 + r.waste)),
       workId: r.workId,
-      workQty: round2(m[r.workPer] * workK),
+      workQty: round2(mq[r.workPer] * workK),
       layer,
+      count,
       rate: r.rate,
       per: r.per,
       basis,
