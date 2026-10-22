@@ -1133,8 +1133,41 @@ const furnMats = [];
 function trackMats(obj) {
   obj.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; const ms = Array.isArray(o.material) ? o.material : [o.material]; ms.forEach(m => { if (!furnMats.includes(m)) { m.userData.op = m.opacity; m.userData.tr = m.transparent; furnMats.push(m); } }); } });
 }
+// лёгкая мебель из простых форм вместо тяжёлых сканированных моделей
+const PROC = {
+  sofa() {
+    const g = new THREE.Group(), fab = new THREE.MeshStandardMaterial({ color: 0x8e99a5, roughness: 0.95 }), cush = new THREE.MeshStandardMaterial({ color: 0x9aa5b1, roughness: 0.95 }), leg = MAT.dark;
+    const add = (m, x, y, z) => { m.position.set(x, y, z); g.add(m); };
+    add(rbox(2.2, 0.36, 0.9, 0.05, fab), 0, 0.26, 0);
+    add(rbox(2.2, 0.48, 0.2, 0.06, fab), 0, 0.62, -0.35);
+    for (const x of [-1.02, 1.02]) add(rbox(0.18, 0.56, 0.9, 0.06, fab), x, 0.36, 0);
+    for (const x of [-0.46, 0.46]) { add(rbox(0.9, 0.12, 0.66, 0.05, cush), x, 0.5, 0.08); add(rbox(0.86, 0.4, 0.14, 0.06, cush), x, 0.72, -0.2); }
+    for (const x of [-1.0, 1.0]) for (const z of [-0.36, 0.36]) add(new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.08, 8), leg), x, 0.04, z);
+    return g;
+  },
+  armchair() {
+    const g = new THREE.Group(), fab = new THREE.MeshStandardMaterial({ color: 0xd9cfc0, roughness: 0.95 });
+    const add = (m, x, y, z) => { m.position.set(x, y, z); g.add(m); };
+    add(rbox(0.82, 0.34, 0.8, 0.05, fab), 0, 0.27, 0);
+    add(rbox(0.82, 0.5, 0.16, 0.06, fab), 0, 0.64, -0.32);
+    for (const x of [-0.36, 0.36]) add(rbox(0.12, 0.42, 0.78, 0.05, fab), x, 0.46, 0);
+    add(rbox(0.6, 0.1, 0.58, 0.04, fab), 0, 0.48, 0.06);
+    for (const x of [-0.34, 0.34]) for (const z of [-0.32, 0.32]) add(new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 8), MAT.oak), x, 0.05, z);
+    return g;
+  },
+  bed_sand() {
+    const g = new THREE.Group(), frame = MAT.oak, sand = new THREE.MeshStandardMaterial({ color: 0xcdbb9c, roughness: 0.95 }), sheet = new THREE.MeshStandardMaterial({ color: 0xf3efe7, roughness: 0.9 }), blanket = new THREE.MeshStandardMaterial({ color: 0xb79e7e, roughness: 0.95 });
+    const add = (m, x, y, z) => { m.position.set(x, y, z); g.add(m); };
+    add(rbox(1.72, 0.28, 2.1, 0.03, frame), 0, 0.14, 0);
+    add(rbox(1.62, 0.22, 2.0, 0.06, sheet), 0, 0.39, 0.02);
+    add(rbox(1.76, 0.95, 0.1, 0.04, sand), 0, 0.55, -1.06);
+    for (const x of [-0.4, 0.4]) add(rbox(0.62, 0.13, 0.36, 0.06, sheet), x, 0.56, -0.74);
+    add(rbox(1.66, 0.06, 1.25, 0.03, blanket), 0, 0.53, 0.38);
+    return g;
+  },
+};
 async function loadFurniture(onProgress) {
-  const names = [...new Set(FURN.map(f => f.m))];
+  const names = [...new Set(FURN.map(f => f.m))].filter(n => !PROC[n]);
   const cache = {}; let done = 0;
   await Promise.all(names.map(n => new Promise(res => {
     fetch(`m/${n}.json`).then(r => r.json()).then(j => { const bin = atob(j.glb); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); gltf.parse(u8.buffer, '', g => { cache[n] = g.scene; done++; onProgress(done, names.length); res(); }, () => { done++; onProgress(done, names.length); res(); }); }).catch(() => { done++; onProgress(done, names.length); res(); });
@@ -1145,7 +1178,7 @@ async function loadFurniture(onProgress) {
     o.material = Array.isArray(o.material) ? out : out[0];
   });
   for (const f of FURN) {
-    const src = cache[f.m]; if (!src) continue;
+    const src = cache[f.m] || (PROC[f.m] && PROC[f.m]()); if (!src) continue;
     const o = src.clone(true);
     if (f.sx) o.scale.x = f.sx;
     const g = new THREE.Group(); g.add(o); g.position.copy(L(...f.pos)); g.rotation.y = f.rot;
