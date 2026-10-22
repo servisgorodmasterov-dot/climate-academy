@@ -442,7 +442,8 @@ footer b{color:var(--ink)}
 @media (max-width:760px){.sides{grid-template-columns:1fr}}
 .side{border:1px solid var(--band-line);border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;gap:8px}
 .side.good{border-color:color-mix(in srgb,var(--ok) 60%,var(--band-line))}
-.side svg{width:100%;max-width:360px;height:auto;color:var(--band-fg)}
+.side svg{width:100%;max-width:440px;height:auto;color:var(--band-fg)}
+.side .btn{align-self:flex-start}
 .side svg text{font:600 11px var(--f-mono);fill:var(--band-muted)}
 .side b{font:700 17px var(--f-display)}
 .side small{color:var(--band-muted);font-size:13.5px;line-height:1.45}
@@ -2596,16 +2597,47 @@ $('#rough').addEventListener('change', e => { const v = e.target.value; const i 
 $('#priceTable').innerHTML = `<thead><tr><th>Мощность</th><th>Трасса, ₸/м</th><th>2 этапа</th><th>1 этап</th><th>2 этап</th><th>Кронштейны</th></tr></thead><tbody>${MOUNT_TABLE.map(m => `<tr><td>${(m.btu / 1000).toString().padStart(2, '0')} · ${m.btu.toLocaleString('ru-RU')} BTU<br><small>${m.pipe}</small></td><td>${fmt(m.pp)}</td><td>${fmt(m.f2)}</td><td>${fmt(m.s1)}</td><td>${fmt(m.s2)}</td><td>${fmt(m.br)}</td></tr>`).join('')}<tr><td>Доп. штроба под блоком<br><small>слева от окна · оценка</small></td><td colspan="5">${fmt(CHASE_M)} за метр</td></tr></tbody>`;
 function renderSides() {
   const L1 = routeStats('living'), L2 = routeStats('bedroom'), c1 = routeCost(L1), c2 = routeCost(L2);
-  const svg = left => `<svg viewBox="0 0 260 150" role="img" aria-label="${left ? 'Блок слева от окна: трубки от окна, штроба под блоком' : 'Блок справа от окна: трубки к окну, трасса сразу в стену'}">
-    <rect x="10" y="10" width="240" height="14" fill="currentColor" opacity=".25"/><rect x="${left ? 150 : 60}" y="10" width="60" height="14" fill="#7CC4FF"/><text x="${left ? 180 : 90}" y="40" text-anchor="middle">окно</text>
-    <rect x="${left ? 10 : 236}" y="24" width="14" height="116" fill="currentColor" opacity=".25"/>
-    <rect x="${left ? 24 : 214}" y="70" width="22" height="64" rx="4" fill="currentColor" opacity=".85"/><text x="${left ? 52 : 208}" y="104" text-anchor="${left ? 'start' : 'end'}">внутр. блок</text>
-    ${left ? '<path d="M35 134 L17 134 L17 52 L-2 52" stroke="#FF6A13" stroke-width="4" fill="none" stroke-linejoin="round"/><path d="M17 134 L17 52" stroke="#B0352C" stroke-width="10" opacity=".35"/><text x="52" y="60" style="fill:#FF6A13">штроба +' + q1(L2.chase) + ' м</text>' : '<path d="M225 70 L243 70 L262 70" stroke="#12865A" stroke-width="4" fill="none"/><text x="205" y="60" text-anchor="end" style="fill:#12865A">сразу в стену</text>'}
-    <text x="130" y="148" text-anchor="middle" style="font-size:10px">трубки блока ${left ? '↓ смотрят от окна' : '↑ смотрят к окну'}</text></svg>`;
+  // объёмная схема угла комнаты по настоящим координатам трассы из 3D: стена с окном, боковая стена, блоки, трасса, штроба
+  const iso = id => {
+    const left = id === 'bedroom', c = routeCenter(id), a = ACS[id], dI = DEV[a.dev], dO = DEV[a.out];
+    const cx = left ? 0 : 9, s = 64, ax = 0.866 * s, ay = 0.5 * s, O = [left ? 110 : 250, 190], k = left ? -1 : 1;
+    const UW = ([x, y, z]) => [left ? x - cx : cx - x, z];
+    const P = (u, w, y) => [O[0] - k * u * ax + k * w * ax, O[1] + u * ay + w * ay - y * s];
+    const pt = q => { const [u, w] = UW(q); return P(u, w, q[1]); };
+    const poly = (arr, attrs) => `<polygon points="${arr.map(q => q.map(v => v.toFixed(1)).join(',')).join(' ')}" ${attrs}/>`;
+    const line = (arr, attrs) => `<polyline points="${arr.map(q => q.map(v => v.toFixed(1)).join(',')).join(' ')}" fill="none" ${attrs}/>`;
+    const H = 2.7, U = 3.9, Wd = 1.7;
+    const win = left ? [1.2, 2.8] : [9 - 7.4, 9 - 5.4];
+    const [iu, iw] = UW(dI.pos), [ou, ow] = UW(dO.pos), y0 = dI.pos[1];
+    const ind = [P(0.05, iw - 0.43, y0 - 0.145), P(0.05, iw + 0.43, y0 - 0.145), P(0.05, iw + 0.43, y0 + 0.145), P(0.05, iw - 0.43, y0 + 0.145)];
+    const out = [P(ou - 0.4, ow, 0.225), P(ou + 0.4, ow, 0.225), P(ou + 0.4, ow, 0.775), P(ou - 0.4, ow, 0.775)];
+    const route = c.pts.map(pt), chase = c.chase ? c.chase.map(pt) : null, hole = pt(c.hole), port = pt(c.pts[0]);
+    const tx = (q, t, anc = 'middle', fill = 'var(--band-muted)', dy = 0) => `<text x="${q[0].toFixed(1)}" y="${(q[1] + dy).toFixed(1)}" text-anchor="${anc}" style="fill:${fill}">${t}</text>`;
+    const st = routeStats(id), col = left ? '#FF6A13' : '#3CCB8C';
+    return `<svg viewBox="0 0 360 380" role="img" aria-label="Угол комнаты: ${left ? 'блок слева от окна, трубки от окна, доп. штроба под блоком' : 'блок справа от окна, трубки к окну, без доп. штробы'}">
+      ${poly([P(0, 0, 0), P(U, 0, 0), P(U, 0, H), P(0, 0, H)], 'fill="currentColor" opacity=".10" stroke="currentColor" stroke-opacity=".25"')}
+      ${poly([P(0, 0, 0), P(0, Wd, 0), P(0, Wd, H), P(0, 0, H)], 'fill="currentColor" opacity=".16" stroke="currentColor" stroke-opacity=".25"')}
+      ${poly([P(win[0], 0, 0.85), P(win[1], 0, 0.85), P(win[1], 0, 2.35), P(win[0], 0, 2.35)], 'fill="#7CC4FF" opacity=".55"')}
+      ${tx(P((win[0] + win[1]) / 2, 0, 1.6), 'окно', 'middle', '#0E1013')}
+      ${poly(out, 'fill="none" stroke="currentColor" stroke-dasharray="4 3" opacity=".7"')}
+      ${tx(P(ou, ow, 0.0), 'наружный блок (снаружи)', 'middle', 'var(--band-muted)', 14)}
+      ${chase ? line(chase, 'stroke="#B0352C" stroke-width="14" stroke-linecap="round" opacity=".55"') : ''}
+      ${line(route, `stroke="${col}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"`)}
+      ${poly(ind, 'fill="#F1F1EC" stroke="#0E1013" stroke-width="1"')}
+      <circle cx="${port[0].toFixed(1)}" cy="${port[1].toFixed(1)}" r="4" fill="${col}"/>
+      <circle cx="${hole[0].toFixed(1)}" cy="${hole[1].toFixed(1)}" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+      ${tx([hole[0] + k * 12, hole[1] - 10], 'Ø65', left ? 'end' : 'start')}
+      ${tx(P(0.05, iw, y0 + 0.3), 'внутренний блок', 'middle', 'var(--band-fg)')}
+      ${chase ? tx([chase[1][0] + 12, chase[1][1] + 22], `доп. штроба ${q1(st.chase)} м под блоком`, 'start', '#FF8A5C') : tx([port[0] + k * 10, port[1] + 26], 'штроба сразу от торца блока', left ? 'start' : 'end', '#3CCB8C')}
+      ${tx([180, 372], `трасса ${q1(st.route)} м · всё время вниз, к отверстию под окном`)}
+    </svg>`;
+  };
+  const svg = left => iso(left ? 'bedroom' : 'living');
   $('#sides').innerHTML = `
-  <div class="side good"><p class="eyebrow">Справа от окна · гостиная №72</p>${svg(false)}<b>Трасса ${q1(L1.route)} м · без доп. штробы</b><small>Трубки смотрят к окну: штроба сразу от выхода трубок идёт напрямую, с уклоном вниз, к отверстию за наружным блоком под окном.</small><span class="price num">${fmt(c1.total)}<small>монтаж</small></span></div>
-  <div class="side"><p class="eyebrow">Слева от окна · спальня №72</p>${svg(true)}<b>Трасса ${q1(L2.route)} м · штроба ${q1(L2.chase)} м</b><small>Трубки смотрят от окна: трасса заходит с дальнего от окна торца, уходит вниз и идёт под блоком, дальше — напрямую с уклоном к отверстию под окном. Растут длина трассы, штроба и заделка.</small><span class="price num">${fmt(c2.total)}<small>+${fmt(c2.total - c1.total)}</small></span></div><p class="mono" style="grid-column:1/-1;font-size:12px;color:var(--band-muted);margin:0">Монтаж ${esc(P[AC_LIV_ID].name)} по прайсу ClimateCool: трасса, установка в 2 этапа, кронштейны; штроба — оценка. Без стоимости кондиционера.</p>`;
+  <div class="side good"><p class="eyebrow">Справа от окна · гостиная №72</p>${svg(false)}<b>Трасса ${q1(L1.route)} м · без доп. штробы</b><small>Трубки смотрят к окну: штроба сразу от выхода трубок идёт напрямую, с уклоном вниз, к отверстию за наружным блоком под окном.</small><span class="price num">${fmt(c1.total)}<small>монтаж</small></span><button class="btn btn-sm" type="button" data-side3d="living">Показать трассу в 3D</button></div>
+  <div class="side"><p class="eyebrow">Слева от окна · спальня №72</p>${svg(true)}<b>Трасса ${q1(L2.route)} м · штроба ${q1(L2.chase)} м</b><small>Трубки смотрят от окна: трасса заходит с дальнего от окна торца, уходит вниз и идёт под блоком, дальше — напрямую с уклоном к отверстию под окном. Растут длина трассы, штроба и заделка.</small><span class="price num">${fmt(c2.total)}<small>+${fmt(c2.total - c1.total)}</small></span><button class="btn btn-sm" type="button" data-side3d="bedroom">Показать трассу в 3D</button></div><p class="mono" style="grid-column:1/-1;font-size:12px;color:var(--band-muted);margin:0">Монтаж ${esc(P[AC_LIV_ID].name)} по прайсу ClimateCool: трасса, установка в 2 этапа, кронштейны; штроба — оценка. Без стоимости кондиционера.</p>`;
 }
+$('#sides').addEventListener('click', e => { const b = e.target.closest('[data-side3d]'); if (!b) return; document.getElementById('studio').scrollIntoView({ behavior: 'smooth' }); setMode('route'); setTimeout(() => $(`[data-rcam="${b.dataset.side3d}"]`)?.click(), 700); });
 $('#reqForm').addEventListener('submit', e => {
   e.preventDefault();
   const name = $('#fName').value.trim(), phone = $('#fPhone').value.trim(); const ok = $('#reqOk');
