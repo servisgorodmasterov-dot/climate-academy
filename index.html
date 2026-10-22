@@ -2775,18 +2775,23 @@ function startTour() {
   document.body.append(ring, card); showStep();
   card.addEventListener('click', e => { if (e.target.closest('[data-next]')) { tourI++; tourI >= TOUR.length ? endTour() : showStep(); } if (e.target.closest('[data-skip]')) endTour(); });
 }
-function showStep() {
-  const s = TOUR[tourI]; const el = $(s.el); el.scrollIntoView({ block: 'center', behavior: 'instant' in window ? 'auto' : 'auto' });
-  requestAnimationFrame(() => {
-    const r = el.getBoundingClientRect(); const pad = 8;
-    Object.assign(ring.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: Math.min(r.height + pad * 2, innerHeight - 20) + 'px' });
-    card.innerHTML = `<b>${s.t}</b><p>${s.p}</p><div class="nav-row"><button class="linkbtn" type="button" data-skip>Пропустить</button><span class="dots">${tourI + 1} / ${TOUR.length}</span><button class="btn btn-sm btn-primary" type="button" data-next>${tourI === TOUR.length - 1 ? 'Понятно' : 'Дальше'}</button></div>`;
-    const cw = Math.min(330, innerWidth - 32); let x = Math.min(Math.max(16, r.left + 16), innerWidth - cw - 16); let y = r.bottom + 16;
-    if (y + 190 > innerHeight) y = Math.max(16, Math.min(r.top + 16, innerHeight - 210));
-    card.style.left = x + 'px'; card.style.top = y + 'px';
-    card.querySelector('[data-next]').focus({ preventScroll: true });
-  });
+function placeTour() {
+  if (!ring || !card || !ring.isConnected) return;
+  const s = TOUR[tourI]; const el = $(s.el); if (!el) return;
+  const r = el.getBoundingClientRect(); const pad = 8;
+  const top = Math.max(8, r.top - pad), bottom = Math.min(innerHeight - 8, r.bottom + pad);
+  Object.assign(ring.style, { left: r.left - pad + 'px', top: top + 'px', width: r.width + pad * 2 + 'px', height: Math.max(0, bottom - top) + 'px' });
+  const cw = Math.min(330, innerWidth - 32); let x = Math.min(Math.max(16, r.left + 16), innerWidth - cw - 16); let y = r.bottom + 16;
+  if (y + 190 > innerHeight) y = Math.max(16, Math.min(r.top + 16, innerHeight - 210));
+  card.style.left = x + 'px'; card.style.top = y + 'px';
 }
+function showStep() {
+  const s = TOUR[tourI]; const el = $(s.el); el.scrollIntoView({ block: 'center', behavior: 'auto' });
+  card.innerHTML = `<b>${s.t}</b><p>${s.p}</p><div class="nav-row"><button class="linkbtn" type="button" data-skip>Пропустить</button><span class="dots">${tourI + 1} / ${TOUR.length}</span><button class="btn btn-sm btn-primary" type="button" data-next>${tourI === TOUR.length - 1 ? 'Понятно' : 'Дальше'}</button></div>`;
+  requestAnimationFrame(placeTour); setTimeout(placeTour, 450); setTimeout(placeTour, 1000);
+  card.querySelector('[data-next]').focus({ preventScroll: true });
+}
+addEventListener('scroll', placeTour, { passive: true }); addEventListener('resize', placeTour);
 function endTour() { ring?.remove(); card?.remove(); store.set('aca-toured', true); }
 $('#helpBtn').addEventListener('click', () => { document.getElementById('studio').scrollIntoView(); setTimeout(startTour, 350); });
 
