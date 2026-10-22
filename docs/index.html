@@ -895,7 +895,7 @@ const S = {
   sys: { cold: true, hot: true, sewer: true, heat: true },
   cart: store.get('aca-cart', {}), cartOpts: store.get('aca-cartopts', { install: true, neutral: 'unknown', deep: 'need', delivery: true }),
 };
-const lowEnd = (navigator.hardwareConcurrency || 8) <= 4 || matchMedia('(max-width: 700px)').matches;
+const lowEnd = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4 || matchMedia('(max-width: 700px)').matches;
 S.quality = store.get('aca-quality', lowEnd ? 'low' : 'high');
 
 /* ================= THREE: renderer & scene (рецепт освещения eTown) ================= */
@@ -1139,6 +1139,11 @@ async function loadFurniture(onProgress) {
   await Promise.all(names.map(n => new Promise(res => {
     fetch(`m/${n}.json`).then(r => r.json()).then(j => { const bin = atob(j.glb); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); gltf.parse(u8.buffer, '', g => { cache[n] = g.scene; done++; onProgress(done, names.length); res(); }, () => { done++; onProgress(done, names.length); res(); }); }).catch(() => { done++; onProgress(done, names.length); res(); });
   })));
+  if (S.quality !== 'high') for (const k in cache) cache[k].traverse(o => {
+    if (!o.isMesh) return; const ms = Array.isArray(o.material) ? o.material : [o.material];
+    const out = ms.map(m => { if (!m || !m.isMeshPhysicalMaterial) return m; const n = new THREE.MeshStandardMaterial(); for (const p of ['name', 'color', 'map', 'normalMap', 'normalScale', 'roughness', 'roughnessMap', 'metalness', 'metalnessMap', 'aoMap', 'emissive', 'emissiveMap', 'emissiveIntensity', 'transparent', 'opacity', 'side', 'alphaTest', 'vertexColors']) if (m[p] !== undefined) n[p] = m[p]?.clone && !m[p].isTexture ? m[p].clone() : m[p]; return n; });
+    o.material = Array.isArray(o.material) ? out : out[0];
+  });
   for (const f of FURN) {
     const src = cache[f.m]; if (!src) continue;
     const o = src.clone(true);
@@ -2252,13 +2257,14 @@ function loop(now) {
 
 /* ================= boot 3D ================= */
 async function boot3D() {
+  const furnP = loadFurniture(() => {});
   stageColors(); applyQuality();
   extras(); buildCurtains(); buildDevices(); buildNets(); buildClimate();
   buildRoomPins(); buildDevicePins();
   setMode('home');
   requestAnimationFrame(loop);
-  await loadFurniture((d, n) => { $('#loadTxt').textContent = `Загружено ${d} из ${n} моделей`; });
-  $('#loader').classList.add('done');
+  requestAnimationFrame(() => requestAnimationFrame(() => $('#loader').classList.add('done')));
+  await furnP;
   setMode(S.mode);
   // первый показ
   if (!store.get('aca-toured', false)) setTimeout(() => startTour(), 900);
