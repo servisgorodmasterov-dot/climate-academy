@@ -110,6 +110,7 @@ em.acc{font-family:var(--f-accent);font-style:italic;font-weight:700;color:var(-
 @media (max-width:600px){.stage{height:62vh;min-height:380px}}
 .stage canvas{display:block;width:100%;height:100%}
 .pins{position:absolute;inset:0;pointer-events:none}
+@media (pointer:coarse){.pin{pointer-events:none!important}}
 .pin{position:absolute;left:0;top:0;transform:translate(-50%,-50%);pointer-events:auto;border:0;padding:0;background:none;display:flex;align-items:center;gap:6px;will-change:transform}
 .pin .dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--surface);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.18);border:2px solid var(--surface);position:relative}
 .pin .dot svg{width:16px;height:16px}
@@ -2229,6 +2230,7 @@ const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(); let downAt = nul
 canvas.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; $('#hint').style.opacity = '0'; });
 canvas.addEventListener('pointerup', e => {
   if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
+  if (e.pointerType !== 'mouse') { let best = null, bd = 28; for (const p of pins) { if (p.el.hidden || !p.onClick || !p.el.isConnected) continue; const r = (p.el.querySelector('.dot') || p.el).getBoundingClientRect(); if (!r.width) continue; const d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)); if (d < bd) { bd = d; best = p; } } if (best) { best.onClick(); return; } }
   const r = canvas.getBoundingClientRect(); mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(mouse, camera);
   if (S.mode === 'electric') {
